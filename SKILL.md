@@ -45,13 +45,15 @@ Only a green outer gauntlet closes a package.
 2. **Decompose** — vertical tracer-bullet packages: ≤4 writable files,
    ≤10 AC, path-disjoint; shared paths → sequential. Unknown terrain →
    parallel `flash-explore` first. Track packages with `todowrite`.
-3. **Dispatch** — ready, path-disjoint packages as **parallel Task waves**
-   (≤3 concurrent; ≤5 for large breadth runs; effort S → single leaf).
-   Every dispatch is a **fresh Task** (never resume for Initial/Fix/Review).
-   If a Task dispatch yields no report within ~3 minutes, cancel it and
-   re-run the package bounded/headless:
-   `timeout <sec> opencode run --agent <leaf-agent> "<same brief>"` —
-   same agent contract, visible exit, no UI hang.
+3. **Dispatch** — default is **bounded headless dispatch** (robust, visible,
+   always returns): write the brief to `/tmp/brief-<pkg>.md`, then run
+   `timeout <sec> opencode run --agent <leaf> "$(cat /tmp/brief-<pkg>.md)"`
+   (timeouts: explore 180s, worker 420s, review 240s; large packages 600s).
+   Parallel waves = multiple such bash calls in one block (≤3 concurrent;
+   ≤5 for large breadth runs; effort S → single leaf). Every dispatch is
+   fresh (never resume for Initial/Fix/Review). The in-session Task tool is
+   **opt-in only** (when the user wants to watch child sessions) — it can
+   hang invisibly and then needs a manual cancel.
    Briefs carry: OBJECTIVE / METRIC-REFERENCE / BOUNDARY (allowed paths) /
    GAUNTLET (verify command + AC list) / FIRST ACTION / CONTEXT CAPSULE
    (symbols, invariants, project rules) / ≤3 lesson bullets if any.
@@ -62,6 +64,17 @@ Only a green outer gauntlet closes a package.
 6. **Integrate & report** — one integration verify across packages; final
    report in the user's language: Intent / Change / Outcome / Verification
    (verify command, exit status, artifacts, residual risks).
+
+## Visibility & forward progress (always)
+
+- Announce every wave **before** dispatch in one short line (package, agent,
+  expected duration) and update `todowrite` per package — the user must see
+  a sign of life before and after every long tool call.
+- Every dispatch returns (timeout at worst). On timeout or non-zero exit:
+  retry once with a sharpened brief; on second failure the orchestrator
+  implements the package in main chat. The process never stalls waiting on
+  a leaf.
+- After each return: one line with the report verdict before continuing.
 
 ## Safety rules
 
