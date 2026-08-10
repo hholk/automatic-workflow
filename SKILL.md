@@ -1,144 +1,92 @@
 ---
 name: flash-orchestrator
-description: "Use when orchestrating OpenCode subagents, delegating bulk work to GPT-5.6 Luna workers, running parallel agent fan-out, corrected worker loops, or explore-implement-verify pipelines. Triggers: orchestrate, flash workers, subagents, maximize delegation."
+description: "Ultrawork router: the chat orchestrates, GPT-5.6 Luna workers burn tokens in gauntlet loops. Use when orchestrating subagents, delegating bulk work, running parallel fan-out, corrected worker loops, or explore-implement-verify pipelines. Triggers: orchestrate, ultrawork, flash workers, subagents, maximize delegation."
 ---
 
-# Flash Orchestrator — Autonomous Ultrawork Router
+# Flash Orchestrator — Ultrawork via Gauntlet Loops
 
-**You (this chat) are the orchestrator** — the session LLM. Not a fixed leaf model.
-Use the full harness: intake/planning, model switches when useful, skill allowlist,
-MCPs (memory/context7), ledger, evidence gates, integration, human gates.
+You (main chat, any session model) are the orchestrator = **intelligence**:
+intake, plan, brief, judge, integrate. Leaf agents = **token burn**: they do
+the bulk work in their own context windows.
 
-Leaf models are pinned (do not inherit the chat model):
+| Leaf | Model (pinned in its agent file) | Role |
+|------|----------------------------------|------|
+| `flash-explore` | GPT-5.6 Luna | read-only map / verified facts |
+| `flash-worker` | GPT-5.6 Luna | implement + self-gauntlet |
+| `flash-review` | DeepSeek V4 Flash | fresh-context challenger |
 
-| Leaf | Exact ID | Role |
-|------|----------|------|
-| `flash-explore` / `flash-worker` | `venice/openai-gpt-56-luna` | Venice GPT-5.6 Luna |
-| `flash-review` | `venice/deepseek-v4-flash-0731` | challenger **only** |
+Model pinning, step caps, and permissions are enforced **natively** by
+`~/.config/opencode/agents/flash-*.md` — never restate them in briefs.
+The canonical `<report>` schemas live in those agent files too; append a
+`REPORT CONTRACT` to a Task prompt only when you must deviate.
 
-**Never** put workers/explorers on DeepSeek or any non-Luna model.
-**Never** put the chat orchestrator on a leaf Task as a substitute for thinking —
-you plan and judge here; bulk implementation goes to Luna workers.
+## Core: the gauntlet loop, two layers
 
-**Core rule:** never bulk-implement in main chat when a flash worker can. Spend main-chat tokens on planning, decomposition, briefs, acceptance criteria, correction, integration, and final judgment.
+**Inner gauntlet — inside every leaf.** Each leaf runs the same loop:
+act → run the check (real command / probe / AC) → read the actual output →
+fix → repeat until green or budget exhausted. Leaves report **evidence**
+(commands + integer exit codes), never prose claims. DONE without green
+evidence is invalid.
 
-## Skill root + bootstrap (do this once after load)
+**Outer gauntlet — here.** A report is an evidence channel, never proof.
+After every worker:
+1. Probe the declared artifacts (file/symbol exists; diff holds the change).
+2. Run the narrowest AC command yourself.
+3. Risk ≥ medium, high blast radius, or any red signal → dispatch
+   `flash-review`: a fresh context refutes the work — the builder never
+   grades itself.
+Only a green outer gauntlet closes a package.
 
-OpenCode's `skill` tool injects only this `SKILL.md` body — not sibling files.
-After loading, resolve the skill root from the skill tool's base directory (or
-`~/.config/opencode/skills/flash-orchestrator`) and **Read once**:
+## Loop
 
-1. `<root>/config.md` — models, risk tiers, review_mode, constants (incl. concurrency caps), access summary
-2. `<root>/references/brief-templates.md` — four core fields + canonical `<report>` schemas + Matt inline principles
-3. `<root>/references/access-tiers.md` — skill/MCP allowlists for orchestrator vs leaves
-4. `<root>/references/parallelism.md` — fan-out/fan-in, effort scale, when not to parallelize
+1. **Intake** — goal unclear, big, or irreversible decisions: run `grilling`
+   (bounded interview). Freeze the contract: goal, DoD, scope/non-scope,
+   binary AC, verify command. Never re-open mid-run except at human gates.
+2. **Decompose** — vertical tracer-bullet packages: ≤4 writable files,
+   ≤10 AC, path-disjoint; shared paths → sequential. Unknown terrain →
+   parallel `flash-explore` first. Track packages with `todowrite`.
+3. **Dispatch** — ready, path-disjoint packages as **parallel Task waves**
+   (≤3 concurrent; ≤5 for large breadth runs; effort S → single leaf).
+   Every dispatch is a **fresh Task** (never resume for Initial/Fix/Review).
+   Briefs carry: OBJECTIVE / METRIC-REFERENCE / BOUNDARY (allowed paths) /
+   GAUNTLET (verify command + AC list) / FIRST ACTION / CONTEXT CAPSULE
+   (symbols, invariants, project rules) / ≤3 lesson bullets if any.
+4. **Judge** — outer gauntlet per package (above).
+5. **Fix** — red → one surgical fix brief with the failure evidence
+   (failed AC + exit codes + short stderr), max 2 per package. Still red →
+   orchestrator implements in main chat. Still red → human gate.
+6. **Integrate & report** — one integration verify across packages; final
+   report in the user's language: Intent / Change / Outcome / Verification
+   (verify command, exit status, artifacts, residual risks).
 
-Use **absolute** paths for the ledger:
+## Safety rules
 
-```bash
-LEDGER="<root>/scripts/ledger.py"
-python3 "$LEDGER" init
-python3 "$LEDGER" start-run --project "<cwd>" --category "<cat>" --phase "<phase>"
-```
+- Leaves write only inside allowed paths (+ one adjacent test file); agent
+  files deny commit/push/rm/publish and nesting (`task`/`skill` denied).
+- Human gate **only** for: secrets, destructive/irreversible actions,
+  product contradictions, terminal failure after orchestrator takeover.
+- Context discipline here: no bulk reads in main chat — delegate to
+  `flash-explore`; summarize, never paste.
+- Limits: brief ≤6000 chars, report ≤2500 chars, one outcome per package.
 
-Never rely on `cwd` being the skill directory. Optionally `reap-stale --hours 6` first.
+## Meta-loop — this skill optimizes itself over time
 
-## Subagents (only these three — leaf agents)
+**Capture (event-driven, near-zero overhead).** After a run, append to
+`<root>/LESSONS.md` **only if something noteworthy happened**: a fix pass
+was needed, a report came back invalid, a brief misled the worker, a probe
+failed unexpectedly, a safety near-miss, or a trick that worked exceptionally
+well. One line: `- YYYY-MM-DD: what → cause → hint (which file to change)`.
+Routine runs log nothing.
 
-| Agent | Role | Model | Writes |
-|-------|------|-------|--------|
-| `flash-explore` | Map code / answer questions | Luna | No |
-| `flash-worker` | Implement + verify, one package | Luna | Yes |
-| `flash-review` | Challenge artifact vs AC | DeepSeek Flash | No |
+**Optimize (on demand).** When the user asks to optimize this skill — or
+after a pattern of similar lessons — load `writing-great-skills`, read
+LESSONS.md and, if needed, recent sessions under
+`~/.local/share/opencode/storage/session/`; propose small, concrete edits to
+SKILL.md / the agent files (prune no-ops, fold lessons into rules, sharpen
+gauntlet checks, tune step caps); apply **only after user approval**; then
+delete consumed lessons.
 
-Dispatch via OpenCode **Task** with `subagent_type` set above; every prompt is self-contained (no inherited chat history).
-**Do not** pass `task_id` on Initial/Fix/Review (fresh Task only; resume is recovery-only per [recovery.md](references/recovery.md)).
-Leaf agents have `task`/`skill` denied — they must not nest further agents or load skills.
+**Rollback.** This skill folder is a git repo: every optimization is a
+commit. The next real run is the test; if behavior regresses, revert.
 
-## Access tiers (skills / MCP)
-
-Full table: [access-tiers.md](references/access-tiers.md). Hard rules:
-
-| Role | Skills | MCP |
-|------|--------|-----|
-| **Orchestrator** | allowlist: `flash-orchestrator` + optional `grilling`, `writing-plans`, `systematic-debugging`, `codebase-design` | `codebase-memory-mcp` (map/impact), `context7` (libs **before** brief); no penpot/open-design/node_repl |
-| **flash-explore** | none | optional graph (`codebase-memory*`) only |
-| **flash-worker / flash-review** | none | none — repo + brief + verify/AC only |
-
-**Matt principles inline** (never full TDD/verification/superpowers skill loads):
-
-1. Tracer-bullet packages (vertical, path-bounded)
-2. RED → GREEN before claiming done
-3. Evidence before done (probe + verify exit; prose ≠ proof)
-4. Human gate only for real ambiguity (secrets, destructive, product contradiction, final recovery failure)
-
-## 1. Intake — bounded, then freeze
-
-Run a **bounded interview** (max 5 adaptive questions) per [intake.md](references/intake.md): DoD, scope/non-scope, irreversible decisions, mandatory verification, external/human steps. Stop early once the contract is complete; never re-open it during autonomous execution. Freeze a compact written contract: goal (one sentence), DoD, scope/non-scope, decisions, AC, verify command.
-
-Ask the human again **only** for the human-gate cases above. All reversible technical decisions proceed. Skill/MCP routing: [intake.md](references/intake.md) + [access-tiers.md](references/access-tiers.md).
-
-## 2. Autonomous loop
-
-- **Init ledger** once via absolute `$LEDGER` (see bootstrap). Store run/package ids.
-- **Preflight dispatch** (Meta-Harness learning):
-  1. `similar --category X --limit 5` and/or `lessons --category X --limit 3`
-  2. Inject top lessons into the brief (≤3 bullets) — prior failure classes, not raw chat
-  3. Classify package **risk** (`low|medium|high`) and **review_mode** (`none|single|dual`) per [config.md](config.md)
-  4. Enforce tier size gates + path overlap; name artifacts + independent probe
-- **Packages** are vertical tracer bullets: id, goal, dependencies, risk, review_mode, allowed/forbidden paths, expected artifacts, first action, probe, AC, verify command. One adjacent test file is always allowed.
-- **Every write brief** (Initial and each Fix) carries the four mandatory core fields — `OBJECTIVE`, `METRIC / REFERENCE`, `BOUNDARY`, `GAUNTLET` — per [brief-templates.md](references/brief-templates.md). LOW risk may set `GAUNTLET: orchestrator evidence only (review_mode=none)`.
-- **Report contract:** copy the applicable canonical `<report>` schema VERBATIM from [brief-templates.md](references/brief-templates.md) into **every** Task prompt.
-- **Pre-dispatch split gate:** respect risk tier budgets in [config.md](config.md). Global ceiling: 4 writable files / 10 AC / 800 artifact lines / 20 tool calls. HIGH stays tighter (2 files / 6 AC). Shared paths → sequential.
-- **Parallel waves (required):** apply [references/parallelism.md](references/parallelism.md). Path-disjoint ready packages must be **wave-dispatched** (fan-out → barrier → fan-in), not drained one-by-one. Default concurrent cap **3** (`MAX_CONCURRENT_PACKAGES`); effort scale L may use up to **5**. Effort scale S → single leaf. Independent explores fan-out first; dual reviews SPEC ∥ QUALITY. Never parallelize writers on the same path or Fix ladder steps on the same package.
-- **Limits:** 1 outcome per package; brief ≤6000 chars; report ≤2500 chars; trace evidence ≤4000 chars.
-- **Ledger lifecycle** (tight logging + correction):
-  - `log-event --kind dispatch|artifact|verify|review|integration|blocker|diagnose`
-  - `log-trace --kind probe|verify|report|stderr|diagnose --evidence "..."` for denser signal (commands, exits, short stderr) — **do not** score-only log
-  - `record-attempt --kind initial|fix1|fix2|fix3 --artifact ... --verify-exit N --outcome ... --summary "≤240" [--risk] [--review-mode] [--trace-evidence "..."]`
-  - On failure: `diagnose --package-row ID` → `error_class` + `fix_hint` + `next_kind` → feed into Fix brief
-  - `run-log --run-id ID --limit 50`; then `finish-package` / `finish-run`
-  - Never leave packages `running` after the session; use `reap-stale` if interrupted
-
-## 3. Judge — artifact-first + adaptive gauntlet
-
-**Never trust prose.** Extract the single inner `<report>` from Task’s outer `<task_result>` and validate fields. The report is the **evidence channel, never proof**. After every writer, probe declared artifacts and run the narrowest AC command.
-
-Full gates in [quality-gates.md](references/quality-gates.md):
-
-- **Artifact Gate** — file/symbol/diff exists and holds the change.
-- **Test Gates** — narrow target test, then module integration when risk ≥ medium.
-- **Adaptive Gauntlet** — `review_mode` from config:
-  - `none`: low risk + green probe/verify → orchestrator sign-off
-  - `single`: one combined SPEC+QUALITY `flash-review`
-  - `dual`: two parallel fresh `flash-review` (SPEC + QUALITY) — default for HIGH
-- **Final Evidence** — verify command + exit + artifacts + residual risks. No raw log dumps.
-
-## 4. Fix loop — diagnose then escalate
-
-Each Fix is a **fresh one-shot** Luna `flash-worker`, increasingly precise:
-
-1. **Initial** — full contract capsule + lessons from `similar`/`lessons`.
-2. **Fix1 — Symptom:** `diagnose` output, failed AC, test evidence, affected files.
-3. **Fix2 — Cause:** reviewer root cause / error_class hint, narrower symbols, invariant.
-4. **Fix3 — Patch (HIGH only by default):** mechanical before/after; LOW/MED may skip to orchestrator after Fix2.
-
-Probe + verify after every attempt; a **no-op counts as failed**. On empty/INVALID report routing see [recovery.md](references/recovery.md). After terminal fix failure the **orchestrator implements**; if that also fails → `blocked` → Human Gate.
-
-## Orchestrator responsibilities (main chat harness)
-
-You own the full control plane — leaves are execution/challenge only:
-
-- **Planning & intake** — bounded interview, freeze contract, package graph, risk/review_mode, effort scale S|M|L for parallel caps.
-- **Harness** — ledger lifecycle, similar/lessons, diagnose, probes, adaptive gauntlet, recovery, **wave fan-out/barrier**.
-- **Model flexibility** — stay on the session model; switch chat models if the user wants a stronger planner or cheaper pass. Leaf Task models stay pinned (Luna / DeepSeek).
-- **Judgment** — architecture without a written plan, merge conflicts across packages, ship call, auth/security, user Q&A.
-- **Token discipline** — never bulk-read whole codebases here; map via `flash-explore`. Never trust worker prose as proof.
-- **Leaf model discipline** — workers/explorers only `venice/openai-gpt-56-luna`; **only** `flash-review` uses `venice/deepseek-v4-flash-0731`.
-- Brief templates: [brief-templates.md](references/brief-templates.md); model notes: [model-prompting.md](references/model-prompting.md).
-
-## Completion evidence
-
-Report to the user in their language: **Intent / Change / Outcome / Verification** — verify command, exit status, artifacts, residual risks. Optionally surface top `error_class` patterns from the run.
-
-Constants and tiers: [config.md](config.md). **Restart the session after any skill/config edit.**
+Restart the session after any skill or agent-file edit.
