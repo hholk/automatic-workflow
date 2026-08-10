@@ -48,6 +48,10 @@ Only a green outer gauntlet closes a package.
 3. **Dispatch** — ready, path-disjoint packages as **parallel Task waves**
    (≤3 concurrent; ≤5 for large breadth runs; effort S → single leaf).
    Every dispatch is a **fresh Task** (never resume for Initial/Fix/Review).
+   If a Task dispatch yields no report within ~3 minutes, cancel it and
+   re-run the package bounded/headless:
+   `timeout <sec> opencode run --agent <leaf-agent> "<same brief>"` —
+   same agent contract, visible exit, no UI hang.
    Briefs carry: OBJECTIVE / METRIC-REFERENCE / BOUNDARY (allowed paths) /
    GAUNTLET (verify command + AC list) / FIRST ACTION / CONTEXT CAPSULE
    (symbols, invariants, project rules) / ≤3 lesson bullets if any.
