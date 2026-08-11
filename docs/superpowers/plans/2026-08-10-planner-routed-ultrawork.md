@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make `work` route every non-trivial phase through a dedicated read-only planner while preserving bounded worker execution and independent verification.
+**Goal:** Make `aw` route every non-trivial phase through a dedicated read-only planner while preserving bounded worker execution and independent verification.
 
 **Architecture:** Add a `flash-plan` leaf that emits a compact route/package plan. The main orchestrator owns decisions and acceptance; planning is required before intake freeze, package dispatch, fixes, reviews, and integration. Existing explore/worker/review agents remain specialized execution adapters.
 
