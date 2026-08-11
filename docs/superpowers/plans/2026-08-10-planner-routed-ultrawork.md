@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make `flash-orchestrator` route every non-trivial phase through a dedicated read-only planner while preserving bounded worker execution and independent verification.
+**Goal:** Make `work` route every non-trivial phase through a dedicated read-only planner while preserving bounded worker execution and independent verification.
 
 **Architecture:** Add a `flash-plan` leaf that emits a compact route/package plan. The main orchestrator owns decisions and acceptance; planning is required before intake freeze, package dispatch, fixes, reviews, and integration. Existing explore/worker/review agents remain specialized execution adapters.
 
@@ -13,7 +13,7 @@
 ### Task 1: Add the planner agent
 
 **Files:**
-- Create: `/Users/henrikholkenbrink/.config/opencode/agents/flash-plan.md`
+- Create: `agents/flash-plan.md`
 
 - [ ] **Step 1: Define a read-only planner profile**
 
@@ -30,7 +30,7 @@ Inspect the file and parse its YAML frontmatter with the repository's available 
 ### Task 2: Make planning the mandatory workflow gateway
 
 **Files:**
-- Modify: `/Users/henrikholkenbrink/.config/opencode/skills/flash-orchestrator/SKILL.md`
+- Modify: `SKILL.md`
 
 - [ ] **Step 1: Add planner role and planner-first invariant**
 
@@ -59,9 +59,9 @@ Describe planner-maintained state handoffs, end-state verification, route metric
 ### Task 3: Align existing leaf contracts with planner routing
 
 **Files:**
-- Modify: `/Users/henrikholkenbrink/.config/opencode/agents/flash-explore.md`
-- Modify: `/Users/henrikholkenbrink/.config/opencode/agents/flash-worker.md`
-- Modify: `/Users/henrikholkenbrink/.config/opencode/agents/flash-review.md`
+- Modify: `agents/flash-explore.md`
+- Modify: `agents/flash-worker.md`
+- Modify: `agents/flash-review.md`
 
 - [ ] **Step 1: Add planner-input requirements to explorer**
 

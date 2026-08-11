@@ -1,9 +1,9 @@
 ---
-name: flash-orchestrator
+name: work
 description: "Ultrawork router: the chat orchestrates, GPT-5.6 Luna workers burn tokens in gauntlet loops. Use when orchestrating subagents, delegating bulk work, running parallel fan-out, corrected worker loops, or explore-implement-verify pipelines. Triggers: orchestrate, ultrawork, flash workers, subagents, maximize delegation."
 ---
 
-# Flash Orchestrator — Planner-Routed Ultrawork via Gauntlet Loops
+# Work — Planner-Routed Ultrawork via Gauntlet Loops
 
 You (main chat, any session model) are the orchestrator = **intelligence**:
 intake, plan, brief, judge, integrate. Leaf agents = **token burn**: they do

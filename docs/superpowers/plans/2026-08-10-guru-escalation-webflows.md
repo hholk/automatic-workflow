@@ -13,9 +13,9 @@
 ### Task 1: Add Guru leaf agents
 
 **Files:**
-- Create: `/Users/henrikholkenbrink/.config/opencode/agents/flash-guru-debug.md`
-- Create: `/Users/henrikholkenbrink/.config/opencode/agents/flash-guru-architecture.md`
-- Create: `/Users/henrikholkenbrink/.config/opencode/agents/flash-guru-decision.md`
+- Create: `agents/flash-guru-debug.md`
+- Create: `agents/flash-guru-architecture.md`
+- Create: `agents/flash-guru-decision.md`
 
 - [ ] **Step 1: Add read-only profiles with explicit model routing**
 - [ ] **Step 2: Add bounded evidence-first prompts and report contracts**
@@ -24,7 +24,7 @@
 ### Task 2: Add Guru routing to the orchestrator
 
 **Files:**
-- Modify: `/Users/henrikholkenbrink/.config/opencode/skills/flash-orchestrator/SKILL.md`
+- Modify: `SKILL.md`
 
 - [ ] **Step 1: Add Guru roles and escalation invariant**
 - [ ] **Step 2: Add debug, architecture, and decision webflows**
@@ -35,7 +35,7 @@
 ### Task 3: Align the planner with Guru escalation
 
 **Files:**
-- Modify: `/Users/henrikholkenbrink/.config/opencode/agents/flash-plan.md`
+- Modify: `agents/flash-plan.md`
 
 - [ ] **Step 1: Add Guru escalation route taxonomy**
 - [ ] **Step 2: Require evidence sufficiency and escalation triggers**
