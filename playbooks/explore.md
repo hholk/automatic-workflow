@@ -1,14 +1,14 @@
 # explore
 
-**Agent:** `flash-explore` (Luna, read-only)
+**Agent:** `flash-explore` (Luna, native background read-only)
 **Load:** `codebase-memory` (if the skill tool is available)
 **MCP:** codebase-memory graph first, then Context7 for libraries, then grep/read
-**Planner:** none. The orchestrator updates the T3 Code list.
+**Planner:** Main refreshes the full Todo before `aw_spawn`.
 **Do not load:** `tdd`, `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
 
 ## When
 
-Paths, symbols, callers, or library behavior are unknown.
+Paths, symbols, callers, or library behavior are unknown. This is asynchronous `aw_spawn` background work; pull results with `aw_status`/`aw_read`.
 
 ## First action
 

@@ -10,6 +10,12 @@
 
 A bounded behavior change with a known verify command. Not a hard undiagnosed bug.
 
+## User transparency contract
+
+Implementation is a native synchronous task with one bounded checkpoint, one
+small write seam, and one targeted verify. Provide honest start/result cards;
+do not promise an in-call timed update. Main verifies afterward.
+
 ## First action
 
 Load `tdd`. If the skill tool is missing: write one failing behavior test through

@@ -6,17 +6,14 @@ argument-hint: task
 when-to-use: "$aw, /aw, orchestrate, ultrawork, flash workers"
 ---
 
-# AW — cheap influence, expensive work elsewhere
+# AW — native sessions, bounded writes
 
-You (main chat) have every tool. Spend as few tokens as possible and keep
-as much control as possible. Until the complete Todo list is written, work
-as if no subagents exist: inspect the task, take the graph snapshot, choose
-the playbook, and prepare the route. Writing the complete Todo list is the
-prompt hook and handoff gate. After that gate, subagents perform exploration,
-implementation, fixes, and review. You only decide, route, update the list,
-and verify. Do not search, edit, or diagnose after the gate. The sole
-execution exception is the surgical main fix after exactly two failed fix
-iterations. You do not keep files or logs in this context.
+Main takes the graph snapshot, then performs a full `todowrite` handoff before
+any dispatch. After the gate, long or parallel read-only exploration/review
+uses `aw_spawn`: it is asynchronous and immediately returns the native child
+session ID. The child/native session is the sole state source; there is no
+ledger, polling, daemon, PID, or custom runner. Main only routes, orchestrates,
+and verifies; it does not implement/search/diagnose post-gate.
 
 Load `codebase-memory`. Do not load `ask-matt`, `grill-with-docs`,
 `implement`, `to-prd`, or `to-issues`. You may load `grilling`. Point
@@ -86,15 +83,31 @@ item.
 Put `content` (not an invented id) in the brief as `TODO` so you can
 match the row. Do not ask the leaf to `todowrite`.
 
+## Native background sessions
+
+Use `aw_status` and `aw_read` as explicit pull controls. A toast is notification
+only; it does not inject results into the parent. On each new user turn, obey
+human instruction first, then inspect relevant unread/background native jobs;
+do not automatically read irrelevant jobs. `aw_control` aborts or steers the
+child. Explain that the session ID is the job ID. Only `flash-explore` and
+`flash-review` may run as read-only background agents.
+
+Write-capable implementation/fix remains a native synchronous task: one bounded
+checkpoint, one small write seam, one targeted verify. Do not promise an in-call
+timed update; Main verifies afterward. Before `aw_spawn` and task dispatch,
+refresh the full main-session `todowrite`. Todo remains main-session-owned.
+Route cards say pending before spawn
+and include the real returned session ID afterward; never promise a fictional
+pre-dispatch host Session ID. Current UI is tool cards + toast + explicit
+status/read: no T3 source patch claims and no automatic live panel.
+
 ## Visibility (T3 Code)
 
-A turn that starts with `task` or `opencode run` is a skill violation.
-Before the handoff gate: graph snapshot, then the complete planner list,
-then route card or grilling. No `task`, subagent, or
-`opencode run` may occur before that list is written. After the gate, every
-dispatch is preceded by a fresh complete `todowrite`; dispatch is in-session
-`task`. `opencode run` only after a Task hang, with
-`--format json | tee /tmp/aw-<pkg>.ndjson`.
+Main performs graph snapshot then full Todo handoff before dispatch. A turn
+that starts with a dispatch is a skill violation.
+Before the handoff gate: graph snapshot, then the complete planner list, then
+route card or grilling. After the gate, every `aw_spawn` or task dispatch is
+preceded by a fresh complete `todowrite`.
 
 ```text
 Phase: intake | fast | explore | implement | diagnose | fix | review | integrate
@@ -103,9 +116,15 @@ Todo: <id or none>
 Agent: <leaf or main> via task|bash|main
 Doing: <one line>
 Verify: <command or none>
-Window: ~Ns
-Result: DONE | BLOCKED | TIMEOUT | NEEDS_CONTEXT | (omit before dispatch)
-Evidence: <command → exit N>
+Job ID: <stable id>
+Session ID: <host session id>
+Started: <absolute ISO timestamp>
+Deadline: <absolute ISO timestamp; planned check-in, not a stop condition when visibility is fresh>
+Check-in: <absolute ISO timestamp>
+Window: informational only; never the sole user-facing timing promise
+Progress evidence: <observable command/output or BLOCKED error>
+Intervention: continue (new absolute check-in + reason) | reroute | cancel | main takeover
+Result: DONE | BLOCKED | TIMEOUT | INTERRUPTED | (omit before dispatch)
 Next: <one line>
 ```
 
@@ -136,8 +155,7 @@ subagents do that work.
 2. **Handoff** — Write the complete Todo list. This is the prompt hook:
   only after it succeeds may any subagent be dispatched. Attach playbook +
   brief. On every playbook, including `fast`, the matching todo exists first.
-  Windows: `fast` 60s, explore 120s, worker 240s, review 180s. Parallel
-  `task` ≤3, disjoint writes only.
+   Background reads may run in parallel; writes remain bounded and sequential.
 
 3. **Dispatch / Decide (post-gate)** — Route subagents and make directional
   choices as A/B/C + recommendation. User may pick. Silence = recommended.
@@ -157,9 +175,18 @@ subagents do that work.
 
 ## Self-improve
 
-Leaf reports include `workflow_delta`. Promote into `playbooks/*.md`
-only when it would have prevented a fail, timeout, or scope leak. One
-line in `LESSONS.md`, edit the playbook, delete the lesson.
+Before close, record a structured Forecast Mismatch lesson whenever the
+orchestrator must do substantive work after a worker return, actual runtime
+clearly exceeds the initial check-in forecast, more than one continue or
+extended check-in is needed, a worker stops because the path/brief/playbook was
+avoidably wrong, or the user intervenes due to perceived hanging. Include:
+Date, Todo/Playbook, forecast vs actual/check-in count, symptom/evidence, root
+cause, orchestrator intervention, proposed skill/playbook change, and status.
+The status lifecycle is `pending` → `promoted` after the rule/playbook change
+→ `validated` after a later successful run; only then may the lesson be
+optionally archived. Lessons are not deleted immediately after promotion.
+Leaf reports include `workflow_delta`; promote only when it would have
+prevented a fail, timeout, or scope leak.
 
 ## Safety
 

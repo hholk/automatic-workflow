@@ -1,16 +1,16 @@
 # fast
 
-**Agent:** `flash-explore` (read / lookup) or `flash-worker` (one small write)
+**Agent:** `flash-explore` (native background read-only) or `flash-worker` (one small foreground write)
 **Load:** none
 **MCP:** Context7 or one `search_graph` only if faster than grep
-**Planner:** none. Do not create or update todos.
+**Planner:** Main refreshes the full Todo before `aw_spawn` or task dispatch.
 **Do not load:** `tdd`, `diagnosing-bugs`, `codebase-design`, `grill-with-docs`, `implement`, `aw`
 
 ## When
 
 The orchestrator already has a graph picture and the brief is a local
 lookup or a tiny change: where is X, how do we connect, one file, one
-command. Not a multi-file feature, not an undiagnosed bug, not a review.
+command. Read-only lookup uses asynchronous `aw_spawn`; writes are bounded native synchronous tasks. Not a multi-file feature, not an undiagnosed bug, not a review.
 
 ## First action
 

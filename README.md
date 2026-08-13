@@ -1,10 +1,10 @@
 # automatic-workflow
 
-`aw` is an orchestration skill. Main spends few tokens and keeps control:
-Main completes the Todo list first, which serves as the prompt hook and
-handoff (not a plugin hook), then Luna subagents execute. Main decides,
-routes, and verifies; after two failed bug-fix iterations, Main takes over.
-Playbooks tell the leaf how to proceed and get sharper over time.
+`aw` is an orchestration skill. Main snapshots the graph, refreshes the full
+Todo list, then hands off. Long or parallel read-only work uses native
+asynchronous `aw_spawn` child sessions; `aw_status`/`aw_read` pull results and
+`aw_control` steers or aborts a child. Main verifies afterward. Write-capable
+work stays a bounded synchronous native task.
 
 ## What it provides
 
@@ -14,8 +14,10 @@ Playbooks tell the leaf how to proceed and get sharper over time.
 - playbooks: fast, explore, implement, diagnose, fix, review
 - decision templates (silence = recommended)
 - two failed bug-fix iterations → Main takes over
-- `workflow_delta` promotion only after a prevented fail
-- T3 Code visibility: in-session `task`, status blocks, no silent `opencode run`
+- forecast mismatches are captured before close and lessons follow pending → promoted → validated
+- T3 Code visibility: tool cards + toast + explicit status/read, with no automatic live panel
+- session IDs are native child job IDs; child state is authoritative, with no ledger/polling/daemon/PID/custom runner
+- every new turn handles human instruction first, then relevant unread background jobs only
 
 ## Install locally
 

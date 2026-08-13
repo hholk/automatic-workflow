@@ -1,15 +1,15 @@
 # review
 
-**Agent:** `flash-review` (read-only challenger)
+**Agent:** `flash-review` (native background read-only challenger)
 **Load:** none
 **MCP:** Context7 to check library claims; codebase-memory to check callers
-**Planner:** none. The orchestrator updates the T3 Code list.
+**Planner:** Main refreshes the full Todo before `aw_spawn`.
 **Do not load:** `tdd`, `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
 
 ## When
 
 The orchestrator needs an independent check: medium+ risk, high blast radius,
-or any red signal after a worker.
+or any red signal after a worker. Review uses asynchronous `aw_spawn`; pull results explicitly with `aw_status`/`aw_read`.
 
 ## First action
 
