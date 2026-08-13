@@ -1,0 +1,7 @@
+interface:
+  display_name: AW Ultrawork
+  short_description: Luna workers, orchestrator steers via playbooks
+  default_prompt: "$aw "
+
+policy:
+  allow_implicit_invocation: true

@@ -1,15 +1,19 @@
 # automatic-workflow
 
-`aw` (automatic-workflow) is a planner-routed orchestration skill for bounded multi-agent software work.
-It separates planning, exploration, implementation, review, recovery, and integration into evidence-gated phases.
+`aw` is an orchestration skill. The main chat spends few tokens and keeps
+control; Luna subagents do the work. Playbooks tell the leaf how to proceed
+and get sharper over time.
 
 ## What it provides
 
-- planner-first routing for non-trivial work
-- bounded headless worker dispatch with explicit stop conditions
-- inner and outer verification gauntlets
-- independent review and evidence-based Guru escalation
-- failure classification, retry brakes, and long-running checkpoints
+- orchestrator has every tool, uses codebase-memory for a cheap map, then dispatches
+- tight briefs so leaves cannot wander
+- T3 Code task planner: orchestrator writes it, leaves update it (not on `fast`)
+- playbooks: fast, explore, implement, diagnose, fix, review
+- decision templates (silence = recommended)
+- two identical fix fails → playbook sharpen → last Luna try → orchestrator
+- `workflow_delta` promotion only after a prevented fail
+- T3 Code visibility: in-session `task`, status blocks, no silent `opencode run`
 
 ## Install locally
 
@@ -21,9 +25,11 @@ ln -sfn ~/.config/opencode/skills/aw ~/.agents/skills/aw
 ln -sfn ~/.config/opencode/skills/aw ~/.claude/skills/aw
 ```
 
-For OpenCode, allow the `aw` skill in the build agent and restart the session after installation or updates so the skill cache reloads.
+For OpenCode, allow the `aw` skill on the build agent, pin `flash-worker` /
+`flash-explore` to Luna, and restart the session after installation or updates.
 
-The companion `flash-*` agent profiles are configured separately by the host harness. This repository contains the orchestration contract and its supporting design plans.
+The companion `flash-*` agent profiles live in the host harness
+(`~/.config/opencode/agents/`). Playbooks are in `playbooks/`.
 
 ## License
 
