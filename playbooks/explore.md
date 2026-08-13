@@ -3,7 +3,7 @@
 **Agent:** `flash-explore` (Luna, read-only)
 **Load:** `codebase-memory` (if the skill tool is available)
 **MCP:** codebase-memory graph first, then Context7 for libraries, then grep/read
-**Planner:** mark the brief's TODO `in_progress` at start, `completed` or leave it failed on `BLOCKED`. Do not add a second list.
+**Planner:** none. The orchestrator updates the T3 Code list.
 **Do not load:** `tdd`, `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
 
 ## When

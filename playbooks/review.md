@@ -3,7 +3,7 @@
 **Agent:** `flash-review` (read-only challenger)
 **Load:** none
 **MCP:** Context7 to check library claims; codebase-memory to check callers
-**Planner:** mark the brief's TODO `in_progress` at start, `completed` or leave it failed on `REQUEST_CHANGES` / `BLOCKED`. Do not add a second list.
+**Planner:** none. The orchestrator updates the T3 Code list.
 **Do not load:** `tdd`, `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
 
 ## When

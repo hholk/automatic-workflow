@@ -3,7 +3,7 @@
 **Agent:** `flash-worker` (Luna)
 **Load:** `tdd`, `codebase-design` (if the skill tool is available)
 **MCP:** Context7 for library APIs; codebase-memory for callers/callees before editing
-**Planner:** mark the brief's TODO `in_progress` at start, `completed` or leave it failed on `BLOCKED`. Do not add a second list.
+**Planner:** none. The orchestrator updates the T3 Code list.
 **Do not load:** `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
 
 ## When

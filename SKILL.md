@@ -45,7 +45,7 @@ Your leverage is a **tight brief**, not more reading.
 OBJECTIVE: <one sentence, done-looks-like>
 NON-GOALS: <what not to touch or invent>
 PLAYBOOK: <name>  (attach playbooks/<name>.md)
-TODO: <planner id, omit on fast>
+TODO: <exact content string of the planner row, omit on fast>
 READ / WRITE: <paths or "discover, then stay there">
 FIRST ACTION: <the first command or search>
 STOP: <when to halt>
@@ -57,23 +57,29 @@ do not do the leaf's job here.
 
 ## Task planner (T3 Code)
 
-This is how you orchestrate in the open. Use `todowrite` for every
-non-`fast` run. Skip it on `fast` — a one-item list for a lookup is
-noise.
+T3 Code's sidebar only renders a `todowrite` call whose input is the
+**full** `{ todos: [...] }` array in **this** session. Child-session
+updates are invisible. Skip the planner on `fast`.
 
-You write the plan **before** the first heavy `task`. One item per
-dispatch (or per package in a wave). Content is the OBJECTIVE, not
-"work on it". Put the item id in the brief so the leaf can update
-that row.
+You own the list. Before the first heavy `task`, and again whenever
+status changes, call `todowrite` with every item — never a single-row
+patch, never an `id` without `content`.
 
-| Who | Does |
-|---|---|
-| You | create the list, order, add/remove items when the route changes |
-| Leaf | `in_progress` as it starts, `completed` or leave failed on `BLOCKED` |
-| You | after return, match the list to evidence; never leave a ghost `in_progress` |
+```text
+todowrite({
+  todos: [
+    { content: "<OBJECTIVE>", status: "pending"|"in_progress"|"completed", priority: "medium" }
+  ]
+})
+```
 
-The planner is the map the user watches. A status block without a
-matching todo is incomplete. Do not let a leaf invent a second plan.
+`content` is the identity. `status` must be those three snake_case
+strings (`in_progress`, not `inProgress`). After a leaf returns, rewrite
+the whole array from evidence. Never leave `in_progress` on a finished
+item.
+
+Put `content` (not an invented id) in the brief as `TODO` so you can
+match the row. Do not ask the leaf to `todowrite`.
 
 ## Visibility (T3 Code)
 

@@ -3,7 +3,7 @@
 **Agent:** `flash-worker` (Luna)
 **Load:** `diagnosing-bugs` (if the skill tool is available)
 **MCP:** codebase-memory to trace the failing path; Context7 if a library is implicated
-**Planner:** mark the brief's TODO `in_progress` at start, `completed` or leave it failed on `BLOCKED`. Do not add a second list.
+**Planner:** none. The orchestrator updates the T3 Code list.
 **Do not load:** `tdd` until a red-capable loop exists; never `grill-with-docs`, `implement`, `aw`
 
 ## When
