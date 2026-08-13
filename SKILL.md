@@ -9,11 +9,14 @@ when-to-use: "$aw, /aw, orchestrate, ultrawork, flash workers"
 # AW — cheap influence, expensive work elsewhere
 
 You (main chat) have every tool. Spend as few tokens as possible and keep
-as much control as possible. Push work — especially searches, edits, and
-long probes — to a Luna subagent. You steer, brief, judge, and decide.
-You may do any tool call yourself when it is cheaper than a dispatch
-(graph snapshot, one verify command, a decision). You do not keep files
-or logs in this context.
+as much control as possible. Until the complete Todo list is written, work
+as if no subagents exist: inspect the task, take the graph snapshot, choose
+the playbook, and prepare the route. Writing the complete Todo list is the
+prompt hook and handoff gate. After that gate, subagents perform exploration,
+implementation, fixes, and review. You only decide, route, update the list,
+and verify. Do not search, edit, or diagnose after the gate. The sole
+execution exception is the surgical main fix after exactly two failed fix
+iterations. You do not keep files or logs in this context.
 
 Load `codebase-memory`. Do not load `ask-matt`, `grill-with-docs`,
 `implement`, `to-prd`, or `to-issues`. You may load `grilling`. Point
@@ -24,7 +27,7 @@ improve over time. Attach the file. Never copy a Matt skill into one.
 
 | Playbook | Agent | Subagent loads |
 |---|---|---|
-| `fast` | `flash-explore` or `flash-worker` | none — just finish |
+| `fast` | `flash-explore` or `flash-worker` | matching todo row |
 | `explore` | `flash-explore` | `codebase-memory` |
 | `implement` | `flash-worker` | `tdd`, `codebase-design` |
 | `diagnose` | `flash-worker` | `diagnosing-bugs` |
@@ -34,8 +37,9 @@ improve over time. Attach the file. Never copy a Matt skill into one.
 You pick the playbook after a cheap graph picture. `fast` when the
 picture says the task is local. Heavier only when the picture (or a
 failed `fast`) shows that shape. Never dispatch `explore` to learn the
-map — that is your MCP. Fan-out is routing, not a playbook. Overlapping
-writes stay sequential. Gurus only after the 2-fail path.
+map — that is your MCP before the handoff gate. Fan-out is routing, not a
+playbook. Overlapping writes stay sequential. Gurus only after the 2-fail
+path.
 
 ## Influence without tokens
 
@@ -45,7 +49,7 @@ Your leverage is a **tight brief**, not more reading.
 OBJECTIVE: <one sentence, done-looks-like>
 NON-GOALS: <what not to touch or invent>
 PLAYBOOK: <name>  (attach playbooks/<name>.md)
-TODO: <exact content string of the planner row, omit on fast>
+TODO: <exact content string of the planner row>
 READ / WRITE: <paths or "discover, then stay there">
 FIRST ACTION: <the first command or search>
 STOP: <when to halt>
@@ -59,11 +63,12 @@ do not do the leaf's job here.
 
 T3 Code's sidebar only renders a `todowrite` call whose input is the
 **full** `{ todos: [...] }` array in **this** session. Child-session
-updates are invisible. Skip the planner on `fast`.
+updates are invisible. Every subagent dispatch requires the planner first,
+including `fast`.
 
-You own the list. Before the first heavy `task`, and again whenever
-status changes, call `todowrite` with every item — never a single-row
-patch, never an `id` without `content`.
+You own the list. Before every `task` dispatch, and again whenever status
+changes, call `todowrite` with the complete list — never a single-row patch,
+never an `id` without `content`.
 
 ```text
 todowrite({
@@ -84,9 +89,11 @@ match the row. Do not ask the leaf to `todowrite`.
 ## Visibility (T3 Code)
 
 A turn that starts with `task` or `opencode run` is a skill violation.
-First: graph snapshot, then planner (if not `fast`), then route card
-or grilling. Default dispatch is in-session `task`. `opencode run`
-only after a Task hang, with
+Before the handoff gate: graph snapshot, then the complete planner list,
+then route card or grilling. No `task`, subagent, or
+`opencode run` may occur before that list is written. After the gate, every
+dispatch is preceded by a fresh complete `todowrite`; dispatch is in-session
+`task`. `opencode run` only after a Task hang, with
 `--format json | tee /tmp/aw-<pkg>.ndjson`.
 
 ```text
@@ -104,19 +111,20 @@ Next: <one line>
 
 ## Graph (your cheap map)
 
-Before the route card, when a repo is in scope:
+Before the Todo handoff gate and before the route card, when a repo is in scope:
 
 1. `list_projects` — missing worktree: say so, do not reindex here.
 2. `get_architecture` — packages, clusters, seams.
 3. ≤2 `search_graph` / `trace_path` for names in the task.
 
-Summarize into the brief. Never paste the dump. Mid-run: same tools to
-check a claim or redraw a write boundary.
+Summarize into the brief. Never paste the dump. After the Todo handoff gate,
+the main does not search, inspect, diagnose, or redraw write boundaries;
+subagents do that work.
 
 ## Loop
 
-1. **Intake** — Snapshot. If still unclear, big, or irreversible:
-   `grilling` (≤8 questions, each with a recommended answer). Then:
+1. **Intake (pre-gate)** — Snapshot. If still unclear, big, or irreversible:
+  `grilling` (≤8 questions, each with a recommended answer). Then:
 
    ```text
    Task: <objective>
@@ -125,22 +133,27 @@ check a claim or redraw a write boundary.
    Next: <leaf, window>
    ```
 
-2. **Dispatch** — Attach playbook + brief. On every playbook except
-   `fast`, the matching todo exists first. `task` the leaf. Windows:
-   `fast` 60s, explore 120s, worker 240s, review 180s. Parallel `task`
-   ≤3, disjoint writes only.
+2. **Handoff** — Write the complete Todo list. This is the prompt hook:
+  only after it succeeds may any subagent be dispatched. Attach playbook +
+  brief. On every playbook, including `fast`, the matching todo exists first.
+  Windows: `fast` 60s, explore 120s, worker 240s, review 180s. Parallel
+  `task` ≤3, disjoint writes only.
 
-3. **Decide** — Directional choices as A/B/C + recommendation. User may
-   pick. Silence = recommended.
+3. **Dispatch / Decide (post-gate)** — Route subagents and make directional
+  choices as A/B/C + recommendation. User may pick. Silence = recommended.
+  The main does not perform exploration, implementation, fixes, review, or
+  diagnosis here.
 
-4. **Validate** — Reports are not proof. Run the one verify or confirm
-   the cited path. Medium+ risk writes or red after a worker → `review`.
+4. **Validate (post-gate)** — Reports are not proof. The main runs the one
+  verify or confirms the cited path. Medium+ risk writes or red after a
+  worker → route `review`.
 
-5. **Two-fail** — Same signature twice → leaf sharpens its playbook
-   (`workflow_delta`) → one last leaf try → only then you write code.
+5. **Two-fail** — After exactly two failed fix iterations, if the behavior
+  still fails, the main takes over with one surgical fix. Do not dispatch a
+  third fix iteration. The main then routes or verifies as usual.
 
 6. **Close** — One integration verify. User language: Intent / Change /
-   Outcome / Verification.
+  Outcome / Verification.
 
 ## Self-improve
 

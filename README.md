@@ -1,17 +1,19 @@
 # automatic-workflow
 
-`aw` is an orchestration skill. The main chat spends few tokens and keeps
-control; Luna subagents do the work. Playbooks tell the leaf how to proceed
-and get sharper over time.
+`aw` is an orchestration skill. Main spends few tokens and keeps control:
+Main completes the Todo list first, which serves as the prompt hook and
+handoff (not a plugin hook), then Luna subagents execute. Main decides,
+routes, and verifies; after two failed bug-fix iterations, Main takes over.
+Playbooks tell the leaf how to proceed and get sharper over time.
 
 ## What it provides
 
-- orchestrator has every tool, uses codebase-memory for a cheap map, then dispatches
+- Main has every tool, uses codebase-memory for a cheap map, then dispatches
 - tight briefs so leaves cannot wander
-- T3 Code task planner: orchestrator writes it, leaves update it (not on `fast`)
+- Todo list is authoritative: Main completes it before dispatch; Planner and leaves do not update it
 - playbooks: fast, explore, implement, diagnose, fix, review
 - decision templates (silence = recommended)
-- two identical fix fails → playbook sharpen → last Luna try → orchestrator
+- two failed bug-fix iterations → Main takes over
 - `workflow_delta` promotion only after a prevented fail
 - T3 Code visibility: in-session `task`, status blocks, no silent `opencode run`
 

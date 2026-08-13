@@ -16,9 +16,8 @@ reproduced bug) and the failure class is known.
 Read the actual stderr / failed AC. Change one thing. Re-run the same verify
 command. If a seam exists, lock the repro as a failing test first.
 
-Same signature as the last fail → do not invent a third identical attempt.
-Report `BLOCKED` with the signature so the orchestrator can sharpen this
-playbook and grant one last try.
+After the second identical fail, the Main takes over with a surgical fix; there
+is no third Leaf attempt.
 
 ## Stop
 
