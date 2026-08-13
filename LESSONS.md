@@ -21,3 +21,12 @@ Lessons remain after promotion and may be archived only after later validation.
   proposed skill/playbook change: use aw_spawn with explicit status/read/control and bounded foreground writes
   status: promoted
   validation note: validation pending fresh real smoke
+
+- Date: 2026-08-13
+  Todo/Playbook: TTS root-cause escalation / diagnose
+  forecast vs actual/check-in count: one guru escalation expected; actual required one rejected dispatch plus one corrected redispatch
+  symptom/evidence: flash-guru-debug returned NEEDS_CONTEXT without technical analysis because the brief omitted the literal `FIRST_ATTEMPT_STATUS: FAILED` contract field
+  root cause: the orchestrator supplied the failed probes narratively but did not encode the guru's required escalation-status marker
+  orchestrator intervention: resent the same read-only evidence packet with explicit failed status, expected behavior, and observed result; the second run resolved the 4096-frame TTS limit
+  proposed skill/playbook change: add a guru-escalation brief checklist requiring `FIRST_ATTEMPT_STATUS`, failed probe, expected result, and observed output before dispatch
+  status: pending
