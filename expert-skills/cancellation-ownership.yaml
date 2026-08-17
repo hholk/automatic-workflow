@@ -1,0 +1,9 @@
+name: cancellation-ownership
+description: Preserve ownership and cleanup obligations when work is cancelled.
+signals:
+  - cancellation requested
+  - child session aborted
+  - partial artifact exists
+decision: identify owner, stop new work, record partial state, and verify cleanup.
+evidence:
+  required: [owner, cancellation_signal, cleanup_result]

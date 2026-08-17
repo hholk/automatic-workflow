@@ -9,8 +9,7 @@ Load the skill `aw` and follow it exactly.
 You have every tool. Spend few tokens, keep control, and use native sessions.
 Main works through the complete Todo list first; that list is the prompt
 hook and handoff, not a plugin hook. Only then do subagents execute. Main
-decides, routes, and verifies; after two failed bug-fix iterations, Main
-takes over. When a repo is in scope: codebase-memory snapshot
+decides, routes, and verifies. When a repo is in scope: codebase-memory snapshot
 (`list_projects`, `get_architecture`, ≤2 targeted graph queries), then choose
 a playbook and give the leaf a tight brief. Keep the Todo list authoritative;
 do not have Planner or leaves update the main list. Grill (≤8 questions) only
@@ -27,7 +26,10 @@ Typical locations (all should be the same checkout via symlink):
 - `~/.codex/skills/aw`
 - `~/.grok/skills/aw`
 
-Expand `~`. After skill load, follow `SKILL.md`. Optional companion files under
+Expand `~`. After skill load, follow `SKILL.md`. At AW intake, run the bounded
+weekly Matt skills check when its seven-day guard allows it; the script records
+the result in `LESSONS.md` and never runs as a background process. Optional
+companion files under
 the skill root are used only when they exist.
 
 User request:
@@ -44,3 +46,11 @@ do not promise an in-call timed update.
 
 Before close, record any forecast mismatch in `LESSONS.md` with the structured
 fields and pending → promoted → validated lifecycle.
+Record every meaningful feedback/result/checkpoint, including routine success,
+with compact metadata only; never store secrets, private full prompts,
+complete tool history, or entire diffs. At close, show exactly three numbered
+next steps: bounded continuation; independent Luna review/verification; and a
+guarded Matt Pocock release that reviews current diff/base, updates target
+project documentation, runs tests, resolves findings, then obtains explicit
+human approval before commit, push, and deploy. Never auto-deploy or bypass
+the human gate.

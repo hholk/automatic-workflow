@@ -1,201 +1,128 @@
 ---
 name: aw
-description: "Use when the user invokes $aw or /aw, or asks to orchestrate cheap Luna workers, parallel fan-out, or an explore-implement-verify run. Triggers: $aw, /aw, orchestrate, ultrawork, flash workers."
+description: "Autonomous supervisor workflow with native OpenCode sessions."
 user-invocable: true
 argument-hint: task
-when-to-use: "$aw, /aw, orchestrate, ultrawork, flash workers"
 ---
 
-# AW — native sessions, bounded writes
+# AW 2.0 — autonomous supervisor
 
-Main takes the graph snapshot, then performs a full `todowrite` handoff before
-any dispatch. After the gate, long or parallel read-only exploration/review
-uses `aw_spawn`: it is asynchronous and immediately returns the native child
-session ID. The child/native session is the sole state source; there is no
-ledger, polling, daemon, PID, or custom runner. Main only routes, orchestrates,
-and verifies; it does not implement/search/diagnose post-gate.
+Matt Pocock's skills are available through the shared OpenCode skill
+directory, including `ask-matt`, `grill-with-docs`, `tdd`, `codebase-design`,
+`diagnosing-bugs`, and `implement`. Use them when their workflow is the best
+fit; do not copy their contents into AW. At most once every seven days during
+AW intake, run `node <skill-root>/scripts/check-matt-skills.mjs`. The check
+compares the local checkout with upstream, fast-forwards only a clean checkout,
+and records the result in `LESSONS.md`. It is explicit and bounded: there is
+no background updater or daemon.
 
-Load `codebase-memory`. Do not load `ask-matt`, `grill-with-docs`,
-`implement`, `to-prd`, or `to-issues`. You may load `grilling`. Point
-the user at `/ask-matt` only when the Matt flow itself is unclear.
+AW is a native OpenCode supervisor, not a runner. Before dispatch, capture the
+graph snapshot, complete the full Todo list with `todowrite`, and perform the
+handoff before dispatch; OpenCode is the source of
+truth: child session state is authoritative and there is no ledger, daemon, PID,
+custom runner, token budget, step budget, or mechanical two-fail gate.
 
-Playbooks in `playbooks/` are for the **subagent**, not for you. They
-improve over time. Attach the file. Never copy a Matt skill into one.
+The pure supervisor contract lives in `supervisor/supervisor.mjs`. It exposes
+checkpoint/help parsing, semantic comparison and stall routing, evidence and
+brief normalization, capability/reasoning selection, canonical prompts, and
+in-memory telemetry/metrics/memory validation. Hosts call these functions and
+decide how to control native sessions; the module has no persistence, daemon,
+polling, ledger, or automatic control of native sessions.
 
-| Playbook | Agent | Subagent loads |
-|---|---|---|
-| `fast` | `flash-explore` or `flash-worker` | matching todo row |
-| `explore` | `flash-explore` | `codebase-memory` |
-| `implement` | `flash-worker` | `tdd`, `codebase-design` |
-| `diagnose` | `flash-worker` | `diagnosing-bugs` |
-| `fix` | `flash-worker` | `tdd` if a seam exists |
-| `review` | `flash-review` | none |
+## Roles and model mapping
 
-You pick the playbook after a cheap graph picture. `fast` when the
-picture says the task is local. Heavier only when the picture (or a
-failed `fast`) shows that shape. Never dispatch `explore` to learn the
-map — that is your MCP before the handoff gate. Fan-out is routing, not a
-playbook. Overlapping writes stay sequential. Gurus only after the 2-fail
-path.
+The canonical active OpenCode role profiles live in `agents/opencode/`; do not
+create a redundant `profiles/` directory.
 
-## Influence without tokens
+Role is separate from model. The orchestrator model is freely configurable by
+the host profile. Worker and reviewer roles map to Venice.ai GPT-5.6 Luna;
+expert maps to Sol. Never route with `if model == Luna`; route by role and
+capability. Background agents are read-only. Foreground implementation is a
+native synchronous task.
 
-Your leverage is a **tight brief**, not more reading.
+## Supervisor loop
 
-```text
-OBJECTIVE: <one sentence, done-looks-like>
-NON-GOALS: <what not to touch or invent>
-PLAYBOOK: <name>  (attach playbooks/<name>.md)
-TODO: <exact content string of the planner row>
-READ / WRITE: <paths or "discover, then stay there">
-FIRST ACTION: <the first command or search>
-STOP: <when to halt>
-VERIFY: <one command or "cite the path">
+Read-only background work uses `aw_spawn` asynchronous native child sessions;
+the returned native child session ID is the job ID. `aw_status` and `aw_read`
+are explicit pull controls, while a toast is notification only and does not
+inject results.
+
+1. Capture a graph snapshot, define the objective and acceptance evidence, then
+   dispatch a tight brief. A brief contains `OBJECTIVE`, `SUCCESS`, `CONTEXT`,
+   `NON-GOALS`, `INITIAL SCOPE`, `VERIFY`, `HELP`, and `SUPERVISOR`.
+2. Evaluate semantic progress at checkpoints, not elapsed time or output size.
+   Progress means a materially narrower hypothesis, changed artifact, or new
+   passing evidence. Information gain is the change in uncertainty between
+   checkpoints; ask for the next discriminating action when it is low.
+3. Intervene only for a stall, scope/risk violation, or explicit help request.
+   Stall signals are repeated unchanged hypotheses, repeated identical
+   failures, no artifact/evidence movement, contradictory evidence, or a
+   blocked dependency. One slow but productive worker is not stalled.
+
+After every meaningful feedback, worker result, or checkpoint, append a compact
+structured entry to `LESSONS.md`, including routine successes. Required fields:
+Date, Todo/Playbook, feedback/result, symptom/evidence, root cause or
+contributing factor, routing/intervention, prevention lesson, and status
+`pending|promoted|validated`. Omit secrets, private full prompts, complete tool
+history, and entire diffs; proactively propose prevention after feedback.
+
+At task close, present exactly three numbered next steps: continue the next
+bounded slice; run an independent Luna review or targeted verification; or use
+Matt Pocock `code-review`, `writing-for-agents` (or relevant docs skill), and
+`implement`/`tdd` as needed to review the current diff/base, update target
+project docs, run tests, resolve findings, and request explicit human approval
+before commit, push, and deploy. Never auto-deploy or bypass that gate.
+
+## Intervention ladder
+
+Continue with a sharper next action → steer scope or request missing evidence →
+route `review` for Luna review → route `context` for Context rescue → route
+`sol` for expert reasoning → ask `human` for an irreversible, secret, or
+product-decision gate. Supervisor Sol path is explicit: preserve the worker's
+evidence, send the failure taxonomy and smallest question, then return advice
+to the worker; Sol does not edit.
+
+## Help and evidence contracts
+
+Workers may self-escalate with compact YAML:
+
+```yaml
+HELP_REQUEST:
+  type: sol # sol | review | context | human
+  question: one precise missing decision
+  evidence: command/output or file path
+  attempted: what was tried
+  risk: low | medium | high
 ```
 
-If a leaf could do the wrong thing, the brief was vague. Tighten it;
-do not do the leaf's job here.
+Every checkpoint and final report records `PROGRESS`, `CURRENT_HYPOTHESIS`,
+`EVIDENCE`, `BLOCKED_ON`, `HELP`, and `NEXT`. Final output also includes
+structured `VERIFY_EVIDENCE`, `SCOPE_EVIDENCE`, `ACCEPTANCE_EVIDENCE`, and a
+`VERIFICATION_SUMMARY` with commands, exit codes, and observed output. Review
+is semantic and evidence-based; there is no automatic challenger gate.
 
-## Task planner (T3 Code)
+## Rescue, memory, and quality
 
-T3 Code's sidebar only renders a `todowrite` call whose input is the
-**full** `{ todos: [...] }` array in **this** session. Child-session
-updates are invisible. Every subagent dispatch requires the planner first,
-including `fast`.
-
-You own the list. Before every `task` dispatch, and again whenever status
-changes, call `todowrite` with the complete list — never a single-row patch,
-never an `id` without `content`.
-
-```text
-todowrite({
-  todos: [
-    { content: "<OBJECTIVE>", status: "pending"|"in_progress"|"completed", priority: "medium" }
-  ]
-})
-```
-
-`content` is the identity. `status` must be those three snake_case
-strings (`in_progress`, not `inProgress`). After a leaf returns, rewrite
-the whole array from evidence. Never leave `in_progress` on a finished
-item.
-
-Put `content` (not an invented id) in the brief as `TODO` so you can
-match the row. Do not ask the leaf to `todowrite`.
-
-## Native background sessions
-
-Use `aw_status` and `aw_read` as explicit pull controls. A toast is notification
-only; it does not inject results into the parent. On each new user turn, obey
-human instruction first, then inspect relevant unread/background native jobs;
-do not automatically read irrelevant jobs. `aw_control` aborts or steers the
-child. Explain that the session ID is the job ID. Only `flash-explore` and
-`flash-review` may run as read-only background agents.
-
-Write-capable implementation/fix remains a native synchronous task: one bounded
-checkpoint, one small write seam, one targeted verify. Do not promise an in-call
-timed update; Main verifies afterward. Before `aw_spawn` and task dispatch,
-refresh the full main-session `todowrite`. Todo remains main-session-owned.
-Route cards say pending before spawn
-and include the real returned session ID afterward; never promise a fictional
-pre-dispatch host Session ID. Current UI is tool cards + toast + explicit
-status/read: no T3 source patch claims and no automatic live panel.
-
-## Visibility (T3 Code)
-
-Main performs graph snapshot then full Todo handoff before dispatch. A turn
-that starts with a dispatch is a skill violation.
-Before the handoff gate: graph snapshot, then the complete planner list, then
-route card or grilling. After the gate, every `aw_spawn` or task dispatch is
-preceded by a fresh complete `todowrite`.
-
-```text
-Phase: intake | fast | explore | implement | diagnose | fix | review | integrate
-Playbook: <name>
-Todo: <id or none>
-Agent: <leaf or main> via task|bash|main
-Doing: <one line>
-Verify: <command or none>
-Job ID: <stable id>
-Session ID: <host session id>
-Started: <absolute ISO timestamp>
-Deadline: <absolute ISO timestamp; planned check-in, not a stop condition when visibility is fresh>
-Check-in: <absolute ISO timestamp>
-Window: informational only; never the sole user-facing timing promise
-Progress evidence: <observable command/output or BLOCKED error>
-Intervention: continue (new absolute check-in + reason) | reroute | cancel | main takeover
-Result: DONE | BLOCKED | TIMEOUT | INTERRUPTED | (omit before dispatch)
-Next: <one line>
-```
-
-## Graph (your cheap map)
-
-Before the Todo handoff gate and before the route card, when a repo is in scope:
-
-1. `list_projects` — missing worktree: say so, do not reindex here.
-2. `get_architecture` — packages, clusters, seams.
-3. ≤2 `search_graph` / `trace_path` for names in the task.
-
-Summarize into the brief. Never paste the dump. After the Todo handoff gate,
-the main does not search, inspect, diagnose, or redraw write boundaries;
-subagents do that work.
-
-## Loop
-
-1. **Intake (pre-gate)** — Snapshot. If still unclear, big, or irreversible:
-  `grilling` (≤8 questions, each with a recommended answer). Then:
-
-   ```text
-   Task: <objective>
-   Playbook: fast | explore | implement | diagnose | fix | review
-   Why: <one sentence from the snapshot>
-   Next: <leaf, window>
-   ```
-
-2. **Handoff** — Write the complete Todo list. This is the prompt hook:
-  only after it succeeds may any subagent be dispatched. Attach playbook +
-  brief. On every playbook, including `fast`, the matching todo exists first.
-   Background reads may run in parallel; writes remain bounded and sequential.
-
-3. **Dispatch / Decide (post-gate)** — Route subagents and make directional
-  choices as A/B/C + recommendation. User may pick. Silence = recommended.
-  The main does not perform exploration, implementation, fixes, review, or
-  diagnosis here.
-
-4. **Validate (post-gate)** — Reports are not proof. The main runs the one
-  verify or confirms the cited path. Medium+ risk writes or red after a
-  worker → route `review`.
-
-5. **Two-fail** — After exactly two failed fix iterations, if the behavior
-  still fails, the main takes over with one surgical fix. Do not dispatch a
-  third fix iteration. The main then routes or verifies as usual.
-
-6. **Close** — One integration verify. User language: Intent / Change /
-  Outcome / Verification.
-
-## Self-improve
-
-Before close, record a structured Forecast Mismatch lesson whenever the
-orchestrator must do substantive work after a worker return, actual runtime
-clearly exceeds the initial check-in forecast, more than one continue or
-extended check-in is needed, a worker stops because the path/brief/playbook was
-avoidably wrong, or the user intervenes due to perceived hanging. Include:
-Date, Todo/Playbook, forecast vs actual/check-in count, symptom/evidence, root
-cause, orchestrator intervention, proposed skill/playbook change, and status.
-The status lifecycle is `pending` → `promoted` after the rule/playbook change
-→ `validated` after a later successful run; only then may the lesson be
-optionally archived. Lessons are not deleted immediately after promotion.
-Leaf reports include `workflow_delta`; promote only when it would have
-prevented a fail, timeout, or scope leak.
+Context rescue narrows the question, retrieves only relevant source-of-truth
+facts, and updates the worker brief without dumping prompts. Failure taxonomy:
+`scope`, `environment`, `dependency`, `test`, `logic`, `evidence`, and
+`human_gate`. Repair memory records symptom, hypothesis, repair, and proof;
+stall/intervention memory records signal, ladder rung, outcome, and information
+gain. An optional compact expert skillbook stores reusable diagnostic patterns.
+These are documented structures, not a hidden persistence system.
 
 ## Safety
 
-- Leaves write only inside allowed paths (+ one adjacent test file).
-- `flash-explore` and `flash-review` are read-only.
-- Gurus are read-only and do not get Context7 or codebase-memory; you
-  pass exhausted MCP evidence if you escalate.
-- Human gate: secrets, destructive/irreversible work, product
-  contradictions, terminal failure after your takeover.
-- Brief ≤6000 chars, report ≤2500 chars, one outcome per dispatch.
+Visibility cards include `Started`, `result`, and `status/read` for each native
+job, plus the user turn ordering above.
 
-Restart the session after editing this skill, a playbook, or an agent file.
+No secrets, destructive actions, commits, pushes, or unapproved paths. Main
+owns planning and verification; native `aw_status`/`aw_read` are explicit pull
+controls and toasts are notification only. Session IDs are native child job IDs.
+On every new turn, handle human instruction first, then inspect relevant unread
+background native jobs only.
+`aw_control` steers or aborts the child; its session ID is the job ID.
+`flash-explore` and `flash-review` are read-only background agents.
+The Todo list is main-session-owned; display the real returned session ID after
+dispatch, never a fictional ID.
+There are no T3 source patch claims and no automatic live panel.

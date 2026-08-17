@@ -1,0 +1,7 @@
+interface:
+  display_name: AW Sol Expert
+  short_description: Read-only expert reasoning and context rescue
+role: expert
+model: sol
+permission_intent: read-only reasoning and context rescue
+capability_policy: preserve supported reasoning, tools, context, and select requested effort flexibly

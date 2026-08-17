@@ -18,7 +18,30 @@ function bounded(value, limit = MAX_INPUT_BYTES) {
   return text
 }
 
+function checkedBrief(value, limit = MAX_INPUT_BYTES) {
+  const text = String(value ?? "")
+  const bytes = Buffer.byteLength(text, "utf8")
+  if (bytes > limit) {
+    const error = new Error(`AW_BRIEF_TOO_LARGE bytes=${bytes} limit=${limit}`)
+    error.code = "AW_BRIEF_TOO_LARGE"
+    error.bytes = bytes
+    error.limit = limit
+    throw error
+  }
+  return text
+}
+
+function textReport(text, limit = MAX_TEXT_BYTES) {
+  const value = String(text ?? "")
+  const bytesTotal = Buffer.byteLength(value, "utf8")
+  const returned = bounded(value, limit)
+  return { text: returned, truncated: bytesTotal > limit,
+    bytes_total: bytesTotal, bytes_returned: Buffer.byteLength(returned, "utf8") }
+}
+
 function errorText(error) {
+  if (error?.code === "AW_BRIEF_TOO_LARGE")
+    return `${error.code} bytes=${error.bytes} limit=${error.limit}`
   return `AW native session error: ${bounded(error?.message || "request failed", 512)}`
 }
 
@@ -70,12 +93,13 @@ export async function AwNativePlugin(input) {
     prompt: z.string(), title: z.string().optional(), agent: z.enum(["flash-explore", "flash-review"]).default("flash-explore"),
   }, async ({ prompt, title, agent }, context) => {
     try {
+      const brief = checkedBrief(prompt)
       const created = unwrap(await client.session.create({ body: { parentID: context.sessionID, title: PREFIX + bounded(title || prompt, 512), permission: permission() }, query: { directory: context.directory } }))
       const id = created?.id ?? created?.sessionID
       if (!id) throw new Error("native session did not return an id")
       await client.session.promptAsync({ path: { id }, query: { directory: context.directory }, body: {
         agent, system: "You are a read-only AW child. Do not edit, write, commit, push, run destructive commands, or create nested tasks.",
-        parts: [{ type: "text", text: bounded(prompt) }],
+          parts: [{ type: "text", text: brief }],
       } })
       return JSON.stringify({ id, sessionID: id, status: "running" })
     } catch (error) { return errorText(error) }
@@ -100,7 +124,7 @@ export async function AwNativePlugin(input) {
       const messages = unwrap(await client.session.messages({ path: { id }, query: { directory: context.directory, limit: MAX_MESSAGES } }))
       const list = Array.isArray(messages) ? messages : messages?.messages ?? []
       const text = list.slice().reverse().map((message) => textParts(message).join("")).find(Boolean) || ""
-      return JSON.stringify({ id, status: nativeStatus(current, id), text: bounded(text, MAX_TEXT_BYTES) })
+      return JSON.stringify({ id, status: nativeStatus(current, id), ...textReport(text) })
     } catch (error) { return errorText(error) }
   })
   const control = makeTool("Control an authorized native AW child.", {
@@ -111,7 +135,7 @@ export async function AwNativePlugin(input) {
       if (action === "abort") await client.session.abort({ path: { id }, query: { directory: context.directory } })
       else {
         if (!message?.trim()) throw new Error("message must be nonblank")
-        await client.session.promptAsync({ path: { id }, query: { directory: context.directory }, body: { parts: [{ type: "text", text: bounded(message) }] } })
+        await client.session.promptAsync({ path: { id }, query: { directory: context.directory }, body: { parts: [{ type: "text", text: checkedBrief(message) }] } })
       }
       return JSON.stringify({ id, action, status: "accepted" })
     } catch (error) { return errorText(error) }

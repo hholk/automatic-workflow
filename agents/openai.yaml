@@ -1,7 +1,21 @@
 interface:
-  display_name: AW Ultrawork
-  short_description: Luna workers, orchestrator steers via playbooks
+  display_name: AW Orchestrator
+  short_description: Autonomous supervisor with configurable orchestrator model
   default_prompt: "$aw "
 
 policy:
   allow_implicit_invocation: true
+
+roles:
+  orchestrator:
+    model: configurable
+    description: Supervises semantic progress and routes help by role.
+  worker:
+    model: venice.ai/gpt-5.6-luna
+    description: Implements with real tools and structured evidence.
+  reviewer:
+    model: venice.ai/gpt-5.6-luna
+    description: Performs evidence-based semantic review.
+  expert:
+    model: sol
+    description: Read-only expert reasoning and context rescue.

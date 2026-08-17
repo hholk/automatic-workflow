@@ -1,0 +1,7 @@
+interface:
+  display_name: AW Luna Review
+  short_description: Evidence-based semantic reviewer
+role: reviewer
+model: Venice.ai GPT-5.6 Luna
+permission_intent: read-only semantic review
+capability_policy: preserve supported reasoning, tools, context, and select requested effort flexibly

@@ -57,6 +57,14 @@ test("spawn creates and prompts a read-only child without touching the parent", 
   assert.match(calls[1][1].body.system, /read-only/)
 })
 
+test("spawn fails closed when a brief exceeds the byte limit", async () => {
+  const { client, calls } = fakeClient()
+  const tool = (await AwNativePlugin({ client, directory: "/repo" })).tool
+  const output = await tool.aw_spawn.execute({ prompt: "x".repeat(4097), title: "too large", agent: "flash-explore" }, context)
+  assert.equal(output, "AW_BRIEF_TOO_LARGE bytes=4097 limit=4096")
+  assert.deepEqual(calls, [])
+})
+
 test("status authorizes fresh direct AW children and projects native state", async () => {
   const children = Array.from({ length: 22 }, (_, i) => ({ id: `c${i}`, title: `[aw] ${i}`, status: "idle" }))
   children.push({ id: "other", title: "not AW", status: "busy" })
@@ -97,7 +105,7 @@ test("read selects only the latest assistant text and authorizes before native c
     { role: "assistant", parts: [{ type: "text", text: "latest" }, { type: "text", text: " answer" }] },
   ] } })
   const tool = (await AwNativePlugin({ client, directory: "/repo" })).tool
-  assert.deepEqual(result(await tool.aw_read.execute({ id: "c" }, context)), { id: "c", status: "idle", text: "latest answer" })
+  assert.deepEqual(result(await tool.aw_read.execute({ id: "c" }, context)), { id: "c", status: "idle", text: "latest answer", truncated: false, bytes_total: 13, bytes_returned: 13 })
   assert.deepEqual(calls.slice(0, 3).map(([name]) => name), ["children", "status", "messages"])
   const before = calls.length
   const rejected = await tool.aw_read.execute({ id: "nope" }, context)
@@ -111,6 +119,17 @@ test("read supports the legacy native message envelope", async () => {
   ] } })
   const tool = (await AwNativePlugin({ client, directory: "/repo" })).tool
   assert.equal(result(await tool.aw_read.execute({ id: "c" }, context)).text, "native result")
+})
+
+test("read exposes truncation metadata", async () => {
+  const { client } = fakeClient({ children: [{ id: "c", title: "[aw] child" }], messages: { c: [
+    { role: "assistant", parts: [{ type: "text", text: "x".repeat(4097) }] },
+  ] } })
+  const tool = (await AwNativePlugin({ client, directory: "/repo" })).tool
+  const output = result(await tool.aw_read.execute({ id: "c" }, context))
+  assert.equal(output.truncated, true)
+  assert.equal(output.bytes_total, 4097)
+  assert.equal(output.bytes_returned, 4096)
 })
 
 test("control aborts or steers only an authorized child and validates messages", async () => {

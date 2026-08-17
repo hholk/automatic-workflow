@@ -1,0 +1,1 @@
+{"symptom":"repeated test failure","hypothesis":"evidence parser discarded continuation","repair":"preserve continuation lines","proof":"checkpoint parser test passes"}

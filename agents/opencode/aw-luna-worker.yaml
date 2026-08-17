@@ -1,0 +1,7 @@
+interface:
+  display_name: AW Luna Worker
+  short_description: Autonomous implementation worker with evidence
+role: worker
+model: Venice.ai GPT-5.6 Luna
+permission_intent: write only within the dispatched allowed paths
+capability_policy: preserve supported reasoning, tools, context, and select requested effort flexibly
