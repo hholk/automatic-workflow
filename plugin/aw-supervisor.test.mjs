@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { AwSupervisorPlugin } from "./aw-supervisor.js"
 import { state } from "./aw-supervisor-core.js"
+import { isVerificationCommand, toolOutputSignature } from "./aw-supervisor-core.js"
 
 const hooks = await AwSupervisorPlugin()
 test("records defensive tool before/after evidence without payloads", async () => {
@@ -36,7 +37,7 @@ test("records verification evidence and does not invent LSP counts", async () =>
   assert.equal(state.get("sensors").sensors.verification.at(-1).exit, 0)
   assert.deepEqual(state.get("sensors").sensors.lsp.current, { changed: true, path: "src/a.js" })
 })
-test("marks repeated identical tool pairs as a strong doom loop signal", async () => {
+test("marks two repeated identical tool pairs as a medium repeated_pair observation", async () => {
   const input = { sessionID: "doom", tool: "bash", args: { command: "same" } }
   await hooks["tool.execute.before"](input)
   await hooks["tool.execute.after"](input, { output: "same result" })
@@ -45,9 +46,17 @@ test("marks repeated identical tool pairs as a strong doom loop signal", async (
   await hooks.event({ event: { type: "session.idle", properties: { sessionID: "doom" } } })
   const status = JSON.parse(await hooks.tool.aw_supervisor_status.execute({}, { sessionID: "doom" }))
   const observation = status.observations.at(-1)
-  assert.equal(observation.sensors.doom_loop, true)
-  assert.equal(observation.signals.at(-1).name, "doom_loop")
-  assert.equal(observation.signals.at(-1).strength, "strong")
+  assert.equal(observation.sensors.repeated_pair.strength, "medium")
+  assert.equal(observation.signals.at(-1).name, "repeated_pair")
+  assert.equal(observation.signals.at(-1).strength, "medium")
+})
+test("includes normalized exit code in bounded output signatures", () => {
+  assert.notEqual(toolOutputSignature({ output: "same", metadata: { exit: 0 } }), toolOutputSignature({ output: "same", metadata: { exit: 1 } }))
+  assert.equal(toolOutputSignature({ output: "same", metadata: { exit: "0" } }), toolOutputSignature({ output: "same", exitCode: 0 }))
+})
+test("recognizes only known verification command shapes", () => {
+  for (const command of ["npm test", "npm run lint", "npm run typecheck", "npm run build -- --quiet", "pnpm test", "pnpm run build", "pytest tests", "go test ./...", "cargo test", "cd project && npm test"]) assert.equal(isVerificationCommand(command), true, command)
+  for (const command of ["echo test", "contest", "printf lint", "npm run deploy", "pnpm lint", "node build.js"]) assert.equal(isVerificationCommand(command), false, command)
 })
 test("extracts runtime metadata verification exit codes", async () => {
   await hooks["tool.execute.before"]({ sessionID: "metadata-exit", tool: "bash" }, { args: { command: "npm test" } })

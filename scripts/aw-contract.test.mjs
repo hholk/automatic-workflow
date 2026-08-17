@@ -148,6 +148,7 @@ assert.match(supervisor, /input_sig/);
 assert.match(supervisor, /output\?\.args \?\? input\?\.args/);
 assert.match(supervisor, /suggestion/); assert.doesNotMatch(supervisor, /decision: result\.decision/);
 assert.match(core, /isVerificationCommand|verificationEvidence/);
+assert.match(core, /repeated_pair/); assert.doesNotMatch(core, /doom_loop: Boolean\(repeatedToolPair\?\.count >= 2\)/);
 assert.match(supervisor, /file\\?\.edited[\s\S]*session\\?\.diff/, 'file/session sensors');
 assert.match(supervisor, /lsp\\?\.client\\?\.diagnostics[\s\S]*lsp\\?\.updated/, 'LSP sensors');
 assert.match(supervisor, /permission.*asked.*replied/s, 'permission sensors');

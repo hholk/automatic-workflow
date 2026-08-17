@@ -11,6 +11,17 @@ Lessons remain after promotion and may be archived only after later validation.
 
 <!-- lessons -->
 
+## 2026-08-17 — Verification fingerprints and observation thresholds
+
+- Date: 2026-08-17
+- Todo/Playbook: scoped supervisor improvements / implement
+- feedback/result: output exit status and command-shape precision needed stronger evidence
+- symptom/evidence: identical text hashed alike across exit 0/1; substring matching classified echo/contest/printf; two pairs emitted strong doom_loop
+- root cause: exit metadata and observation confidence were omitted from normalization and command matching was unanchored
+- routing/intervention: hashed normalized exit, anchored known commands, and changed two-pair output to medium repeated_pair; retained write keys because active config and contracts require them
+- prevention lesson: test bounded signatures, exact command allowlists, and graduated non-binding signals at each threshold
+- status: validated
+
 ## 2026-08-17 — Canonical Markdown write permission parity
 
 - Date: 2026-08-17

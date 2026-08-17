@@ -34,7 +34,8 @@ export function record(id, kind, payload = {}) {
 }
 function sensorSummary(s) {
   const repeatedToolPair = s.sensors.toolPairs.at(-1) ?? null
-  return { newPaths: s.sensors.files.slice(-8), lsp: s.sensors.lsp, verification: s.sensors.verification.slice(-4), repeatedToolPair, doom_loop: Boolean(repeatedToolPair?.count >= 2), permissions: s.sensors.permissions.slice(-4) }
+  const repeated_pair = repeatedToolPair ? { ...repeatedToolPair, strength: repeatedToolPair.count >= 3 ? "strong" : "medium" } : null
+  return { newPaths: s.sensors.files.slice(-8), lsp: s.sensors.lsp, verification: s.sensors.verification.slice(-4), repeatedToolPair, repeated_pair, permissions: s.sensors.permissions.slice(-4) }
 }
 export function observeSensors(id) { return sensorSummary(snapshot(id)) }
 export function observation(id, reason) {
@@ -43,7 +44,7 @@ export function observation(id, reason) {
   const stall = detectStall(history)
   const decision = chooseIntervention({ history, actionRisk: "low" })
   const sensors = sensorSummary(s)
-  const signals = [...stall.signals, ...sensors.newPaths.map(value => ({ name: "new_path", value })), ...(sensors.repeatedToolPair ? [{ name: "repeated_tool_pair", value: sensors.repeatedToolPair }] : []), ...(sensors.doom_loop ? [{ name: "doom_loop", value: sensors.repeatedToolPair, strength: "strong" }] : []), ...sensors.permissions.map(value => ({ name: "permission", value }))]
+  const signals = [...stall.signals, ...sensors.newPaths.map(value => ({ name: "new_path", value })), ...(sensors.repeated_pair ? [{ name: "repeated_pair", value: sensors.repeated_pair, strength: sensors.repeated_pair.strength }] : []), ...(sensors.repeated_pair?.count >= 3 ? [{ name: "doom_loop", value: sensors.repeated_pair, strength: "strong" }] : []), ...sensors.permissions.map(value => ({ name: "permission", value }))]
   const item = { reason, informationGain: comparison?.informationGain ?? 0, productive: comparison?.productive ?? false, stalled: stall.stalled, signals, decision: decision.route, sensors }
   s.observations.push(item); if (s.observations.length > MAX) s.observations.shift(); return item
 }
@@ -55,8 +56,14 @@ export function addCheckpoint(id, input) {
   return { checkpoint, item, comparison: s.checkpoints.length > 1 ? compareCheckpoints(s.checkpoints.at(-2), checkpoint) : null, stall: detectStall(s.checkpoints), decision: chooseIntervention({ history: s.checkpoints, actionRisk: "low" }) }
 }
 export function toolInputSignature(args) { return signature(args) }
-export function toolOutputSignature(output) { return signature(output?.result ?? output?.output ?? output?.data ?? output) }
-export const isVerificationCommand = (command) => /(?:test|lint|typecheck|build|pytest|cargo\s+test|go\s+test)/i.test(text(command))
+function normalizedExitCode(output) {
+  const exit = output?.metadata?.exit ?? output?.exit ?? output?.exitCode
+  return Number.isFinite(Number(exit)) && String(exit).trim() !== "" ? Number(exit) : null
+}
+export function toolOutputSignature(output) {
+  return signature({ value: output?.result ?? output?.output ?? output?.data ?? output, exit: normalizedExitCode(output) })
+}
+export const isVerificationCommand = (command) => /^(?:cd\s+(?:"[^"]+"|'[^']+'|[^\s;&]+)\s*&&\s*)?(?:npm\s+(?:test|run\s+(?:test|lint|typecheck|build))|pnpm\s+(?:test|run\s+(?:test|lint|typecheck|build))|pytest|go\s+test|cargo\s+test)(?:\s|$)/i.test(text(command).trim())
 export function verificationEvidence(input, output) {
   const args = input?.args ?? {}, command = args.command ?? args.cmd ?? ""
   if (!isVerificationCommand(command)) return null
