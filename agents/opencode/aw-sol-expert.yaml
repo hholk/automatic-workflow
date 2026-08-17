@@ -39,12 +39,12 @@ permission:
     "git restore*": deny
     "git commit*": deny
     "git push*": deny
-  "git apply*": deny
-  "release*": deny
-  "deploy*": deny
-  "npm run deploy*": deny
-  "pnpm run deploy*": deny
-  "npm run release*": deny
-  "pnpm run release*": deny
-  "npm publish*": deny
-  "pnpm publish*": deny
+    "git apply*": deny
+    "release*": deny
+    "deploy*": deny
+    "npm run deploy*": deny
+    "pnpm run deploy*": deny
+    "npm run release*": deny
+    "pnpm run release*": deny
+    "npm publish*": deny
+    "pnpm publish*": deny

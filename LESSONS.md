@@ -11,6 +11,61 @@ Lessons remain after promotion and may be archived only after later validation.
 
 <!-- lessons -->
 
+## 2026-08-17 — Canonical Markdown write permission parity
+
+- Date: 2026-08-17
+- Todo/Playbook: Markdown role permission parity / fix
+- feedback/result: canonical Markdown profiles lacked explicit write capability
+- symptom/evidence: worker and orchestrator Markdown frontmatter omitted `write: allow` while YAML/active config required it
+- root cause: permission keys drifted across role representations
+- orchestrator intervention: added Markdown write permissions and contract assertions spanning Markdown, YAML, and active config edit/write/task keys
+- prevention lesson: assert exact permission-key parity across every canonical and effective role artifact
+- status: validated
+
+## 2026-08-17 — Orchestrator write permission parity
+
+- Date: 2026-08-17
+- Todo/Playbook: orchestrator write capability / fix
+- feedback/result: canonical YAML lacked the active primary write permission
+- symptom/evidence: YAML permission keys were edit/task only while Markdown and active config required write
+- root cause: canonical orchestrator YAML drifted from the host capability matrix
+- orchestrator intervention: added `write: allow` and retained contract assertions for YAML, Markdown, and active config parity
+- prevention lesson: assert exact primary permission parity across every canonical and effective representation
+- status: validated
+
+## 2026-08-17 — Active Sol npm build verification parity
+
+- Date: 2026-08-17
+- Todo/Playbook: Sol build permission parity / fix
+- feedback/result: active Sol verification needed the npm build command
+- symptom/evidence: active config probe failed because `npm run build*` was absent
+- root cause: active runtime allowlist drifted from the canonical Sol verification contract
+- orchestrator intervention: added the deny-first `npm run build*` allow entry and retained active parity assertions
+- prevention lesson: probe every canonical verification exception against the effective Sol permission matrix
+- status: validated
+
+## 2026-08-17 — Canonical Sol YAML permission nesting
+
+- Date: 2026-08-17
+- Todo/Playbook: Sol YAML permission nesting / fix
+- feedback/result: moved every command denial under `permission.bash` and added parser-backed coverage
+- symptom/evidence: YAML parse failed on duplicate allow keys and release/deploy/publish denies were at permission root
+- root cause: duplicated shell entries plus inconsistent indentation drifted the canonical mapping
+- orchestrator intervention: deduplicated entries, nested all destructive/release vectors, and asserted no forbidden permission-root keys
+- prevention lesson: parse the complete YAML and assert the effective nested deny matrix
+- status: validated
+
+## 2026-08-17 — Sol wording, verification permissions, and runtime exit metadata
+
+- Date: 2026-08-17
+- Todo/Playbook: confirmed Sol/runtime inconsistencies / implement
+- feedback/result: corrected bounded Sol contribution wording, safe verification allowlists, and metadata exit capture
+- symptom/evidence: contradictory “Sol does not edit” text, Markdown policy lacked test commands, runtime exit lived under `metadata.exit`
+- root cause: documentation/policy drift and hook implementation modeled legacy top-level exit fields
+- orchestrator intervention: synchronized canonical profiles, extracted metadata-first integer exit, and added contract/runtime-shape tests
+- prevention lesson: test canonical wording and permission parity against actual hook payloads
+- status: validated
+
 ## 2026-08-17 — Sol Markdown frontmatter indentation
 
 - Date: 2026-08-17

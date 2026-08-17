@@ -49,6 +49,14 @@ test("marks repeated identical tool pairs as a strong doom loop signal", async (
   assert.equal(observation.signals.at(-1).name, "doom_loop")
   assert.equal(observation.signals.at(-1).strength, "strong")
 })
+test("extracts runtime metadata verification exit codes", async () => {
+  await hooks["tool.execute.before"]({ sessionID: "metadata-exit", tool: "bash" }, { args: { command: "npm test" } })
+  await hooks["tool.execute.after"]({ sessionID: "metadata-exit", tool: "bash", args: { command: "npm test" } }, { output: "passed", metadata: { exit: 0 } })
+  assert.equal(state.get("metadata-exit").sensors.verification.at(-1).exit, 0)
+  await hooks["tool.execute.before"]({ sessionID: "metadata-exit-1", tool: "bash" }, { args: { command: "npm test" } })
+  await hooks["tool.execute.after"]({ sessionID: "metadata-exit-1", tool: "bash", args: { command: "npm test" } }, { output: "failed", metadata: { exit: 1 } })
+  assert.equal(state.get("metadata-exit-1").sensors.verification.at(-1).exit, 1)
+})
 test("handles realistic event fixtures, idle observation, and compaction", async () => {
   for (const type of ["file.edited", "session.diff", "lsp.client.diagnostics", "lsp.updated", "permission.asked", "permission.replied", "session.status", "session.compacted"]) await hooks.event({ event: { type, properties: { sessionID: "e", path: "src/a.js", status: "ok" } } })
   await hooks.event({ event: { type: "session.idle", properties: { sessionID: "e" } } })

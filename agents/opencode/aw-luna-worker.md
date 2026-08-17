@@ -4,6 +4,7 @@ model: venice/openai-gpt-56-luna
 mode: subagent
 permission:
   edit: allow
+  write: allow
   task:
     "*": deny
     "aw-luna-review": allow

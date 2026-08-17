@@ -60,7 +60,8 @@ export const isVerificationCommand = (command) => /(?:test|lint|typecheck|build|
 export function verificationEvidence(input, output) {
   const args = input?.args ?? {}, command = args.command ?? args.cmd ?? ""
   if (!isVerificationCommand(command)) return null
-  return { input_sig: toolInputSignature(args), output_sig: toolOutputSignature(output), chars: JSON.stringify(output ?? null).length, ...(Number.isInteger(output?.exit) ? { exit: output.exit } : {}), ...(Number.isInteger(output?.exitCode) ? { exit: output.exitCode } : {}) }
+  const exit = output?.metadata?.exit ?? output?.exit ?? output?.exitCode
+  return { input_sig: toolInputSignature(args), output_sig: toolOutputSignature(output), chars: JSON.stringify(output ?? null).length, ...(Number.isInteger(exit) ? { exit } : {}) }
 }
 export function observeEvent(id, name, props = {}) {
   const s = snapshot(id)

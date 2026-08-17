@@ -19,7 +19,33 @@ const contract = sources.join('\n');
 const lessons = await readFile(join(root, 'LESSONS.md'), 'utf8');
 const supervisor = await readFile(join(root, 'plugin/aw-supervisor.js'), 'utf8');
 const core = await readFile(join(root, 'plugin/aw-supervisor-core.js'), 'utf8');
+const orchestratorYaml = await readFile(join(root, 'agents/opencode/aw-orchestrator.yaml'), 'utf8');
 const hostConfig = process.env.AW_OPENCODE_CONFIG ?? '/Users/henrikholkenbrink/.config/opencode/opencode.json';
+
+const solForbiddenPatterns = [
+  'git apply*', 'release*', 'deploy*', 'npm run deploy*', 'pnpm run deploy*',
+  'npm run release*', 'pnpm run release*', 'npm publish*', 'pnpm publish*',
+  'rm *', 'rm -rf *', 'git reset*', 'git clean*', 'git checkout*',
+  'git restore*', 'git commit*', 'git push*',
+];
+
+function parseSolYaml(text) {
+  try {
+    const require = createRequire(import.meta.url);
+    return require('yaml').parse(text);
+  } catch (error) {
+    if (error?.code !== 'MODULE_NOT_FOUND') throw new Error(`Sol YAML: invalid YAML: ${error.message}`);
+    const bash = {};
+    let inBash = false;
+    for (const line of text.split(/\r?\n/)) {
+      if (line === '  bash:') { inBash = true; continue; }
+      if (inBash && /^  \S/.test(line)) inBash = false;
+      const match = inBash && line.match(/^    (?:"([^"]+)"|(\*)): (allow|deny)$/);
+      if (match) bash[match[1] ?? match[2]] = match[3];
+    }
+    return { permission: { bash } };
+  }
+}
 
 function assertCanonicalFrontmatter(text, name) {
   const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -81,9 +107,12 @@ assert.match(profiles[0], /model: venice\/openai-gpt-56-luna[\s\S]*mode: subagen
 assert.match(profiles[1], /model: venice\/openai-gpt-56-luna[\s\S]*mode: subagent[\s\S]*permission:/);
 assert.match(profiles[2], /model: venice\/openai-gpt-56-sol[\s\S]*mode: subagent[\s\S]*permission:/);
 assert.match(profiles[3], /mode: primary[\s\S]*permission:/);
+assert.match(orchestratorYaml, /permission:\n  edit: allow\n  write: allow\n  task: allow/, 'orchestrator YAML write parity');
 for (const profile of profiles) { assert.doesNotMatch(profile, /^role:/m); assert.doesNotMatch(profile, /^permissions:/m); }
 assert.match(profiles[0], /edit: allow[\s\S]*task:[\s\S]*"\*": deny[\s\S]*aw-luna-review[\s\S]*aw-sol-expert/, 'worker is write-capable and task deny-first');
+assert.match(profiles[0], /permission:[\s\S]*edit: allow[\s\S]*write: allow[\s\S]*task:/, 'worker Markdown edit/write/task parity');
 assert.match(profiles[3], /edit: allow[\s\S]*task: allow/, 'orchestrator is write-capable');
+assert.match(profiles[3], /permission:[\s\S]*edit: allow[\s\S]*write: allow[\s\S]*task: allow/, 'orchestrator Markdown edit/write/task parity');
 for (const [name, profile] of [['reviewer', profiles[1]]]) {
   assert.match(profile, /edit: deny/, `${name}: edit denied`);
   assert.match(profile, /write: deny/, `${name}: write denied`);
@@ -91,10 +120,23 @@ for (const [name, profile] of [['reviewer', profiles[1]]]) {
   assert.match(profile, /bash:\s+[\s\S]*"\*": deny[\s\S]*"rm \*": deny[\s\S]*"git reset\*": deny/, `${name}: destructive bash denied`);
 }
 assert.match(profiles[2], /task: deny[\s\S]*edit: allow[\s\S]*write: allow/, 'Sol is gated contributor');
+assert.match(contract, /Supervisor Sol path preserves worker evidence[\s\S]*delegates the smallest expert slice[\s\S]*Sol may inspect[\s\S]*verify[\s\S]*implement[\s\S]*never orchestrates[\s\S]*expands scope/i, 'Sol wording allows bounded contribution');
+assert.doesNotMatch(contract, /Sol does not edit/i, 'no contradictory Sol edit wording');
 const solYaml = await readFile(join(root, 'agents/opencode/aw-sol-expert.yaml'), 'utf8');
+const solDocument = parseSolYaml(solYaml);
+assert.ok(solDocument?.permission?.bash, 'Sol YAML: permission.bash mapping');
+for (const pattern of solForbiddenPatterns)
+  assert.equal(solDocument.permission.bash[pattern], 'deny', `Sol YAML nested deny: ${pattern}`);
+const intendedPermissionKeys = new Set(['edit', 'write', 'read', 'glob', 'grep', 'list', 'task', 'bash']);
+for (const key of Object.keys(solDocument.permission ?? {}))
+  assert.ok(intendedPermissionKeys.has(key), `Sol YAML: forbidden root permission key: ${key}`);
 for (const key of ['edit: allow', 'write: allow', 'task: deny', '"*": deny', '"rm *": deny', '"git reset*": deny'])
   assert.match(solYaml, new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Sol YAML: ${key}`);
 const solMarkdown = await readFile(join(root, 'agents/opencode/aw-sol-expert.md'), 'utf8');
+for (const pattern of ['npm test*', 'npm run test*', 'npm run lint*', 'npm run typecheck*', 'npm run build*', 'pnpm test*', 'pnpm run test*', 'pnpm run lint*', 'pnpm run typecheck*', 'pnpm run build*', 'pytest*', 'go test*', 'cargo test*']) {
+  assert.ok(solYaml.includes(`"${pattern}": allow`), `Sol YAML verification allow: ${pattern}`);
+  assert.ok(solMarkdown.includes(`"${pattern}": allow`), `Sol Markdown verification allow: ${pattern}`);
+}
 for (const key of ['deploy*', 'npm run deploy*', 'pnpm run deploy*']) {
   assert.match(solYaml, new RegExp(`"${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}": deny`), `Sol YAML deploy deny: ${key}`);
   assert.match(solMarkdown, new RegExp(`"${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}": deny`), `Sol Markdown deploy deny: ${key}`);

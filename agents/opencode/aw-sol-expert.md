@@ -12,6 +12,19 @@ permission:
   list: allow
   bash:
     "*": deny
+    "npm test*": allow
+    "npm run test*": allow
+    "npm run lint*": allow
+    "npm run typecheck*": allow
+    "npm run build*": allow
+    "pnpm test*": allow
+    "pnpm run test*": allow
+    "pnpm run lint*": allow
+    "pnpm run typecheck*": allow
+    "pnpm run build*": allow
+    "pytest*": allow
+    "go test*": allow
+    "cargo test*": allow
     "pwd": allow
     "ls *": allow
     "git status*": allow

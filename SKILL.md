@@ -120,9 +120,10 @@ before commit, push, and deploy. Never auto-deploy or bypass that gate.
 Continue with a sharper next action → steer scope or request missing evidence →
 route `review` for Luna review → route `context` for Context rescue → route
 `sol` for expert reasoning → ask `human` for an irreversible, secret, or
-product-decision gate. Supervisor Sol path is explicit: preserve the worker's
-evidence, send the failure taxonomy and smallest question, then return advice
-to the worker; Sol does not edit.
+ product-decision gate. Supervisor Sol path preserves worker evidence and
+ delegates the smallest expert slice: prefer advice/diagnosis; Sol may inspect,
+ verify, or implement when effective. Sol never orchestrates, spawns, commits,
+ pushes, deploys, releases, or expands scope.
 
 ## Help and evidence contracts
 
