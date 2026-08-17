@@ -20,6 +20,22 @@ test("does not mark an intent or result repeated when the output changes", async
   assert.equal(events[2].repeated, false)
   assert.equal(events[3].repeated, false)
 })
+test("uses before output args and after input args for stable fingerprints", async () => {
+  const before = { sessionID: "before-output", tool: "bash", args: { command: "wrong" } }
+  await hooks["tool.execute.before"](before, { args: { command: "right" } })
+  await hooks["tool.execute.after"]({ sessionID: "before-output", tool: "bash", args: { command: "right" } }, { output: "same" })
+  await hooks["tool.execute.before"]({ sessionID: "before-output", tool: "bash" }, { args: { command: "right" } })
+  await hooks["tool.execute.after"]({ sessionID: "before-output", tool: "bash", args: { command: "right" } }, { output: "same" })
+  assert.ok(state.get("before-output").events[1].input_sig)
+  assert.equal(state.get("before-output").events[3].repeated, true)
+})
+test("records verification evidence and does not invent LSP counts", async () => {
+  await hooks["tool.execute.before"]({ sessionID: "sensors", tool: "bash" }, { args: { command: "npm test" } })
+  await hooks["tool.execute.after"]({ sessionID: "sensors", tool: "bash", args: { command: "npm test" } }, { output: "passed", exit: 0 })
+  await hooks.event({ event: { type: "lsp.updated", properties: { sessionID: "sensors", path: "src/a.js" } } })
+  assert.equal(state.get("sensors").sensors.verification.at(-1).exit, 0)
+  assert.deepEqual(state.get("sensors").sensors.lsp.current, { changed: true, path: "src/a.js" })
+})
 test("marks repeated identical tool pairs as a strong doom loop signal", async () => {
   const input = { sessionID: "doom", tool: "bash", args: { command: "same" } }
   await hooks["tool.execute.before"](input)

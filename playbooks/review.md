@@ -9,6 +9,11 @@
 
 ## When
 
+Parallel progress is optional leverage for independent review or verification;
+keep fan-out minimal, avoid overlapping writes, and reconcile before final
+verification. Native `aw_spawn` remains stable; experimental `background=true`
+support is not required.
+
 The orchestrator needs an independent check: medium+ risk, high blast radius,
 or any red signal after a worker. Review uses asynchronous `aw_spawn`; pull results explicitly with `aw_status`/`aw_read`.
 

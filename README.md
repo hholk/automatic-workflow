@@ -7,6 +7,18 @@ parallel read-only work uses native asynchronous `aw_spawn` child sessions;
 `aw_control` steers or aborts a child. Main verifies afterward. Write-capable
 work stays a bounded synchronous native task.
 Toast is notification only and does not inject results.
+Role boundary: the worker is edit-capable with deny-first task permissions and
+only review/Sol exceptions; review cannot edit/write/task and has a narrow safe
+verification allowlist; Sol is an optional host-gated contributor who may edit
+and verify but cannot task, commit, push, deploy, or destroy.
+
+## Parallel progress
+
+Optional leverage for independent exploration/research/review/verification or
+disjoint slices: use the smallest useful fan-out, avoid duplicate or
+overlapping writes, and reconcile before shared changes and final verification.
+Native `aw_spawn` remains stable; `background=true` requires host experimental
+support and is not required.
 
 ## What it provides
 

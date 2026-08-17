@@ -5,7 +5,7 @@
 **Sol role:** `aw-sol-expert`
 **Load:** `tdd`, `codebase-design` (if the skill tool is available)
 **MCP:** Context7 for library APIs; codebase-memory for callers/callees before editing
-**Permission intent:** worker writes only within the brief's allowed paths; review and Sol are read-only.
+**Permission intent:** worker writes only within allowed paths and task permission is deny-first with only `aw-luna-review`/`aw-sol-expert` exceptions; review is edit/write/task denied with safe verification only; Sol is an optional host-gated contributor allowed to edit and safely verify, never release or destroy.
 **Capability/effort policy:** preserve advertised reasoning, tools, and context capabilities; select the nearest supported effort without assuming a task class.
 **Planner:** none. The orchestrator updates the T3 Code list.
 **Do not load:** `diagnosing-bugs`, `grill-with-docs`, `implement`, `aw`
@@ -13,6 +13,10 @@
 ## When
 
 A bounded behavior change with a known verify command. Not a hard undiagnosed bug.
+
+Parallel progress is optional for independent exploration, research, review,
+verification, or disjoint slices; keep fan-out minimal, avoid overlapping
+writes, and reconcile before shared changes/final verification.
 
 ## User transparency contract
 

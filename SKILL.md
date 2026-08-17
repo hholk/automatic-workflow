@@ -42,6 +42,10 @@ for choosing continue, context, review, Sol, or human escalation through the
  native OpenCode session tools.
 Action-risk is distinct from reasoning-risk: sensors report bounded evidence;
 the host owns blast-radius gates and reasoning interventions.
+The tool hook reads before arguments from `output.args` with an `input.args`
+fallback. Path-only LSP events report changed/path without invented zero counts;
+likely verification commands record bounded signatures, character counts, and
+optional exit metadata. Checkpoint output uses non-binding `suggestion`.
 
 OpenCode agent profiles are real Markdown frontmatter files in
 `agents/opencode/`. Install them explicitly into a host's agent directory only
@@ -86,7 +90,16 @@ inject results.
 3. Intervene only for a stall, scope/risk violation, or explicit help request.
    Stall signals are repeated unchanged hypotheses, repeated identical
    failures, no artifact/evidence movement, contradictory evidence, or a
-   blocked dependency. One slow but productive worker is not stalled.
+    blocked dependency. One slow but productive worker is not stalled.
+
+## Parallel progress
+
+Parallel progress is optional leverage for independent exploration, research,
+review, verification, or disjoint slices when useful. Choose the smallest
+useful fan-out; do not duplicate work or run overlapping writes. Reconcile
+results before shared changes and before final verification. Native `aw_spawn`
+remains stable; `background=true` is only relevant when the host has enabled
+experimental support and is never required.
 
 After every meaningful feedback, worker result, or checkpoint, append a compact
 structured entry to `LESSONS.md`, including routine successes. Required fields:
@@ -151,7 +164,9 @@ controls and toasts are notification only. Session IDs are native child job IDs.
 On every new turn, handle human instruction first, then inspect relevant unread
 background native jobs only.
 `aw_control` steers or aborts the child; its session ID is the job ID.
-`flash-explore` and `flash-review` are read-only background agents.
+`flash-explore` and `flash-review` are read-only background agents; flash-review
+may run safe verification only. Sol may edit and verify when required, but task
+spawning and release/destructive actions remain denied.
 The Todo list is main-session-owned; display the real returned session ID after
 dispatch, never a fictional ID.
 There are no T3 source patch claims and no automatic live panel.

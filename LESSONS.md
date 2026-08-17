@@ -11,6 +11,94 @@ Lessons remain after promotion and may be archived only after later validation.
 
 <!-- lessons -->
 
+## 2026-08-17 — Sol Markdown frontmatter indentation
+
+- Date: 2026-08-17
+- Todo/Playbook: canonical Sol frontmatter / fix
+- feedback/result: malformed bash mapping prevented YAML parsing
+- symptom/evidence: YAML parser rejected `git push*` at inconsistent indentation
+- root cause: trailing bash deny entries were indented outside `permission.bash`
+- orchestrator intervention: aligned entries and added four-profile delimiter/indentation regression
+- prevention lesson: parse canonical Markdown frontmatter in the contract test
+- status: validated
+
+## 2026-08-17 — Canonical Sol deploy deny parity
+
+- Date: 2026-08-17
+- Todo/Playbook: Sol deploy permissions / fix
+- feedback/result: canonical Sol policies needed active runtime deploy denies
+- symptom/evidence: active contract denied deploy variants while YAML/Markdown omitted them
+- root cause: canonical descriptors drifted from the effective mutation deny matrix
+- orchestrator intervention: added `deploy*`, `npm run deploy*`, and `pnpm run deploy*` to both profiles and asserted parity
+- prevention lesson: contract-test every canonical mutation deny shared with active runtime policy
+- status: validated
+
+## 2026-08-17 — Sol release command boundary
+
+- Date: 2026-08-17
+- Todo/Playbook: Sol release permissions / fix
+- feedback/result: release commands needed explicit denies in active and canonical Sol policies
+- symptom/evidence: deploy and publish were denied, but release patterns were absent
+- root cause: release-specific shell vectors were not included in the mutation deny contract
+- orchestrator intervention: denied release, npm/pnpm release, and publish patterns and added active-profile assertions
+- prevention lesson: keep release and publish vectors explicit in every gated contributor policy
+- status: validated
+
+## 2026-08-17 — Active flash-review verification allowlist
+
+- Date: 2026-08-17
+- Todo/Playbook: flash-review safe verification permissions / fix
+- feedback/result: active reviewer bash policy lacked canonical test, lint, typecheck, and build commands
+- symptom/evidence: wildcard bash deny had no safe verification exceptions; contract assertion covered verification only for Sol
+- root cause: active reviewer policy and effective-config contract had drifted from the canonical verification profile
+- orchestrator intervention: added deny-first verification allowlist and explicit mutation/release denials; generalized active assertions
+- prevention lesson: assert safe verification patterns and every mutation vector for each read-only active profile
+- status: validated
+
+## 2026-08-17 — Depth, permissions, and optional parallel progress
+
+- Date: 2026-08-17
+- Todo/Playbook: confirmed AW contract improvements / implement
+- feedback/result: active depth and role matrices plus parallel guidance needed explicit enforcement
+- symptom/evidence: depth was absent; safe verification/build allowances and non-binding parallel wording were incomplete
+- root cause: runtime config and documentation had drifted from the intended bounded delegation contract
+- orchestrator intervention: added depth 2, deny-first role capabilities, soft parallel-progress guidance, and regressions
+- prevention lesson: contract-test effective config, role boundaries, and optional rather than mandatory fan-out semantics
+- status: validated
+
+## 2026-08-17 — Active review/Sol runtime drift
+
+- Date: 2026-08-17
+- Todo/Playbook: independent runtime permission review / fix
+- feedback/result: active flash-review and aw-sol-expert matrices diverged from intended roles
+- symptom/evidence: reviewer permitted edit/write; Sol denied edits and lacked safe verification commands; default-config assertions were swallowed
+- root cause: effective config checks treated all failures as optional when only an absent explicit override should be skippable
+- orchestrator intervention: repaired the two active permission blocks and narrowed contract-test skip behavior to absent overridden configs
+- prevention lesson: always enforce the default active config and test deny-first shell policy plus gated verification allowlists
+- status: validated
+
+## 2026-08-17 — Active runtime permission synchronization
+
+- Date: 2026-08-17
+- Todo/Playbook: runtime role matrix drift / fix
+- feedback/result: active worker task routing and Sol contributor permissions diverged from canonical profiles
+- symptom/evidence: worker task was broadly allowed; Sol lacked write capability and safe verification allowlist
+- root cause: effective host config was not contract-tested against the canonical deny-first and gated-contributor matrices
+- orchestrator intervention: synchronized only the active worker/Sol blocks and asserted safe commands plus mutation denies
+- prevention lesson: test effective permission objects, ordering, verification allowlists, and every shell mutation vector
+- status: validated
+
+## 2026-08-17 — Hook arguments and role/evidence boundaries
+
+- Date: 2026-08-17
+- Todo/Playbook: P0 hook and role/evidence improvements / implement
+- feedback/result: corrected before-hook argument source, non-binding checkpoint suggestion, LSP limitation, and bounded verification sensor
+- symptom/evidence: OpenCode before args arrive on output; absent LSP counts must not become zero; Sol needs gated contributor capability
+- root cause: host hook/API semantics and canonical/effective role policies were underspecified
+- routing/intervention: use output.args fallback, preserve exactly three next-step options, allow safe verification, and keep release/destructive gates explicit
+- prevention lesson: contract-test hook signatures, sensor evidence shape, deny-first task permissions, and active profile parity
+- status: pending
+
 ## 2026-08-17 — Active AW role matrix repair
 
 - Date: 2026-08-17

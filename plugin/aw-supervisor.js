@@ -1,14 +1,14 @@
 import { tool } from "@opencode-ai/plugin"
-import { addCheckpoint, bounded, observeEvent, observation, paths, record, sessionId, snapshot, toolInputSignature, toolOutputSignature } from "./aw-supervisor-core.js"
+import { addCheckpoint, bounded, observeEvent, observation, paths, record, sessionId, snapshot, toolInputSignature, toolOutputSignature, verificationEvidence } from "./aw-supervisor-core.js"
 
 function eventName(event) { return event?.type ?? event?.event?.type }
 
 export async function AwSupervisorPlugin() {
   return {
-    "tool.execute.before": async (input) => {
-      const id = sessionId(input), input_sig = toolInputSignature(input.args ?? {})
+    "tool.execute.before": async (input, output) => {
+      const args = output?.args ?? input?.args ?? {}, id = sessionId(input), input_sig = toolInputSignature(args)
       const repeated = false
-      record(id, "tool.intent", { tool: bounded(input.tool), input_sig, args: { keys: Object.keys(input.args ?? {}).slice(0, 12) }, repeated })
+      record(id, "tool.intent", { tool: bounded(input.tool), input_sig, args: { keys: Object.keys(args).slice(0, 12) }, repeated })
     },
     "tool.execute.after": async (input, output) => {
        const id = sessionId(input), output_sig = toolOutputSignature(output), s = snapshot(id), intent = [...s.events].reverse().find(e => e.kind === "tool.intent" && e.tool === bounded(input?.tool))
@@ -20,7 +20,8 @@ export async function AwSupervisorPlugin() {
          s.sensors.toolPairs.push({ fingerprint, count: (previousPair?.count ?? 0) + 1 })
          if (s.sensors.toolPairs.length > 8) s.sensors.toolPairs.shift()
        }
-      record(id, "tool.result", { tool: bounded(input?.tool), input_sig: intent?.input_sig, output_sig, repeated, result: { signature: output_sig, chars: JSON.stringify(output ?? null).length, paths: paths([input?.args, output]) } })
+       const evidence = verificationEvidence(input, output); if (evidence) s.sensors.verification.push(evidence)
+       record(id, "tool.result", { tool: bounded(input?.tool), input_sig: intent?.input_sig, output_sig, repeated, result: { signature: output_sig, chars: JSON.stringify(output ?? null).length, paths: paths([input?.args, output]), ...(evidence ? { verification: evidence } : {}) } })
     },
     event: async ({ event } = {}) => {
       const name = eventName(event); if (!name) return
@@ -38,7 +39,7 @@ export async function AwSupervisorPlugin() {
       aw_checkpoint: tool({
         description: "Record an optional event-driven AW milestone and inspect bounded stall signals.",
         args: { progress: tool.schema.string(), hypothesis: tool.schema.string(), evidence: tool.schema.string(), blocked_on: tool.schema.string(), help: tool.schema.string(), next: tool.schema.string(), relevant_paths: tool.schema.array(tool.schema.string()).optional(), known_facts: tool.schema.array(tool.schema.string()).optional() },
-        async execute(args, context) { const result = addCheckpoint(context?.sessionID ?? "default", args); return JSON.stringify({ accepted: true, informationGain: result.item.informationGain, productive: result.item.productive, stalled: result.stall.stalled, signals: result.item.signals, decision: result.decision }) },
+        async execute(args, context) { const result = addCheckpoint(context?.sessionID ?? "default", args); return JSON.stringify({ accepted: true, informationGain: result.item.informationGain, productive: result.item.productive, stalled: result.stall.stalled, signals: result.item.signals, suggestion: result.decision }) },
       }),
       aw_supervisor_status: tool({ description: "Read compact AW supervisor observations for the current session.", args: {}, async execute(_args, context) { const s = snapshot(context?.sessionID ?? "default"); return JSON.stringify({ observations: s.observations.slice(-4), recent: s.events.slice(-4).map(({ kind, at, tool, status, paths: eventPaths, input_sig, output_sig }) => ({ kind, at, tool, status, paths: eventPaths, input_sig, output_sig })) }) } }),
     },

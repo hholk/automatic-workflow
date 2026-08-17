@@ -35,6 +35,14 @@ the skill root are used only when they exist.
 User request:
 $ARGUMENTS
 
+## Parallel progress
+
+Parallel progress is optional leverage for independent exploration/research,
+review, verification, or disjoint slices: use the smallest useful fan-out,
+avoid duplicate or overlapping writes, and reconcile before shared changes and
+final verification. Native `aw_spawn` remains stable; `background=true` is
+only for hosts with experimental support and is not required.
+
 ## User-visible job protocol
 
 Before `aw_spawn`, show a pending route card with no fictional ID. After it

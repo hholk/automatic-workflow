@@ -11,6 +11,9 @@
 A previous dispatch returned red evidence (failed AC, non-zero verify, or a
 reproduced bug) and the failure class is known.
 
+Parallel progress is optional for independent diagnosis or verification; keep
+fan-out minimal, avoid overlapping writes, and reconcile before final verify.
+
 ## First action
 
 Read the actual stderr / failed AC. Change one thing. Re-run the same verify

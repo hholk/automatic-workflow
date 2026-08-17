@@ -3,14 +3,27 @@ model: venice/openai-gpt-56-sol
 mode: subagent
 permission:
   task: deny
-  edit: deny
-  write: deny
+  edit: allow
+  write: allow
   read: allow
   glob: allow
   grep: allow
   list: allow
   bash:
     "*": deny
+    "npm test*": allow
+    "npm run test*": allow
+    "npm run lint*": allow
+    "npm run typecheck*": allow
+    "npm run build*": allow
+    "pnpm test*": allow
+    "pnpm run test*": allow
+    "pnpm run lint*": allow
+    "pnpm run typecheck*": allow
+    "pnpm run build*": allow
+    "pytest*": allow
+    "go test*": allow
+    "cargo test*": allow
     "pwd": allow
     "ls *": allow
     "git status*": allow
@@ -26,4 +39,12 @@ permission:
     "git restore*": deny
     "git commit*": deny
     "git push*": deny
-    "git apply*": deny
+  "git apply*": deny
+  "release*": deny
+  "deploy*": deny
+  "npm run deploy*": deny
+  "pnpm run deploy*": deny
+  "npm run release*": deny
+  "pnpm run release*": deny
+  "npm publish*": deny
+  "pnpm publish*": deny

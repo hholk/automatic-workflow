@@ -10,6 +10,9 @@
 
 Paths, symbols, callers, or library behavior are unknown. This is asynchronous `aw_spawn` background work; pull results with `aw_status`/`aw_read`.
 
+Parallel progress is optional leverage for independent exploration/research;
+use the smallest useful fan-out, avoid duplicate work, and reconcile results.
+
 ## First action
 
 `list_projects` / `search_graph` / `trace_path`, or Context7 for the named library.

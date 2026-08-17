@@ -12,6 +12,9 @@ The orchestrator already has a graph picture and the brief is a local
 lookup or a tiny change: where is X, how do we connect, one file, one
 command. Read-only lookup uses asynchronous `aw_spawn`; writes are bounded native synchronous tasks. Not a multi-file feature, not an undiagnosed bug, not a review.
 
+Parallel progress is optional only for independent lookup or verification;
+choose the smallest useful fan-out and reconcile before final verification.
+
 ## First action
 
 Do exactly the OBJECTIVE. First sufficient hit, then stop. No plan, no

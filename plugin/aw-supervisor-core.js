@@ -56,11 +56,17 @@ export function addCheckpoint(id, input) {
 }
 export function toolInputSignature(args) { return signature(args) }
 export function toolOutputSignature(output) { return signature(output?.result ?? output?.output ?? output?.data ?? output) }
+export const isVerificationCommand = (command) => /(?:test|lint|typecheck|build|pytest|cargo\s+test|go\s+test)/i.test(text(command))
+export function verificationEvidence(input, output) {
+  const args = input?.args ?? {}, command = args.command ?? args.cmd ?? ""
+  if (!isVerificationCommand(command)) return null
+  return { input_sig: toolInputSignature(args), output_sig: toolOutputSignature(output), chars: JSON.stringify(output ?? null).length, ...(Number.isInteger(output?.exit) ? { exit: output.exit } : {}), ...(Number.isInteger(output?.exitCode) ? { exit: output.exitCode } : {}) }
+}
 export function observeEvent(id, name, props = {}) {
   const s = snapshot(id)
   const found = paths(props)
   if (/^(file\.edited|session\.diff)$/.test(name)) s.sensors.files.push(...found.filter(p => !s.sensors.files.includes(p)))
-  if (/^lsp\./.test(name)) { const counts = { errors: Number(props.errors ?? props.errorCount ?? props.diagnostics?.filter?.(x => x?.severity === "error").length ?? 0), warnings: Number(props.warnings ?? props.warningCount ?? props.diagnostics?.filter?.(x => x?.severity === "warning").length ?? 0) }; s.sensors.lsp = { previous: s.sensors.lsp.current, current: counts } }
+  if (/^lsp\./.test(name)) { const counts = {}; if (props.errors != null || props.errorCount != null || props.diagnostics) counts.errors = Number(props.errors ?? props.errorCount ?? props.diagnostics.filter?.(x => x?.severity === "error").length ?? 0); if (props.warnings != null || props.warningCount != null || props.diagnostics) counts.warnings = Number(props.warnings ?? props.warningCount ?? props.diagnostics.filter?.(x => x?.severity === "warning").length ?? 0); s.sensors.lsp = { previous: s.sensors.lsp.current, current: { changed: true, path: bounded(props.path), ...counts } } }
   if (/^permission\./.test(name)) s.sensors.permissions.push({ type: bounded(props.type), action: bounded(props.action), risk: bounded(props.risk), permission: bounded(props.permission) })
   if (/verification|verify/i.test(name)) s.sensors.verification.push(bounded(props.signature ?? props.output ?? props.status))
   record(id, name, { paths: found, status: bounded(props.status ?? props.error), signature: props.output ? signature(props.output) : undefined })
