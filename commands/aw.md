@@ -6,7 +6,7 @@ argument-hint: task
 
 Load the skill `aw` and follow it exactly.
 
-You have every tool. Spend few tokens, keep control, and use native sessions.
+Use native sessions to make autonomous progress with evidence, not to add orchestration overhead.
 Main works through the complete Todo list first; that list is the prompt
 hook and handoff, not a plugin hook. Only then do subagents execute. Main
 decides, routes, and verifies. When a repo is in scope: codebase-memory snapshot

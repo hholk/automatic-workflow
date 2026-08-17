@@ -32,6 +32,26 @@ explicit in-memory reporting. The host remains responsible for persistence,
 native session control, and verification. These functions have no execution loop or
 automatically control sessions.
 
+Action-risk is distinct from reasoning-risk: sensors report bounded evidence; the
+host owns blast-radius gates and reasoning interventions.
+
+## Native supervisor sensors
+
+`plugin/aw-supervisor.js` connects that pure decision layer to OpenCode's
+documented plugin hooks. It records bounded evidence from tool execution,
+file/session movement, LSP diagnostics, permission requests, and session
+lifecycle events. Before compaction it injects a compact supervisor snapshot
+into the continuation context. It does not run a second agent loop: no
+automatic Sol call, abort, polling, daemon, PID manager, or durable session
+ledger is introduced. The host/orchestrator uses the observation and decides
+the next native action.
+
+The canonical active profiles are Markdown files in `agents/opencode/` with
+OpenCode YAML frontmatter. Install them explicitly and non-destructively into
+`~/.config/opencode/agents/` or `.opencode/agents/`; existing files are never
+silently overwritten. The YAML files in the same directory are metadata
+templates only.
+
 ## Install locally
 
 Clone this repository into the skill directory used by your harness, or link the checkout:

@@ -11,6 +11,28 @@ Lessons remain after promotion and may be archived only after later validation.
 
 <!-- lessons -->
 
+## 2026-08-17 — AW supervisor review repair
+
+- Date: 2026-08-17
+  Todo/Playbook: independent review findings / fix
+  feedback/result: active host registration and current contract checks were missing; supervisor state was unbounded across sessions
+  symptom/evidence: host config omitted the supervisor plugin; compaction assumed context; historical lesson text carried the contract test
+  root cause: integration lifecycle and process-local memory boundaries were not regression-tested at their public seams
+  orchestrator intervention: registered the plugin, added MAX_SESSIONS eviction and defensive compaction, and replaced historical assertions with current behavior checks
+  prevention lesson: verify active config conditionally, test bounded multi-session state and every sensor/host boundary, and keep lessons observational
+  status: validated
+
+## 2026-08-17 — AW-2.0 contract correction
+
+- Date: 2026-08-17
+  Todo/Playbook: AW supervisor documentation/test closure / fix
+  feedback/result: remaining contract gaps were closed with explicit assertions
+  symptom/evidence: the initial suite omitted direct hook, profile, and risk-boundary checks
+  root cause: documentation and tests were not bound to each current AW-2.0 artifact
+  orchestrator intervention: added source/profile/lesson assertions and defensive payload/event coverage without control automation
+  proposed skill/playbook change: require current assertions for every sensor, host decision boundary, and exactly three numbered next steps
+  status: validated
+
 ## 2026-08-17
 
 - Date: 2026-08-17

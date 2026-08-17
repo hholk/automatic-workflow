@@ -33,11 +33,11 @@ export function parseHelpRequest(input) {
 export const validateHelpRequest = (input) => parseHelpRequest(input).valid
 export function normalizeFailure(value) { const raw = text(value).toLowerCase().replace(/[- ]/g, "_"); if (FAILURE_ALIASES[raw]) return FAILURE_ALIASES[raw]; const key = raw.toUpperCase(); return FAILURES.has(key) ? key : "UNKNOWN" }
 
-const semantic = (v) => ({ hypothesis: text(v.CURRENT_HYPOTHESIS ?? v.hypothesis), evidence: text(v.EVIDENCE ?? v.evidence), paths: text(v.RELEVANT_PATHS ?? v.paths), facts: text(v.KNOWN_FACTS ?? v.known_facts), failure: normalizeFailure(v.BLOCKED_ON ?? v.failure) })
+const semantic = (v) => ({ hypothesis: text(v.CURRENT_HYPOTHESIS ?? v.hypothesis), evidence: text(v.EVIDENCE ?? v.evidence), failure: normalizeFailure(v.BLOCKED_ON ?? v.failure) })
 export function compareCheckpoints(previous, next) {
   const a = parseCheckpoint(previous), b = parseCheckpoint(next), sa = semantic(previous || {}), sb = semantic(next || {})
   const changed = CHECKPOINT_FIELDS.filter(k => a[k] !== b[k])
-  const semanticChanges = ["hypothesis", "evidence", "paths", "facts"].filter(k => sa[k] !== sb[k])
+  const semanticChanges = ["hypothesis", "evidence"].filter(k => sa[k] !== sb[k])
   const sameFailure = sa.failure === sb.failure && sb.failure !== "UNKNOWN"
   const productive = semanticChanges.length > 0 || (sameFailure && ["CURRENT_HYPOTHESIS", "EVIDENCE", "NEXT"].some(k => a[k] !== b[k]))
   return { changed, semanticChanges, sameFailure, informationGain: productive ? Math.min(1, semanticChanges.length / 3 + .25) : 0, identical: changed.length === 0, productive }
@@ -50,14 +50,12 @@ export function detectStall(history = []) {
   if (unchanged("hypothesis")) signals.push({ name: "same_hypothesis", value: semantic(latest).hypothesis })
   if (unchanged("failure") && semantic(latest).failure !== "UNKNOWN") signals.push({ name: "same_failure", value: semantic(latest).failure })
   if (unchanged("evidence")) signals.push({ name: "no_evidence_movement", value: semantic(latest).evidence })
-  if (unchanged("paths")) signals.push({ name: "no_path_movement", value: semantic(latest).paths })
-  if (unchanged("facts")) signals.push({ name: "no_known_fact_movement", value: semantic(latest).facts })
   const productive = parsed.slice(1).some((_, i) => compareCheckpoints(items[i], items[i + 1]).productive)
   return { stalled: signals.length >= 2 && !productive, signals, checkpoints: parsed.length }
 }
-export function chooseIntervention({ history = [], risk = "low", help, contextBlocked = false, protectedWork = false, destructive = false, irreversible = false, humanGate = false } = {}) {
+export function chooseIntervention({ history = [], risk = "low", actionRisk = "low", help, contextBlocked = false, protectedWork = false, destructive = false, irreversible = false, secrets = false, permission = false, externalSideEffect = false, humanGate = false } = {}) {
   const request = help && parseHelpRequest(help)
-  if (risk === "high" || protectedWork || destructive || irreversible || humanGate) return { level: 4, route: "human", reason: risk === "high" ? "high_risk" : "protected_work" }
+  if (actionRisk === "high" || protectedWork || destructive || irreversible || secrets || permission || externalSideEffect || humanGate) return { level: 4, route: "human", reason: actionRisk === "high" ? "high_action_risk" : "protected_work" }
   const latest = history.at(-1), failure = latest && semantic(latest).failure
   if (["NETWORK", "RATE_LIMIT", "TOOL"].includes(failure)) return { level: 0, route: "continue", reason: "no_reasoning_failure" }
   if (contextBlocked) return { level: 2, route: "context", reason: "context_blockage" }

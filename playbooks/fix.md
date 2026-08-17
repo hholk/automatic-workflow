@@ -16,12 +16,14 @@ reproduced bug) and the failure class is known.
 Read the actual stderr / failed AC. Change one thing. Re-run the same verify
 command. If a seam exists, lock the repro as a failing test first.
 
-After the second identical fail, the Main takes over with a surgical fix; there
-is no third Leaf attempt.
+When evidence repeats, change the hypothesis or request the smallest missing
+fact; preserve the failure signature and maximize information gained by the
+next bounded action. Escalate on a stall, risk boundary, or missing decision,
+not a fixed attempt count.
 
 ## Stop
 
-Verify is green, or this is the second identical fail.
+Verify is green, or the current evidence requires an explicit host decision.
 
 ## Verify
 

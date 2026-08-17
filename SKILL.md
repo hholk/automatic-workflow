@@ -29,6 +29,35 @@ in-memory telemetry/metrics/memory validation. Hosts call these functions and
 decide how to control native sessions; the module has no persistence, daemon,
 polling, ledger, or automatic control of native sessions.
 
+## OpenCode sensor layer
+
+`plugin/aw-supervisor.js` is the thin host integration layer. It observes
+`tool.execute.before`/`tool.execute.after`, file edits, session diffs, LSP
+diagnostics, permission events, session lifecycle events, and
+`experimental.session.compacting`. It keeps only bounded, process-local
+observations and exposes `aw_supervisor_status`; it never persists a ledger,
+stores full prompts/secrets, aborts a worker, or starts Sol automatically.
+Hooks provide objective evidence. The Luna orchestrator remains responsible
+for choosing continue, context, review, Sol, or human escalation through the
+ native OpenCode session tools.
+Action-risk is distinct from reasoning-risk: sensors report bounded evidence;
+the host owns blast-radius gates and reasoning interventions.
+
+OpenCode agent profiles are real Markdown frontmatter files in
+`agents/opencode/`. Install them explicitly into a host's agent directory only
+after checking for existing files; do not overwrite user profiles silently:
+
+```sh
+for f in agents/opencode/*.md; do
+  target="$HOME/.config/opencode/agents/$(basename "$f")"
+  test -e "$target" || ln -s "$(pwd)/$f" "$target"
+done
+```
+
+The worker and reviewer profiles use Venice.ai GPT-5.6 Luna, the expert uses
+Sol, and the orchestrator model remains host-configurable. Restart OpenCode
+after installing or changing profiles/plugins.
+
 ## Roles and model mapping
 
 The canonical active OpenCode role profiles live in `agents/opencode/`; do not
