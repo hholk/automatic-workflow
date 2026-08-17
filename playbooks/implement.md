@@ -54,3 +54,4 @@ Close with exactly three numbered next steps. Option 3 is a guarded Matt
 Pocock release: review current diff/base, update target-project docs, run
 tests, resolve findings, then ask for explicit human approval before commit,
 push, and deploy. Never auto-deploy or bypass the human gate.
+Optional `aw_checkpoint` calls are event-driven milestones for progress/evidence, never a required step or time schedule. Host decisions remain authoritative.

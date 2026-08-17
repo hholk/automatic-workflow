@@ -11,6 +11,61 @@ Lessons remain after promotion and may be archived only after later validation.
 
 <!-- lessons -->
 
+## 2026-08-17 — Active AW role matrix repair
+
+- Date: 2026-08-17
+- Todo/Playbook: final review permissions / fix
+- feedback/result: effective flash-worker lacked write permissions; active orchestrator block was absent
+- symptom/evidence: host config denied worker task and had no `aw-orchestrator` entry; reviewer shell policy required explicit deny-first ordering
+- root cause: canonical role intent and effective host permissions had drifted apart
+- orchestrator intervention: aligned worker allow permissions, added deny-first reviewer protections, and added host-configurable primary orchestrator
+- prevention lesson: contract-test effective role matrices, exact orchestrator fields, and shell mutation protections
+- status: validated
+
+## 2026-08-17 — Active reviewer/Sol shell policy repair
+
+- Date: 2026-08-17
+- Todo/Playbook: active permission security defect / fix
+- feedback/result: active flash-review allowed `bash *`; Sol was not explicitly present in the active config
+- symptom/evidence: wildcard bash allow permitted redirection, scripts, and file mutation despite edit denial
+- root cause: canonical read-only profile metadata was not enforced in the effective host config
+- orchestrator intervention: denied bash wildcard before a narrow read-only allowlist, added active aw-sol-expert, and asserted dangerous shell vectors statically
+- prevention lesson: test effective active permission blocks, key ordering, and deny-by-default policy separately from canonical descriptors
+- status: validated
+
+## 2026-08-17 — AW Sol read-only profile security repair
+
+- Date: 2026-08-17
+- Todo/Playbook: final review security defect / fix
+- feedback/result: Sol's Markdown profile allowed edits and YAML did not clearly deny writes
+- symptom/evidence: both Sol descriptors contained `edit: allow`; no write or destructive-bash deny contract existed
+- root cause: read-only intent was documented in prose but not enforced consistently in profile metadata
+- orchestrator intervention: denied edit/write/task for Sol, denied destructive bash patterns, and added reviewer/Sol versus worker/orchestrator contract regressions
+- prevention lesson: security-sensitive role intent must be asserted in every active profile artifact and distinguish read-only allowances from destructive command denial
+- status: validated
+
+## 2026-08-17 — AW repeated tool result predicate
+
+- Date: 2026-08-17
+- Todo/Playbook: repeated tool/output detection / fix
+- feedback/result: identical input with changed output was vulnerable to a false repeated intent
+- symptom/evidence: `previous.output_sig === previous.output_sig` was tautological; output-aware result detection already used the current output
+- root cause: the before hook had no current output to compare, but claimed repetition from a self-comparison
+- orchestrator intervention: removed the premature before-hook repetition claim and added changed-output and doom-loop regressions
+- prevention lesson: only mark tool repetition after matching current tool, input, and output; validate active profiles with CLI smoke
+- status: validated
+
+## 2026-08-17 — AW review defect: doom-loop and legacy profiles
+
+- Date: 2026-08-17
+- Todo/Playbook: independent review defects / fix
+- feedback/result: repeated identical tool pairs lacked a bounded doom-loop signal; YAML descriptors diverged from canonical Markdown profiles
+- symptom/evidence: sensor summary exposed only the latest repeated pair and legacy YAML used unsupported metadata keys
+- root cause: repeated-pair counts and YAML contract parity were not tested at their public seams
+- orchestrator intervention: added bounded count-based `doom_loop` observation signals and aligned YAML metadata with Markdown frontmatter
+- prevention lesson: contract-test every sensor signal and both intended profile artifacts without treating YAML as active source
+- status: validated
+
 ## 2026-08-17 — AW supervisor review repair
 
 - Date: 2026-08-17

@@ -1,7 +1,29 @@
-interface:
-  display_name: AW Sol Expert
-  short_description: Read-only expert reasoning and context rescue
-role: expert
-model: sol
-permission_intent: read-only reasoning and context rescue
-capability_policy: preserve supported reasoning, tools, context, and select requested effort flexibly
+description: AW Sol expert context rescue
+model: venice/openai-gpt-56-sol
+mode: subagent
+permission:
+  task: deny
+  edit: deny
+  write: deny
+  read: allow
+  glob: allow
+  grep: allow
+  list: allow
+  bash:
+    "*": deny
+    "pwd": allow
+    "ls *": allow
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "grep *": allow
+    "rg *": allow
+    "rm *": deny
+    "rm -rf *": deny
+    "git reset*": deny
+    "git clean*": deny
+    "git checkout*": deny
+    "git restore*": deny
+    "git commit*": deny
+    "git push*": deny
+    "git apply*": deny

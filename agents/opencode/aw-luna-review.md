@@ -1,11 +1,28 @@
 ---
 description: AW Luna read-only reviewer
-role: reviewer
-model: Venice.ai GPT-5.6 Luna
-mode: primary
-tools:
-  write: false
-permissions:
-  policy: read-only
+model: venice/openai-gpt-56-luna
+mode: subagent
+permission:
+  edit: deny
+  write: deny
+  task: deny
+  bash:
+    "*": deny
+    "pwd": allow
+    "ls *": allow
+    "git status*": allow
+    "git diff*": allow
+    "git log*": allow
+    "grep *": allow
+    "rg *": allow
+    "rm *": deny
+    "rm -rf *": deny
+    "git reset*": deny
+    "git clean*": deny
+    "git checkout*": deny
+    "git restore*": deny
+    "git commit*": deny
+    "git push*": deny
+    "git apply*": deny
 ---
 Review the requested scope and return findings with evidence. Do not edit.

@@ -17,6 +17,7 @@ const sources = await Promise.all([
 const contract = sources.join('\n');
 const lessons = await readFile(join(root, 'LESSONS.md'), 'utf8');
 const supervisor = await readFile(join(root, 'plugin/aw-supervisor.js'), 'utf8');
+const core = await readFile(join(root, 'plugin/aw-supervisor-core.js'), 'utf8');
 const hostConfig = process.env.AW_OPENCODE_CONFIG ?? '/Users/henrikholkenbrink/.config/opencode/opencode.json';
 
 assert.match(contract, /graph snapshot[\s\S]*full[\s\S]*todowrite[\s\S]*before[\s\S]*dispatch/i, 'pre-dispatch graph and todo gate');
@@ -40,7 +41,27 @@ for (const file of ['aw-luna-worker.md', 'aw-luna-review.md', 'aw-orchestrator.m
   const profile = await readFile(join(root, 'agents/opencode', file), 'utf8');
   assert.match(profile, /^---\n[\s\S]*\n---/m, `${file}: frontmatter`);
 }
+const profiles = await Promise.all(['aw-luna-worker.md', 'aw-luna-review.md', 'aw-sol-expert.md', 'aw-orchestrator.md'].map(file => readFile(join(root, 'agents/opencode', file), 'utf8')));
+assert.match(profiles[0], /model: venice\/openai-gpt-56-luna[\s\S]*mode: subagent[\s\S]*permission:/);
+assert.match(profiles[1], /model: venice\/openai-gpt-56-luna[\s\S]*mode: subagent[\s\S]*permission:/);
+assert.match(profiles[2], /model: venice\/openai-gpt-56-sol[\s\S]*mode: subagent[\s\S]*permission:/);
+assert.match(profiles[3], /mode: primary[\s\S]*permission:/);
+for (const profile of profiles) { assert.doesNotMatch(profile, /^role:/m); assert.doesNotMatch(profile, /^permissions:/m); }
+assert.match(profiles[0], /edit: allow[\s\S]*task: allow/, 'worker is write-capable');
+assert.match(profiles[3], /edit: allow[\s\S]*task: allow/, 'orchestrator is write-capable');
+for (const [name, profile] of [['reviewer', profiles[1]], ['Sol', profiles[2]]]) {
+  assert.match(profile, /edit: deny/, `${name}: edit denied`);
+  assert.match(profile, /write: deny/, `${name}: write denied`);
+  assert.match(profile, /task: deny/, `${name}: task denied`);
+  assert.match(profile, /bash:\s+[\s\S]*"\*": deny[\s\S]*"rm \*": deny[\s\S]*"git reset\*": deny/, `${name}: destructive bash denied`);
+}
+const solYaml = await readFile(join(root, 'agents/opencode/aw-sol-expert.yaml'), 'utf8');
+for (const key of ['edit: deny', 'write: deny', 'task: deny', '"*": deny', '"rm *": deny', '"git reset*": deny'])
+  assert.match(solYaml, new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `Sol YAML: ${key}`);
 assert.ok(supervisor.includes('tool.execute.before') && supervisor.includes('tool.execute.after'), 'tool hooks');
+assert.match(supervisor, /aw_checkpoint/);
+assert.doesNotMatch(supervisor, /__testing/);
+assert.match(supervisor, /input_sig/);
 assert.match(supervisor, /file\\?\.edited[\s\S]*session\\?\.diff/, 'file/session sensors');
 assert.match(supervisor, /lsp\\?\.client\\?\.diagnostics[\s\S]*lsp\\?\.updated/, 'LSP sensors');
 assert.match(supervisor, /permission.*asked.*replied/s, 'permission sensors');
@@ -51,6 +72,34 @@ try {
   const activeConfig = JSON.parse(await readFile(hostConfig, 'utf8'));
   assert.ok(activeConfig.plugin?.includes('file:///Users/henrikholkenbrink/.config/opencode/skills/aw/plugin/aw-native.js'), 'active native registration');
   assert.ok(activeConfig.plugin?.includes('file:///Users/henrikholkenbrink/.config/opencode/skills/aw/plugin/aw-supervisor.js'), 'active supervisor registration');
+  const activeAgents = activeConfig.agent ?? {};
+  const safeBash = new Set(['pwd', 'ls *', 'git status*', 'git diff*', 'git log*', 'grep *', 'rg *']);
+  for (const name of ['flash-review', 'aw-sol-expert']) {
+    const profile = activeAgents[name];
+    assert.ok(profile, `${name}: active profile present`);
+    assert.equal(profile.permission?.edit, 'deny', `${name}: active edit denied`);
+    assert.equal(profile.permission?.write, 'deny', `${name}: active write denied`);
+    assert.equal(profile.permission?.task, 'deny', `${name}: active task denied`);
+    const bash = profile.permission?.bash ?? {};
+    assert.equal(Object.keys(bash)[0], '*', `${name}: bash wildcard deny precedes allows`);
+    assert.equal(bash['*'], 'deny', `${name}: bash wildcard denied`);
+    for (const [pattern, decision] of Object.entries(bash)) {
+      if (pattern === '*') continue;
+      if (safeBash.has(pattern)) assert.equal(decision, 'allow', `${name}: safe bash allowlist`);
+      else assert.equal(decision, 'deny', `${name}: non-safe bash vector denied: ${pattern}`);
+      assert.doesNotMatch(pattern, /(?:>|>>|\b(?:mv|cp|rm)\b|(?:^|\s)(?:sh|bash|zsh|node|python|perl|ruby|source|eval)(?:\s|$)|\.\/(?:[^ ]+))/i, `${name}: shell write/script vector`);
+    }
+  }
+  const worker = activeAgents['flash-worker'];
+  assert.ok(worker, 'flash-worker: active profile present');
+  assert.equal(worker.permission?.edit, 'allow', 'flash-worker: edit allowed');
+  assert.equal(worker.permission?.write, 'allow', 'flash-worker: write allowed');
+  assert.equal(worker.permission?.task, 'allow', 'flash-worker: task allowed');
+  const orchestrator = activeAgents['aw-orchestrator'];
+  assert.ok(orchestrator, 'aw-orchestrator: active profile present');
+  assert.equal(orchestrator.mode, 'primary', 'aw-orchestrator: primary mode');
+  assert.equal(orchestrator.model, undefined, 'aw-orchestrator: host-configurable model');
+  assert.deepEqual(Object.keys(orchestrator.permission ?? {}), ['edit', 'write', 'task'], 'aw-orchestrator: exact permission matrix');
 } catch (error) {
   if (process.env.AW_OPENCODE_CONFIG) throw error;
 }

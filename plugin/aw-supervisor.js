@@ -1,82 +1,47 @@
-import { createHash } from "node:crypto"
 import { tool } from "@opencode-ai/plugin"
-import { compareCheckpoints, detectStall, chooseIntervention } from "../supervisor/supervisor.mjs"
+import { addCheckpoint, bounded, observeEvent, observation, paths, record, sessionId, snapshot, toolInputSignature, toolOutputSignature } from "./aw-supervisor-core.js"
 
-const MAX = 12
-const MAX_SESSIONS = 64
-const LIMIT = 240
-const state = new Map()
-const text = (value) => typeof value === "string" ? value : value == null ? "" : String(value)
-const bounded = (value) => text(value).replace(/\s+/g, " ").slice(0, LIMIT)
-const signature = (value) => createHash("sha256").update(text(value)).digest("hex").slice(0, 12)
-const sessionId = (input = {}) => input.sessionID ?? input.sessionId ?? input.id ?? input.properties?.sessionID ?? "default"
-const paths = (value) => {
-  const found = []
-  const visit = (item) => {
-    if (typeof item === "string" && /(^|\/|\\)(?:src|test|tests|plugin|supervisor|README|SKILL|commands|playbooks)(?:\/|\\|\.|$)/i.test(item)) found.push(bounded(item))
-    else if (Array.isArray(item)) item.forEach(visit)
-    else if (item && typeof item === "object") Object.values(item).forEach(visit)
-  }
-  visit(value)
-  return [...new Set(found)].slice(0, 8)
-}
-function snapshot(id) {
-  if (!state.has(id)) {
-    state.set(id, { events: [], checkpoints: [], observations: [] })
-    while (state.size > MAX_SESSIONS) state.delete(state.keys().next().value)
-  }
-  return state.get(id)
-}
-function record(id, kind, payload = {}) {
-  const s = snapshot(id)
-  s.events.push({ kind, at: Date.now(), ...payload })
-  if (s.events.length > MAX) s.events.splice(0, s.events.length - MAX)
-  return s
-}
-function observation(id, reason) {
-  const s = snapshot(id), history = s.checkpoints
-  const comparison = history.length > 1 ? compareCheckpoints(history.at(-2), history.at(-1)) : null
-  const stall = detectStall(history)
-  const decision = chooseIntervention({ history, actionRisk: "low" })
-  const item = { reason, informationGain: comparison?.informationGain ?? 0, productive: comparison?.productive ?? false, stalled: stall.stalled, signalCount: stall.signals.length, decision: decision.route }
-  s.observations.push(item); if (s.observations.length > MAX) s.observations.shift(); return item
-}
 function eventName(event) { return event?.type ?? event?.event?.type }
 
 export async function AwSupervisorPlugin() {
   return {
     "tool.execute.before": async (input) => {
-      record(sessionId(input), "tool.intent", { tool: bounded(input.tool), args: { keys: Object.keys(input.args ?? {}).slice(0, 12) } })
+      const id = sessionId(input), input_sig = toolInputSignature(input.args ?? {})
+      const repeated = false
+      record(id, "tool.intent", { tool: bounded(input.tool), input_sig, args: { keys: Object.keys(input.args ?? {}).slice(0, 12) }, repeated })
     },
     "tool.execute.after": async (input, output) => {
-      const raw = output?.result ?? output?.output ?? output?.data ?? output
-      record(sessionId(input), "tool.result", { tool: bounded(input?.tool), result: { signature: signature(raw), chars: text(raw).length, paths: paths([input?.args, raw]) } })
+       const id = sessionId(input), output_sig = toolOutputSignature(output), s = snapshot(id), intent = [...s.events].reverse().find(e => e.kind === "tool.intent" && e.tool === bounded(input?.tool))
+       const input_sig = toolInputSignature(input?.args ?? {})
+       const fingerprint = intent?.input_sig === input_sig ? `${bounded(input?.tool)}:${intent.input_sig}:${output_sig}` : null
+       const repeated = Boolean(fingerprint && s.events.some(e => e.kind === "tool.result" && e.tool === bounded(input?.tool) && e.input_sig === input_sig && e.output_sig === output_sig))
+       if (fingerprint) {
+         const previousPair = s.sensors.toolPairs.findLast(pair => pair.fingerprint === fingerprint)
+         s.sensors.toolPairs.push({ fingerprint, count: (previousPair?.count ?? 0) + 1 })
+         if (s.sensors.toolPairs.length > 8) s.sensors.toolPairs.shift()
+       }
+      record(id, "tool.result", { tool: bounded(input?.tool), input_sig: intent?.input_sig, output_sig, repeated, result: { signature: output_sig, chars: JSON.stringify(output ?? null).length, paths: paths([input?.args, output]) } })
     },
     event: async ({ event } = {}) => {
       const name = eventName(event); if (!name) return
-      const id = sessionId(event?.properties ? event : event?.properties ?? event)
-      const props = event?.properties ?? {}
-      const relevant = /^(file\.edited|session\.diff|lsp\.client\.diagnostics|lsp\.updated|permission\.(asked|replied)|session\.(idle|error|status|compacted))$/.test(name)
-      if (!relevant) return
-      record(id, name, { paths: paths(props), status: bounded(props.status ?? props.error), signature: props.output ? signature(props.output) : undefined })
+      const id = sessionId(event?.properties ? event : event?.properties ?? event), props = event?.properties ?? {}
+      if (!/^(file\.edited|session\.diff|lsp\.client\.diagnostics|lsp\.updated|permission\.(asked|replied)|session\.(idle|error|status|compacted))$/.test(name)) return
+      observeEvent(id, name, props)
       if (name === "session.idle" || name === "session.error") observation(id, name)
     },
     "experimental.session.compacting": async (input, output) => {
-      const id = sessionId(input); const item = observation(id, "compacting")
+      const id = sessionId(input), s = snapshot(id), item = observation(id, "compacting"), latest = s.checkpoints.at(-1)
       if (!Array.isArray(output.context)) output.context = []
-      output.context.push(`AW supervisor observation: progress=${item.productive ? "semantic" : "structural/unknown"}; stalled=${item.stalled}; decision=${item.decision}. Host decides any control action.`)
+      output.context.push(`AW supervisor checkpoint: ${latest ? `progress=${latest.PROGRESS}; hypothesis=${latest.CURRENT_HYPOTHESIS}; evidence=${latest.EVIDENCE}; next=${latest.NEXT}` : "none"}. Sensors: ${JSON.stringify(item.sensors)}. Host decides any control action.`)
     },
     tool: {
-      aw_supervisor_status: tool({
-        description: "Read compact AW supervisor observations for the current session.", args: {},
-        async execute(_args, context) {
-          const s = snapshot(context?.sessionID ?? "default")
-          return JSON.stringify({ observations: s.observations.slice(-4), recent: s.events.slice(-4).map(({ kind, at, tool, status, paths }) => ({ kind, at, tool, status, paths })) })
-        },
+      aw_checkpoint: tool({
+        description: "Record an optional event-driven AW milestone and inspect bounded stall signals.",
+        args: { progress: tool.schema.string(), hypothesis: tool.schema.string(), evidence: tool.schema.string(), blocked_on: tool.schema.string(), help: tool.schema.string(), next: tool.schema.string(), relevant_paths: tool.schema.array(tool.schema.string()).optional(), known_facts: tool.schema.array(tool.schema.string()).optional() },
+        async execute(args, context) { const result = addCheckpoint(context?.sessionID ?? "default", args); return JSON.stringify({ accepted: true, informationGain: result.item.informationGain, productive: result.item.productive, stalled: result.stall.stalled, signals: result.item.signals, decision: result.decision }) },
       }),
+      aw_supervisor_status: tool({ description: "Read compact AW supervisor observations for the current session.", args: {}, async execute(_args, context) { const s = snapshot(context?.sessionID ?? "default"); return JSON.stringify({ observations: s.observations.slice(-4), recent: s.events.slice(-4).map(({ kind, at, tool, status, paths: eventPaths, input_sig, output_sig }) => ({ kind, at, tool, status, paths: eventPaths, input_sig, output_sig })) }) } }),
     },
   }
 }
-
-export const __testing = { state, record, observation, signature }
 export default AwSupervisorPlugin

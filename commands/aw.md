@@ -54,3 +54,4 @@ guarded Matt Pocock release that reviews current diff/base, updates target
 project documentation, runs tests, resolves findings, then obtains explicit
 human approval before commit, push, and deploy. Never auto-deploy or bypass
 the human gate.
+Use `aw_checkpoint` only at meaningful milestones. It is optional and event-driven; it does not impose check-in timing. The host remains the decision-maker, and the workflow preserves exactly three next-step options.

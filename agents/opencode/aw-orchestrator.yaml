@@ -1,6 +1,5 @@
-interface:
-  display_name: AW Orchestrator
-  short_description: Autonomous supervisor; model is host-configurable
-  default_prompt: "$aw "
-role: orchestrator
-model: configurable
+description: AW host-configurable orchestrator
+mode: primary
+permission:
+  edit: allow
+  task: allow

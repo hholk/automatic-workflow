@@ -1,27 +1,51 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { AwSupervisorPlugin, __testing } from "./aw-supervisor.js"
+import { AwSupervisorPlugin } from "./aw-supervisor.js"
+import { state } from "./aw-supervisor-core.js"
 
 const hooks = await AwSupervisorPlugin()
 test("records defensive tool before/after evidence without payloads", async () => {
   await hooks["tool.execute.before"]({ sessionID: "s", tool: "bash", args: { command: "secret=hidden" } })
   await hooks["tool.execute.after"]({ sessionID: "s", tool: "bash", args: { command: "secret=hidden" } }, { output: "changed src/a.js" })
-  const events = __testing.state.get("s").events
+  const events = state.get("s").events
   assert.equal(events.length, 2); assert.equal(JSON.stringify(events).includes("hidden"), false); assert.ok(events[1].result.signature)
+})
+test("does not mark an intent or result repeated when the output changes", async () => {
+  const input = { sessionID: "different-output", tool: "bash", args: { command: "same input" } }
+  await hooks["tool.execute.before"](input)
+  await hooks["tool.execute.after"](input, { output: "first result" })
+  await hooks["tool.execute.before"](input)
+  await hooks["tool.execute.after"](input, { output: "different result" })
+  const events = state.get("different-output").events
+  assert.equal(events[2].repeated, false)
+  assert.equal(events[3].repeated, false)
+})
+test("marks repeated identical tool pairs as a strong doom loop signal", async () => {
+  const input = { sessionID: "doom", tool: "bash", args: { command: "same" } }
+  await hooks["tool.execute.before"](input)
+  await hooks["tool.execute.after"](input, { output: "same result" })
+  await hooks["tool.execute.before"](input)
+  await hooks["tool.execute.after"](input, { output: "same result" })
+  await hooks.event({ event: { type: "session.idle", properties: { sessionID: "doom" } } })
+  const status = JSON.parse(await hooks.tool.aw_supervisor_status.execute({}, { sessionID: "doom" }))
+  const observation = status.observations.at(-1)
+  assert.equal(observation.sensors.doom_loop, true)
+  assert.equal(observation.signals.at(-1).name, "doom_loop")
+  assert.equal(observation.signals.at(-1).strength, "strong")
 })
 test("handles realistic event fixtures, idle observation, and compaction", async () => {
   for (const type of ["file.edited", "session.diff", "lsp.client.diagnostics", "lsp.updated", "permission.asked", "permission.replied", "session.status", "session.compacted"]) await hooks.event({ event: { type, properties: { sessionID: "e", path: "src/a.js", status: "ok" } } })
   await hooks.event({ event: { type: "session.idle", properties: { sessionID: "e" } } })
   const output = { context: [] }; await hooks["experimental.session.compacting"]({ sessionID: "e" }, output)
-  assert.match(output.context[0], /AW supervisor observation/); assert.ok(__testing.state.get("e").observations.length)
+  assert.match(output.context[0], /AW supervisor checkpoint/); assert.ok(state.get("e").observations.length)
 })
 test("ignores empty and unknown payloads without leaking full history", async () => {
   await hooks.event({}); await hooks.event({ event: { type: "unrelated.event", properties: { sessionID: "e", secret: "hidden" } } })
   await hooks["tool.execute.before"]({ sessionID: "payload", tool: "bash", args: undefined })
   await hooks["tool.execute.after"]({ sessionID: "payload", tool: "bash" }, undefined)
-  const state = __testing.state.get("payload")
-  assert.equal(state.events.length, 2); assert.equal(JSON.stringify(state).includes("hidden"), false)
-  assert.ok(state.events.length <= 12)
+  const session = state.get("payload")
+  assert.equal(session.events.length, 2); assert.equal(JSON.stringify(session).includes("hidden"), false)
+  assert.ok(session.events.length <= 12)
 })
 test("does not auto-abort or invoke Sol and summaries remain bounded", async () => {
   const status = JSON.parse(await hooks.tool.aw_supervisor_status.execute({}, { sessionID: "e" }))
@@ -29,9 +53,15 @@ test("does not auto-abort or invoke Sol and summaries remain bounded", async () 
 })
 test("bounds process-local state across distinct sessions", async () => {
   for (let index = 0; index < 80; index++) await hooks["tool.execute.before"]({ sessionID: `bounded-${index}`, tool: "bash", args: {} })
-  assert.ok(__testing.state.size <= 64)
-  assert.equal(__testing.state.has("bounded-0"), false)
-  assert.equal(__testing.state.has("bounded-79"), true)
+  assert.ok(state.size <= 64)
+  assert.equal(state.has("bounded-0"), false)
+  assert.equal(state.has("bounded-79"), true)
+})
+test("entry loader exposes only callable exports and checkpoint is bounded", async () => {
+  const entry = await import("./aw-supervisor.js")
+  assert.ok(Object.values(entry).every(value => typeof value === "function"))
+  const result = JSON.parse(await hooks.tool.aw_checkpoint.execute({ progress: "p", hypothesis: "h", evidence: "e", blocked_on: "none", help: "none", next: "n" }, { sessionID: "checkpoint" }))
+  assert.equal(result.accepted, true)
 })
 test("initializes missing compaction context", async () => {
   const output = {}

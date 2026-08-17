@@ -80,3 +80,4 @@ create a redundant `profiles/` directory. Playbooks are in `playbooks/`.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+The optional `aw_checkpoint` milestone is event-driven, not a timing or step requirement. It records bounded progress evidence for host review; the host decides all control actions. Install the OpenCode profiles for Luna worker/reviewer and Sol expert routing.

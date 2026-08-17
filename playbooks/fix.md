@@ -34,3 +34,4 @@ The exact command that went red. Not a different, wider suite.
 Use the `flash-worker` `<report>` schema. Include
 `failure_signature: <ac-id or exit + short stderr>` and
 `workflow_delta: none|<one concrete edit to this playbook>`.
+Optional `aw_checkpoint` calls are event-driven milestones for progress/evidence, never a required step or time schedule. Host decisions remain authoritative.

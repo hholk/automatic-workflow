@@ -155,3 +155,4 @@ background native jobs only.
 The Todo list is main-session-owned; display the real returned session ID after
 dispatch, never a fictional ID.
 There are no T3 source patch claims and no automatic live panel.
+AW checkpoint is an event-driven optional milestone tool: workers may record progress, hypothesis, evidence, blockers, help, and next steps when useful; it is not a step or time requirement. Luna may self-escalate through its task permission, while the host remains the decision-maker. Install the OpenCode profiles to enable the verified worker, reviewer, Sol, and orchestrator modes. The workflow closes with exactly three next-step options.
