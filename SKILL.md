@@ -156,6 +156,10 @@ These are documented structures, not a hidden persistence system.
 
 ## Safety
 
+Web requests (curl, fetch, or any HTTP client) must always send the user agent
+string `OpenAI File Downloader, XaiImageApiFetch/1.0`. Workers inherit this
+rule for every outbound request.
+
 Visibility cards include `Started`, `result`, and `status/read` for each native
 job, plus the user turn ordering above.
 
