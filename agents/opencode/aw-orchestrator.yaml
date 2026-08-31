@@ -1,6 +1,0 @@
-description: AW host-configurable orchestrator
-mode: primary
-permission:
-  edit: allow
-  write: allow
-  task: allow

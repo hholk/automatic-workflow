@@ -1,0 +1,252 @@
+{
+  "version": "v2",
+  "entrypoint": {
+    "files": [
+      "SKILL.md"
+    ],
+    "words": 305,
+    "characters": 2215,
+    "estimated_tokens": 554
+  },
+  "average_route_estimated_tokens": 1028,
+  "route_contexts": [
+    {
+      "id": "tiny_local",
+      "route": "direct",
+      "files": [
+        "SKILL.md"
+      ],
+      "words": 305,
+      "characters": 2215,
+      "estimated_tokens": 554
+    },
+    {
+      "id": "read_only_map",
+      "route": "explore",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "workflows/explore.md"
+      ],
+      "words": 597,
+      "characters": 4190,
+      "estimated_tokens": 1048
+    },
+    {
+      "id": "unknown_bug",
+      "route": "diagnose",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "workflows/diagnose.md"
+      ],
+      "words": 602,
+      "characters": 4264,
+      "estimated_tokens": 1066
+    },
+    {
+      "id": "diagnosed_bug",
+      "route": "fix",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "workflows/fix.md"
+      ],
+      "words": 597,
+      "characters": 4198,
+      "estimated_tokens": 1050
+    },
+    {
+      "id": "known_change",
+      "route": "implement",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "workflows/implement.md"
+      ],
+      "words": 602,
+      "characters": 4262,
+      "estimated_tokens": 1066
+    },
+    {
+      "id": "architecture",
+      "route": "teacher",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "references/teacher.md"
+      ],
+      "words": 814,
+      "characters": 5698,
+      "estimated_tokens": 1425
+    },
+    {
+      "id": "hard_fix",
+      "route": "teacher",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "references/teacher.md"
+      ],
+      "words": 814,
+      "characters": 5698,
+      "estimated_tokens": 1425
+    },
+    {
+      "id": "completed_change",
+      "route": "review",
+      "files": [
+        "SKILL.md",
+        "references/runtimes.md",
+        "workflows/review.md"
+      ],
+      "words": 593,
+      "characters": 4254,
+      "estimated_tokens": 1064
+    },
+    {
+      "id": "irreversible",
+      "route": "human",
+      "files": [
+        "SKILL.md"
+      ],
+      "words": 305,
+      "characters": 2215,
+      "estimated_tokens": 554
+    }
+  ],
+  "routing": {
+    "passed": 9,
+    "total": 9,
+    "cases": [
+      {
+        "id": "tiny_local",
+        "expected_route": "direct",
+        "pass": true
+      },
+      {
+        "id": "read_only_map",
+        "expected_route": "explore",
+        "pass": true
+      },
+      {
+        "id": "unknown_bug",
+        "expected_route": "diagnose",
+        "pass": true
+      },
+      {
+        "id": "diagnosed_bug",
+        "expected_route": "fix",
+        "pass": true
+      },
+      {
+        "id": "known_change",
+        "expected_route": "implement",
+        "pass": true
+      },
+      {
+        "id": "architecture",
+        "expected_route": "teacher",
+        "pass": true
+      },
+      {
+        "id": "hard_fix",
+        "expected_route": "teacher",
+        "pass": true
+      },
+      {
+        "id": "completed_change",
+        "expected_route": "review",
+        "pass": true
+      },
+      {
+        "id": "irreversible",
+        "expected_route": "human",
+        "pass": true
+      }
+    ]
+  },
+  "invariants": {
+    "codex_glm": true,
+    "opencode_glm": true,
+    "codex_sol_teacher": true,
+    "no_venice_sol": true,
+    "teacher_five_turn_cap": true,
+    "custom_runtime_removed": true
+  },
+  "obsolete": [],
+  "live": {
+    "engine": "opencode --pure",
+    "model": "venice/z-ai-glm-5-3-flash",
+    "instruction_characters": 3766,
+    "passed": 9,
+    "total": 9,
+    "cases": [
+      {
+        "id": "tiny_local",
+        "expected": "direct",
+        "actual": "direct",
+        "pass": true
+      },
+      {
+        "id": "read_only_map",
+        "expected": "explore",
+        "actual": "explore",
+        "pass": true
+      },
+      {
+        "id": "unknown_bug",
+        "expected": "diagnose",
+        "actual": "diagnose",
+        "pass": true
+      },
+      {
+        "id": "diagnosed_bug",
+        "expected": "fix",
+        "actual": "fix",
+        "pass": true
+      },
+      {
+        "id": "known_change",
+        "expected": "implement",
+        "actual": "implement",
+        "pass": true
+      },
+      {
+        "id": "architecture",
+        "expected": "teacher",
+        "actual": "teacher",
+        "pass": true
+      },
+      {
+        "id": "hard_fix",
+        "expected": "teacher",
+        "actual": "teacher",
+        "pass": true
+      },
+      {
+        "id": "completed_change",
+        "expected": "review",
+        "actual": "review",
+        "pass": true
+      },
+      {
+        "id": "irreversible",
+        "expected": "human",
+        "actual": "human",
+        "pass": true
+      }
+    ],
+    "tokens": {
+      "total": 13932,
+      "input": 13708,
+      "output": 97,
+      "reasoning": 127,
+      "cache": {
+        "write": 0,
+        "read": 0
+      }
+    },
+    "cost": 0.0021682
+  }
+}

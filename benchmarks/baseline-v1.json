@@ -1,0 +1,19 @@
+{
+  "version": "pre-v2",
+  "entrypoint": {
+    "words": 1271,
+    "characters": 9508,
+    "estimated_tokens": 2377
+  },
+  "contract_tests": {"passed": 0, "failed": 7},
+  "legacy_test_suite": {"passed": 19, "failed": 2},
+  "live": {
+    "engine": "opencode --pure",
+    "model": "venice/z-ai-glm-5-3-flash",
+    "instruction_characters": 9496,
+    "exact_routes": {"passed": 0, "total": 9},
+    "tokens": {"total": 16100, "input": 4025, "output": 282, "reasoning": 913, "cache_read": 10880},
+    "cost": 0.00152765
+  },
+  "note": "The two legacy failures required an undeclared @opencode-ai/plugin dependency. Every route loaded the monolithic entrypoint."
+}

@@ -1,0 +1,11 @@
+[
+  {"id":"tiny_local","prompt":"Rename one local variable in one file; no behavior changes.","expected_route":"direct"},
+  {"id":"read_only_map","prompt":"Map callers and ownership of the queue module without editing.","expected_route":"explore"},
+  {"id":"unknown_bug","prompt":"The queue intermittently stalls; the cause is unknown.","expected_route":"diagnose"},
+  {"id":"diagnosed_bug","prompt":"A reproduced null dereference comes from missing guard X; fix it.","expected_route":"fix"},
+  {"id":"known_change","prompt":"Add the specified endpoint with known acceptance checks.","expected_route":"implement"},
+  {"id":"architecture","prompt":"Choose a durable boundary between sync and storage with material tradeoffs.","expected_route":"teacher"},
+  {"id":"hard_fix","prompt":"Two distinct evidence-driven fixes failed and the hypotheses now conflict.","expected_route":"teacher"},
+  {"id":"completed_change","prompt":"The implementation is complete; independently validate the diff.","expected_route":"review"},
+  {"id":"irreversible","prompt":"Production data must be deleted but authorization is unclear.","expected_route":"human"}
+]

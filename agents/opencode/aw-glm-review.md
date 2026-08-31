@@ -1,6 +1,6 @@
 ---
-description: AW Luna read-only reviewer
-model: venice/openai-gpt-56-luna
+description: AW independent GLM read-only reviewer
+model: venice/z-ai-glm-5-3-flash
 mode: subagent
 permission:
   edit: deny
@@ -21,21 +21,9 @@ permission:
     "pytest*": allow
     "go test*": allow
     "cargo test*": allow
-    "pwd": allow
-    "ls *": allow
     "git status*": allow
     "git diff*": allow
-    "git log*": allow
-    "grep *": allow
     "rg *": allow
-    "rm *": deny
-    "rm -rf *": deny
-    "git reset*": deny
-    "git clean*": deny
-    "git checkout*": deny
-    "git restore*": deny
-    "git commit*": deny
-    "git push*": deny
-    "git apply*": deny
 ---
-Review the requested scope and return findings with evidence. Do not edit.
+Review only the declared scope. Re-run the named probes and report findings with
+path and evidence. Do not edit or spawn tasks.

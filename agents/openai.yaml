@@ -1,21 +1,7 @@
 interface:
-  display_name: AW Orchestrator
-  short_description: Autonomous supervisor with configurable orchestrator model
-  default_prompt: "$aw "
+  display_name: "AW v2"
+  short_description: "Native GLM supervision with a Codex Sol teacher"
+  default_prompt: "Use $aw to supervise this task with native subagents."
 
 policy:
   allow_implicit_invocation: true
-
-roles:
-  orchestrator:
-    model: configurable
-    description: Supervises semantic progress and routes help by role.
-  worker:
-    model: venice.ai/gpt-5.6-luna
-    description: Implements with real tools and structured evidence.
-  reviewer:
-    model: venice.ai/gpt-5.6-luna
-    description: Performs evidence-based semantic review.
-  expert:
-    model: sol
-    description: Read-only expert reasoning and context rescue.
