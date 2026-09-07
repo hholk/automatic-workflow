@@ -1,0 +1,11 @@
+{
+  "description": "AW prompt-free lifecycle evidence; replace <AW_SKILL_DIR> with an absolute path and review with /hooks.",
+  "hooks": {
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }],
+    "PostToolUse": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }],
+    "SubagentStart": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }],
+    "SubagentStop": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node <AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs --host codex", "timeout": 3 }] }]
+  }
+}

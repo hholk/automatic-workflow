@@ -1,6 +1,6 @@
 interface:
-  display_name: "AW v2"
-  short_description: "Native GLM supervision with a Codex Sol teacher"
+  display_name: "AW v4"
+  short_description: "Evidence-driven native subagent supervision"
   default_prompt: "Use $aw to supervise this task with native subagents."
 
 policy:

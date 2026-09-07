@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const read = (path) => readFileSync(join(root, path), "utf8")
+const frontmatter = (path) => read(path).match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ""
 
 test("ships frozen worker and teacher contracts", () => {
   for (const path of ["contracts/worker.md", "contracts/teacher.md"]) {
@@ -56,20 +57,66 @@ test("routes evidence gaps, human authority, and lean TDD explicitly", () => {
   assert.match(teacher, /one evidence repair/i)
 })
 
+test("prefers useful MCP evidence without forcing redundant calls", () => {
+  const skill = read("SKILL.md")
+  const worker = read("prompts/core/worker.md")
+  assert.match(skill, /Codebase Memory/)
+  assert.match(skill, /Context7/)
+  assert.match(worker, /Codebase Memory/)
+  assert.match(worker, /Context7/)
+
+  assert.match(skill, /reuse.*supplied evidence|reuse sufficient supplied evidence/is)
+  assert.match(worker, /reuse.*supplied evidence|reuse sufficient supplied evidence/is)
+
+  assert.match(skill, /when either is likely\s+cheaper than manual discovery/is)
+  assert.match(worker, /useful and cheaper/is)
+  assert.match(worker, /skip unavailable, redundant, or non-decisive\s+calls/is)
+
+  for (const text of [skill, worker]) {
+    assert.doesNotMatch(text, /always call/i)
+  }
+
+  const codex = read("references/runtimes-codex.md")
+  const opencode = read("references/runtimes-opencode.md")
+  const copilot = read("references/runtimes-copilot.md")
+  assert.match(codex, /configured native MCPs/i)
+  assert.match(opencode, /explicitly allow both (?:MCP )?namespaces/i)
+  assert.match(copilot, /configured MCP servers/i)
+  assert.match(copilot, /unavailable tools remain UNKNOWN/i)
+
+  const teacher = read("prompts/core/teacher.md")
+  assert.match(teacher, /Use no tools or outside\s+evidence/i)
+  assert.doesNotMatch(teacher, /Codebase Memory|Context7/)
+})
+
 test("binds dedicated native harness profiles without recursive agents", () => {
   for (const name of ["aw-glm-worker", "aw-glm-review"]) {
     const profile = read(`agents/opencode/${name}.md`)
+    const config = frontmatter(`agents/opencode/${name}.md`)
     assert.match(profile, /model: venice\/z-ai-glm-5-3-flash/)
     assert.match(profile, /mode: all/)
-    assert.match(profile, /task: deny/)
+    assert.match(config, /task: deny/)
+    assert.match(config, /"codebase-memory-mcp_\*": allow/)
+    assert.match(config, /"context7_\*": allow/)
     assert.match(profile, /DONE.*TEACHER_REQUEST/is)
     assert.doesNotMatch(profile, /HUMAN_REQUEST/)
+    if (name === "aw-glm-worker") {
+      assert.match(config, /edit: allow/)
+      assert.match(config, /write: allow/)
+    }
   }
   const luna = read("agents/opencode/aw-luna-worker.md")
+  const lunaConfig = frontmatter("agents/opencode/aw-luna-worker.md")
   assert.match(luna, /model: openai-codex\/gpt-5\.6-luna/)
   assert.match(luna, /mode: all/)
   assert.match(luna, /recorded GLM availability failure/i)
-  assert.match(luna, /task: deny/)
+  assert.match(lunaConfig, /task: deny/)
+  assert.match(lunaConfig, /"codebase-memory-mcp_\*": allow/)
+  assert.match(lunaConfig, /"context7_\*": allow/)
+  assert.match(lunaConfig, /edit: allow/)
+  assert.match(lunaConfig, /write: allow/)
+  assert.match(frontmatter("agents/opencode/aw-glm-review.md"), /edit: deny/)
+  assert.match(frontmatter("agents/opencode/aw-glm-review.md"), /write: deny/)
 
   const opencode = read("references/runtimes-opencode.md")
   assert.match(opencode, /aw-glm-worker/)
@@ -86,6 +133,9 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   const copilot = read("references/runtimes-copilot.md")
   assert.match(copilot, /unresolved.*unknown/is)
   assert.match(copilot, /exclude.*model-specific/is)
+  const copilotAgent = read("agents/copilot/aw-worker.agent.md")
+  assert.match(copilotAgent, /- codebase-memory-mcp\/\*/)
+  assert.match(copilotAgent, /- context7\/\*/)
   assert.doesNotMatch(`${codex}\n${copilot}`, /\bv3\b/)
 })
 

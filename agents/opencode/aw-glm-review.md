@@ -6,6 +6,8 @@ permission:
   edit: deny
   write: deny
   task: deny
+  "codebase-memory-mcp_*": allow
+  "context7_*": allow
   bash:
     "*": deny
     "npm test*": allow

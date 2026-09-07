@@ -1,123 +1,273 @@
 {
-  "version": "v2",
+  "version": "v4",
   "entrypoint": {
     "files": [
       "SKILL.md"
     ],
-    "words": 305,
-    "characters": 2215,
-    "estimated_tokens": 554
+    "words": 357,
+    "characters": 2672,
+    "estimated_tokens": 668
   },
-  "average_route_estimated_tokens": 1028,
+  "average_route_estimated_tokens": 1532,
   "route_contexts": [
     {
       "id": "tiny_local",
       "route": "direct",
+      "host": "opencode",
+      "profile_id": null,
+      "prompt_profile_id": null,
+      "expected_profile_id": null,
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [],
       "files": [
         "SKILL.md"
       ],
-      "words": 305,
-      "characters": 2215,
-      "estimated_tokens": 554
+      "words": 357,
+      "characters": 2672,
+      "estimated_tokens": 668
     },
     {
       "id": "read_only_map",
       "route": "explore",
+      "host": "opencode",
+      "profile_id": "opencode-glm-worker-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "opencode-glm-worker-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/explore.md",
+        "playbooks/recipes/base-v1.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "workflows/explore.md"
+        "references/runtimes-opencode.md",
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/explore.md",
+        "playbooks/recipes/base-v1.md"
       ],
-      "words": 597,
-      "characters": 4190,
-      "estimated_tokens": 1048
+      "words": 994,
+      "characters": 7230,
+      "estimated_tokens": 1808
     },
     {
       "id": "unknown_bug",
       "route": "diagnose",
+      "host": "opencode",
+      "profile_id": "opencode-glm-worker-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "opencode-glm-worker-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/diagnose.md",
+        "playbooks/recipes/base-v1.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "workflows/diagnose.md"
+        "references/runtimes-opencode.md",
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/diagnose.md",
+        "playbooks/recipes/base-v1.md"
       ],
-      "words": 602,
-      "characters": 4264,
-      "estimated_tokens": 1066
+      "words": 995,
+      "characters": 7274,
+      "estimated_tokens": 1819
     },
     {
       "id": "diagnosed_bug",
       "route": "fix",
+      "host": "opencode",
+      "profile_id": "opencode-glm-worker-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "opencode-glm-worker-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/fix.md",
+        "playbooks/recipes/base-v1.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "workflows/fix.md"
+        "references/runtimes-opencode.md",
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/fix.md",
+        "playbooks/recipes/base-v1.md"
       ],
-      "words": 597,
-      "characters": 4198,
-      "estimated_tokens": 1050
+      "words": 1017,
+      "characters": 7420,
+      "estimated_tokens": 1855
     },
     {
       "id": "known_change",
       "route": "implement",
+      "host": "opencode",
+      "profile_id": "opencode-glm-worker-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "opencode-glm-worker-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/implement.md",
+        "playbooks/recipes/base-v1.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "workflows/implement.md"
+        "references/runtimes-opencode.md",
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/implement.md",
+        "playbooks/recipes/base-v1.md"
       ],
-      "words": 602,
-      "characters": 4262,
-      "estimated_tokens": 1066
+      "words": 1022,
+      "characters": 7494,
+      "estimated_tokens": 1874
     },
     {
       "id": "architecture",
       "route": "teacher",
+      "host": "codex",
+      "profile_id": "sol-teacher-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "sol-teacher-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-5.6-sol.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "references/teacher.md"
+        "references/runtimes-codex.md",
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-5.6-sol.md"
       ],
-      "words": 814,
-      "characters": 5698,
-      "estimated_tokens": 1425
+      "words": 867,
+      "characters": 6280,
+      "estimated_tokens": 1570
+    },
+    {
+      "id": "architecture_astra",
+      "route": "teacher",
+      "host": "codex",
+      "profile_id": "astra-teacher-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "astra-teacher-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-6-astra.md"
+      ],
+      "files": [
+        "SKILL.md",
+        "references/runtimes-codex.md",
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-6-astra.md"
+      ],
+      "words": 873,
+      "characters": 6338,
+      "estimated_tokens": 1585
     },
     {
       "id": "hard_fix",
       "route": "teacher",
+      "host": "codex",
+      "profile_id": "sol-teacher-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "sol-teacher-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-5.6-sol.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "references/teacher.md"
+        "references/runtimes-codex.md",
+        "prompts/core/teacher.md",
+        "contracts/teacher.md",
+        "prompts/models/gpt-5.6-sol.md"
       ],
-      "words": 814,
-      "characters": 5698,
-      "estimated_tokens": 1425
+      "words": 867,
+      "characters": 6280,
+      "estimated_tokens": 1570
     },
     {
       "id": "completed_change",
       "route": "review",
+      "host": "opencode",
+      "profile_id": "opencode-glm-worker-v1",
+      "prompt_profile_id": "model-bound-v1",
+      "expected_profile_id": "opencode-glm-worker-v1",
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/review.md",
+        "playbooks/recipes/base-v1.md"
+      ],
       "files": [
         "SKILL.md",
-        "references/runtimes.md",
-        "workflows/review.md"
+        "references/runtimes-opencode.md",
+        "prompts/core/worker.md",
+        "contracts/worker.md",
+        "prompts/models/glm-5.3-flash.md",
+        "workflows/review.md",
+        "playbooks/recipes/base-v1.md"
       ],
-      "words": 593,
-      "characters": 4254,
-      "estimated_tokens": 1064
+      "words": 1043,
+      "characters": 7624,
+      "estimated_tokens": 1906
     },
     {
       "id": "irreversible",
       "route": "human",
+      "host": "opencode",
+      "profile_id": null,
+      "prompt_profile_id": null,
+      "expected_profile_id": null,
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [],
       "files": [
         "SKILL.md"
       ],
-      "words": 305,
-      "characters": 2215,
-      "estimated_tokens": 554
+      "words": 357,
+      "characters": 2672,
+      "estimated_tokens": 668
     }
   ],
   "routing": {
-    "passed": 9,
-    "total": 9,
+    "passed": 10,
+    "total": 10,
     "cases": [
       {
         "id": "tiny_local",
@@ -150,6 +300,11 @@
         "pass": true
       },
       {
+        "id": "architecture_astra",
+        "expected_route": "teacher",
+        "pass": true
+      },
+      {
         "id": "hard_fix",
         "expected_route": "teacher",
         "pass": true
@@ -166,6 +321,128 @@
       }
     ]
   },
+  "profiles": {
+    "passed": 10,
+    "total": 10,
+    "cases": [
+      {
+        "id": "tiny_local",
+        "profile_id": null,
+        "expected_profile_id": null,
+        "pass": true
+      },
+      {
+        "id": "read_only_map",
+        "profile_id": "opencode-glm-worker-v1",
+        "expected_profile_id": "opencode-glm-worker-v1",
+        "pass": true
+      },
+      {
+        "id": "unknown_bug",
+        "profile_id": "opencode-glm-worker-v1",
+        "expected_profile_id": "opencode-glm-worker-v1",
+        "pass": true
+      },
+      {
+        "id": "diagnosed_bug",
+        "profile_id": "opencode-glm-worker-v1",
+        "expected_profile_id": "opencode-glm-worker-v1",
+        "pass": true
+      },
+      {
+        "id": "known_change",
+        "profile_id": "opencode-glm-worker-v1",
+        "expected_profile_id": "opencode-glm-worker-v1",
+        "pass": true
+      },
+      {
+        "id": "architecture",
+        "profile_id": "sol-teacher-v1",
+        "expected_profile_id": "sol-teacher-v1",
+        "pass": true
+      },
+      {
+        "id": "architecture_astra",
+        "profile_id": "astra-teacher-v1",
+        "expected_profile_id": "astra-teacher-v1",
+        "pass": true
+      },
+      {
+        "id": "hard_fix",
+        "profile_id": "sol-teacher-v1",
+        "expected_profile_id": "sol-teacher-v1",
+        "pass": true
+      },
+      {
+        "id": "completed_change",
+        "profile_id": "opencode-glm-worker-v1",
+        "expected_profile_id": "opencode-glm-worker-v1",
+        "pass": true
+      },
+      {
+        "id": "irreversible",
+        "profile_id": null,
+        "expected_profile_id": null,
+        "pass": true
+      }
+    ]
+  },
+  "prompt_profiles": {
+    "passed": 10,
+    "total": 10,
+    "cases": [
+      {
+        "id": "tiny_local",
+        "prompt_profile_id": null,
+        "pass": true
+      },
+      {
+        "id": "read_only_map",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "unknown_bug",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "diagnosed_bug",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "known_change",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "architecture",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "architecture_astra",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "hard_fix",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "completed_change",
+        "prompt_profile_id": "model-bound-v1",
+        "pass": true
+      },
+      {
+        "id": "irreversible",
+        "prompt_profile_id": null,
+        "pass": true
+      }
+    ]
+  },
   "invariants": {
     "codex_glm": true,
     "opencode_glm": true,
@@ -178,7 +455,7 @@
   "live": {
     "engine": "opencode --pure",
     "model": "venice/z-ai-glm-5-3-flash",
-    "instruction_characters": 3766,
+    "instruction_characters": 4698,
     "passed": 9,
     "total": 9,
     "cases": [
@@ -238,15 +515,16 @@
       }
     ],
     "tokens": {
-      "total": 13932,
-      "input": 13708,
-      "output": 97,
-      "reasoning": 127,
+      "total": 14365,
+      "input": 13991,
+      "output": 147,
+      "reasoning": 227,
       "cache": {
         "write": 0,
         "read": 0
       }
     },
-    "cost": 0.0021682
+    "cost": 0.00228565,
+    "status": "historical-not-current"
   }
 }
