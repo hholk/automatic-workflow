@@ -40,6 +40,11 @@
       "model_delta": "prompts/models/gpt-6-astra.md"
     }
   },
+  "prompt_profiles": {
+    "model-bound-v1": {
+      "overlays": {}
+    }
+  },
   "teacher_default": "gpt-5.6-sol",
   "teacher_explicit_overrides": ["gpt-6-astra"]
 }

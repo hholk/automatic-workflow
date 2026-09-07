@@ -16,6 +16,17 @@ const assertComponents = (components) => {
   }
 }
 
+const resolvePromptProfile = (input, registry, playbook, nativeProfile) => {
+  const id = input.promptProfileID || playbook.defaults?.prompt_profile_id
+  const profile = registry.prompt_profiles?.[id]
+  if (!profile) throw new Error(`unknown prompt profile: ${id}`)
+  const overlay = profile.overlays?.[nativeProfile.id] || null
+  if (id !== "model-bound-v1" && !overlay) {
+    throw new Error(`prompt profile ${id} is not applicable to ${nativeProfile.id}`)
+  }
+  return { id, overlay }
+}
+
 export const resolveSelection = (input, overrides = {}) => {
   const registry = overrides.registry || defaultRegistry
   const playbook = overrides.playbook || defaultPlaybook
@@ -33,7 +44,8 @@ export const resolveSelection = (input, overrides = {}) => {
     }
     const profile = registry.teacher_profiles[model]
     if (!profile) throw new Error(`unknown teacher profile: ${model}`)
-    const components = [profile.core, profile.contract, profile.model_delta]
+    const promptProfile = resolvePromptProfile(input, registry, playbook, profile)
+    const components = [profile.core, profile.contract, profile.model_delta, promptProfile.overlay].filter(Boolean)
     assertComponents(components)
     return {
       host: input.host,
@@ -41,6 +53,7 @@ export const resolveSelection = (input, overrides = {}) => {
       route: input.route,
       model,
       profile_id: profile.id,
+      prompt_profile_id: promptProfile.id,
       recipe_id: null,
       components,
       teacher: {
@@ -53,14 +66,16 @@ export const resolveSelection = (input, overrides = {}) => {
   if (!workerRoutes.has(input.route)) throw new Error(`unknown route: ${input.route}`)
   const profile = registry.worker_profiles[`${input.host}|${input.model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${input.model}`)
+  const promptProfile = resolvePromptProfile(input, registry, playbook, profile)
   const recipeID = playbook.defaults.recipe_id
   const components = [
     profile.core,
     profile.contract,
     profile.model_delta,
+    promptProfile.overlay,
     `workflows/${input.route}.md`,
     `playbooks/recipes/${recipeID}.md`,
-  ]
+  ].filter(Boolean)
   assertComponents(components)
   return {
     host: input.host,
@@ -70,6 +85,7 @@ export const resolveSelection = (input, overrides = {}) => {
     complexity: input.complexity || null,
     model: input.model,
     profile_id: profile.id,
+    prompt_profile_id: promptProfile.id,
     recipe_id: recipeID,
     components,
     teacher: null,
@@ -90,6 +106,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       route: arg("--route"),
       taskClass: arg("--task-class"),
       complexity: arg("--complexity"),
+      promptProfileID: arg("--prompt-profile-id"),
       explicitModelRequest: process.argv.includes("--explicit-model-request"),
     })
     process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
