@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import { parseModelJson } from "./benchmark-output.mjs"
+import { resolveSelection } from "./resolve-profile.mjs"
 
 const ownRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const valueAfter = (name) => {
@@ -15,9 +16,10 @@ const live = process.argv.includes("--live")
 const write = process.argv.includes("--write")
 const read = (path) => readFileSync(join(root, path), "utf8")
 const metric = (paths) => {
-  const value = paths.map(read).join("\n")
+  const files = [...new Set(paths)]
+  const value = files.map(read).join("\n")
   return {
-    files: paths,
+    files,
     words: value.trim().split(/\s+/).filter(Boolean).length,
     characters: value.length,
     estimated_tokens: Math.ceil(value.length / 4),
@@ -25,33 +27,54 @@ const metric = (paths) => {
 }
 
 const cases = JSON.parse(read("benchmarks/use-cases.json"))
+const playbook = JSON.parse(read("playbooks/current.json"))
 const routing = read("references/routing.md")
-const routeFiles = {
-  direct: [], human: [],
-  explore: ["references/runtimes.md", "workflows/explore.md"],
-  diagnose: ["references/runtimes.md", "workflows/diagnose.md"],
-  fix: ["references/runtimes.md", "workflows/fix.md"],
-  implement: ["references/runtimes.md", "workflows/implement.md"],
-  review: ["references/runtimes.md", "workflows/review.md"],
-  teacher: ["references/runtimes.md", "references/teacher.md"],
+const runtimeFor = {
+  codex: "references/runtimes-codex.md",
+  opencode: "references/runtimes-opencode.md",
+  "github-copilot": "references/runtimes-copilot.md",
 }
-const routeCoverage = cases.map(({ id, expected_route }) => {
-  const row = routing.split("\n").find((line) => line.includes(`\`${id}\``)) || ""
+const selectionFor = (item) => {
+  if (["direct", "human"].includes(item.expected_route) || !item.expected_profile_id) return null
+  return resolveSelection({
+    host: item.host,
+    role: item.role,
+    model: item.role === "teacher" ? item.teacher_model : item.worker_model,
+    route: item.expected_route,
+    taskClass: item.task_class,
+    complexity: item.complexity,
+    explicitModelRequest: item.explicit_model_request === true,
+  })
+}
+const routeCoverage = cases.map(({ id, routing_case, expected_route }) => {
+  const row = routing.split("\n").find((line) => line.includes(`\`${routing_case || id}\``)) || ""
   return { id, expected_route, pass: row.includes(`\`${expected_route}\``) }
 })
-const routeContexts = cases.map(({ id, expected_route }) => ({
-  id,
-  route: expected_route,
-  ...metric(["SKILL.md", ...routeFiles[expected_route]]),
-}))
+const routeContexts = cases.map((item) => {
+  const selection = selectionFor(item)
+  const component_ids = selection?.components || []
+  const runtime = selection ? runtimeFor[item.host] : null
+  return {
+    id: item.id,
+    route: item.expected_route,
+    host: item.host,
+    profile_id: selection?.profile_id || null,
+    prompt_profile_id: selection?.prompt_profile_id || null,
+    expected_profile_id: item.expected_profile_id,
+    profile_pass: (selection?.profile_id || null) === item.expected_profile_id,
+    prompt_profile_pass: !selection || selection.prompt_profile_id === playbook.defaults.prompt_profile_id,
+    component_ids,
+    ...metric(["SKILL.md", ...(runtime ? [runtime] : []), ...component_ids]),
+  }
+})
 const entrypoint = metric(["SKILL.md"])
 const averageRouteTokens = Math.round(routeContexts.reduce((sum, item) => sum + item.estimated_tokens, 0) / routeContexts.length)
-const obsolete = ["bin.mjs", "bin.mjs.map", "plugin", "supervisor", "quality", "expert-skills"].filter((path) => existsSync(join(root, path)))
-const runtime = read("references/runtimes.md")
+const obsolete = ["bin.mjs", "bin.mjs.map", "plugin", "supervisor", "quality", "expert-skills", "scripts/aw-v2-contract.test.mjs"].filter((path) => existsSync(join(root, path)))
+const runtime = `${read("references/runtimes-opencode.md")}\n${read("references/runtimes-codex.md")}`
 const teacher = read("references/teacher.md")
 
 const result = {
-  version: "v2",
+  version: "v4",
   entrypoint,
   average_route_estimated_tokens: averageRouteTokens,
   route_contexts: routeContexts,
@@ -59,6 +82,16 @@ const result = {
     passed: routeCoverage.filter((item) => item.pass).length,
     total: routeCoverage.length,
     cases: routeCoverage,
+  },
+  profiles: {
+    passed: routeContexts.filter((item) => item.profile_pass).length,
+    total: routeContexts.length,
+    cases: routeContexts.map(({ id, profile_id, expected_profile_id, profile_pass }) => ({ id, profile_id, expected_profile_id, pass: profile_pass })),
+  },
+  prompt_profiles: {
+    passed: routeContexts.filter((item) => item.prompt_profile_pass).length,
+    total: routeContexts.length,
+    cases: routeContexts.map(({ id, prompt_profile_id, prompt_profile_pass }) => ({ id, prompt_profile_id, pass: prompt_profile_pass })),
   },
   invariants: {
     codex_glm: runtime.includes("venice/glm-5.3-flash"),
@@ -96,6 +129,7 @@ if (live) {
   const scored = cases.map((item) => ({ id: item.id, expected: item.expected_route, actual: actual.get(item.id), pass: actual.get(item.id) === item.expected_route }))
   const finish = events.filter((event) => event.type === "step_finish").at(-1)
   result.live = {
+    status: "current",
     engine: "opencode --pure",
     model: "venice/z-ai-glm-5-3-flash",
     instruction_characters: instructions.length,
@@ -108,7 +142,13 @@ if (live) {
 }
 
 if (write && !live && existsSync(join(root, "benchmarks/latest.json"))) {
-  result.live = JSON.parse(read("benchmarks/latest.json")).live
+  result.live = { ...JSON.parse(read("benchmarks/latest.json")).live, status: "historical-not-current" }
 }
 if (write) writeFileSync(join(root, "benchmarks/latest.json"), `${JSON.stringify(result, null, 2)}\n`)
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+if (result.routing.passed !== result.routing.total
+  || result.profiles.passed !== result.profiles.total
+  || result.prompt_profiles.passed !== result.prompt_profiles.total
+  || !Object.values(result.invariants).every(Boolean)) {
+  process.exitCode = 1
+}

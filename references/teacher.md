@@ -1,46 +1,56 @@
-# Sol teacher
+# Teacher gauntlet
 
-Use only for `architecture` or `hard_fix`. GPT-5.6 Sol comes from the Codex
-subscription, never Venice. It is a teacher: GLM investigates and implements;
-Sol receives only prepared evidence and returns guidance.
+Use for a material technical decision after the worker returns a valid
+`TEACHER_REQUEST`. `gpt-5.6-sol` from the Codex subscription is the default.
+GPT-6 Astra is allowed only when the user explicitly requests it. The teacher
+is a no-tools adviser: it does not read the repo, execute, edit, spawn, or
+release.
 
-## Contract
+## Eligibility
 
-- Maximum five Sol responses for one question.
-- Sol must not use tools, read the repo, edit, execute, spawn, or release.
-- Input per turn: at most 1,200 tokens of problem, constraints, evidence,
-  attempted hypotheses, and the exact decision needed.
-- Sol returns exactly one of:
-  - `ASK: <one discriminating question or evidence request>`
-  - `FINAL: <decision>; WHY: <brief rationale>; GLM_STEPS: <ordered actions>; RISKS: <top risks>; VERIFY: <proof>`
-- GLM answers `ASK` by doing the work and supplying at most 600 new tokens.
-- On response five, Sol must return `FINAL`, naming assumptions and confidence
-  if evidence remains incomplete.
-
-## Codex host
-
-Spawn one native child with `model: gpt-5.6-sol`, high reasoning, and
-`fork_turns: none`. Tell it the no-tools contract. Use follow-up messages on the
-same child for GLM's answers; do not restart and resend history.
-
-## OpenCode host
-
-Start a vanilla Codex CLI thread in an empty temporary directory:
-
-```sh
-codex exec -m gpt-5.6-sol --ignore-user-config --ignore-rules \
-  --disable skill_search --disable plugins --disable apps --sandbox read-only \
-  --skip-git-repo-check -C "$AW_TEACHER_DIR" --json "$PROMPT"
-```
-
-Capture the native thread ID and continue it with `codex exec resume <id> ...`.
-The empty directory plus no-tools prompt ensures that only GLM-supplied evidence
-reaches the teacher. Stop immediately on `FINAL` or after response five.
-
-Start every thread with this compact prefix:
+The main agent applies `scripts/teacher-state.mjs`. Reject with the first stable
+reason that applies:
 
 ```text
-AW TEACHER CONTRACT. Response 1/5. Do not use tools or outside evidence.
-Reply exactly as ASK: <one request> or FINAL: <decision>; WHY: <brief>;
-GLM_STEPS: <steps>; RISKS: <risks>; VERIFY: <proof>.
+HUMAN_DECISION_REQUIRED
+MISSING_EVIDENCE_REFERENCES
+NOT_DECISION_RELEVANT
+CHEAPER_CHECK_AVAILABLE
+TEACHER_BUDGET_EXHAUSTED
 ```
+
+The worker may repair one rejected request. Human authority returns to the
+human route; it is never guessed by the teacher.
+
+## Loop
+
+1. Start one isolated teacher thread with the objective, decision, constraints,
+   observed evidence, attempted hypotheses, remaining unknown, and turn count.
+2. Accept exactly one `ASK` or `FINAL` from [the frozen contract](../contracts/teacher.md).
+3. On `ASK`, the main selects the evidence worker. `inspect`, `reproduce`, and
+   `verify` reuse the existing worker. `compare` or conflicting evidence uses a
+   fresh read-only worker.
+4. Validate and compress its `EVIDENCE`; then resume the same teacher thread.
+5. On `FINAL`, turn the recommendation into one bounded worker action and run
+   the outer verification gauntlet.
+
+One ASK repair is allowed when target, expected evidence, or stop condition is
+missing. A second invalid ASK forces `FINAL`. One evidence repair is allowed to
+the same worker; then record `UNKNOWN`, try a fresh read-only worker only when
+independence can help, or force `FINAL` from explicit assumptions.
+
+The normal case is one ASK. The hard limit is three ASK messages. Maximum five Sol responses
+are allowed. Repeated requests, zero information gain, missing authority,
+or `FINAL` stop the loop. Terminal outcomes are `VERIFIED`,
+`PARTIAL_WITH_UNKNOWN`, `HUMAN_REQUIRED`, `BLOCKED_ENVIRONMENT`,
+`TEACHER_EXHAUSTED`, and `FAILED_VERIFICATION`.
+
+## Native hosts
+
+Codex starts one child with the selected teacher model, high reasoning, and no
+forked context, then uses follow-up messages on the same child. OpenCode starts
+an isolated `codex exec` thread in an empty temporary directory, captures its
+native thread ID, and continues with `codex exec resume`. The OpenCode runtime
+contains the exact command and model-evidence checks. Copilot uses a supported
+custom-agent model only when it can prove the resolved model; otherwise the
+model-specific result is excluded.

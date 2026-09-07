@@ -2,8 +2,16 @@
 
 Use when desired behavior, scope, and verification are known.
 
-Assign exact file ownership to one GLM worker. Implement the smallest complete
-vertical slice, using existing dependencies and patterns. Add or update a focused
-behavior test when it provides durable value. The worker runs the declared verify
-command and reports changed paths plus observed output. The host reviews the diff
-and reruns the smallest relevant verification before accepting the result.
+Dispatch the resolved native worker with exact file ownership. Implement the
+smallest complete vertical slice using existing dependencies and patterns.
+When observable behavior changes at a known public seam, use:
+
+```text
+SEAM -> RED -> MINIMAL CHANGE -> GREEN
+```
+
+Uncertain seams, mocking strategy, or integration-test design require the full
+`mattpocock-skills:tdd` skill. Documentation and configuration use a targeted
+probe without an artificial RED. The worker runs the declared verification and
+returns `DONE` or `TEACHER_REQUEST`; the main reruns the narrowest acceptance
+probe before accepting the result.

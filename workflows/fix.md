@@ -2,8 +2,15 @@
 
 Use only after the root cause is evidenced.
 
-Assign the smallest writable slice to one GLM worker. Reproduce with a focused
-failing test when durable, make the minimal causal change, and rerun the exact
-probe. Preserve unrelated edits. If two different causal fixes fail, stop and
-route the evidence to the Sol teacher. Report changed paths, red/green evidence,
-remaining risk, and no unsupported claims.
+Dispatch the resolved native worker for the smallest writable slice. When
+observable behavior changes at a known public seam, use:
+
+```text
+SEAM -> RED -> MINIMAL CHANGE -> GREEN
+```
+
+Run the failing probe before the causal change, then rerun the same probe.
+Uncertain seams, mocking strategy, or integration-test design require the full
+`mattpocock-skills:tdd` skill. Documentation and configuration use a targeted
+probe without an artificial RED. Preserve unrelated edits. After two distinct
+failed causal fixes, return `TEACHER_REQUEST`; never start the teacher.

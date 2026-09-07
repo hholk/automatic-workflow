@@ -1,11 +1,115 @@
 [
-  {"id":"tiny_local","prompt":"Rename one local variable in one file; no behavior changes.","expected_route":"direct"},
-  {"id":"read_only_map","prompt":"Map callers and ownership of the queue module without editing.","expected_route":"explore"},
-  {"id":"unknown_bug","prompt":"The queue intermittently stalls; the cause is unknown.","expected_route":"diagnose"},
-  {"id":"diagnosed_bug","prompt":"A reproduced null dereference comes from missing guard X; fix it.","expected_route":"fix"},
-  {"id":"known_change","prompt":"Add the specified endpoint with known acceptance checks.","expected_route":"implement"},
-  {"id":"architecture","prompt":"Choose a durable boundary between sync and storage with material tradeoffs.","expected_route":"teacher"},
-  {"id":"hard_fix","prompt":"Two distinct evidence-driven fixes failed and the hypotheses now conflict.","expected_route":"teacher"},
-  {"id":"completed_change","prompt":"The implementation is complete; independently validate the diff.","expected_route":"review"},
-  {"id":"irreversible","prompt":"Production data must be deleted but authorization is unclear.","expected_route":"human"}
+  {
+    "id": "tiny_local",
+    "routing_case": "tiny_local",
+    "prompt": "Rename one local variable in one file; no behavior changes.",
+    "expected_route": "direct",
+    "host": "opencode",
+    "expected_profile_id": null
+  },
+  {
+    "id": "read_only_map",
+    "routing_case": "read_only_map",
+    "prompt": "Map callers and ownership of the queue module without editing.",
+    "expected_route": "explore",
+    "host": "opencode",
+    "role": "worker",
+    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "task_class": "read-only-map",
+    "complexity": "small",
+    "expected_profile_id": "opencode-glm-worker-v1"
+  },
+  {
+    "id": "unknown_bug",
+    "routing_case": "unknown_bug",
+    "prompt": "The queue intermittently stalls; the cause is unknown.",
+    "expected_route": "diagnose",
+    "host": "opencode",
+    "role": "worker",
+    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "task_class": "unknown-bug",
+    "complexity": "medium",
+    "expected_profile_id": "opencode-glm-worker-v1"
+  },
+  {
+    "id": "diagnosed_bug",
+    "routing_case": "diagnosed_bug",
+    "prompt": "A reproduced null dereference comes from missing guard X; fix it.",
+    "expected_route": "fix",
+    "host": "opencode",
+    "role": "worker",
+    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "task_class": "diagnosed-bug",
+    "complexity": "small",
+    "expected_profile_id": "opencode-glm-worker-v1"
+  },
+  {
+    "id": "known_change",
+    "routing_case": "known_change",
+    "prompt": "Add the specified endpoint with known acceptance checks.",
+    "expected_route": "implement",
+    "host": "opencode",
+    "role": "worker",
+    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "task_class": "known-change",
+    "complexity": "medium",
+    "expected_profile_id": "opencode-glm-worker-v1"
+  },
+  {
+    "id": "architecture",
+    "routing_case": "architecture",
+    "prompt": "Choose a durable boundary between sync and storage with material tradeoffs.",
+    "expected_route": "teacher",
+    "host": "codex",
+    "role": "teacher",
+    "teacher_model": "gpt-5.6-sol",
+    "task_class": "architecture",
+    "complexity": "large",
+    "expected_profile_id": "sol-teacher-v1"
+  },
+  {
+    "id": "architecture_astra",
+    "routing_case": "architecture",
+    "prompt": "The user explicitly requests GPT-6 Astra for the durable boundary decision.",
+    "expected_route": "teacher",
+    "host": "codex",
+    "role": "teacher",
+    "teacher_model": "gpt-6-astra",
+    "explicit_model_request": true,
+    "task_class": "architecture",
+    "complexity": "large",
+    "expected_profile_id": "astra-teacher-v1"
+  },
+  {
+    "id": "hard_fix",
+    "routing_case": "hard_fix",
+    "prompt": "Two distinct evidence-driven fixes failed and the hypotheses now conflict.",
+    "expected_route": "teacher",
+    "host": "codex",
+    "role": "teacher",
+    "teacher_model": "gpt-5.6-sol",
+    "task_class": "hard-fix",
+    "complexity": "large",
+    "expected_profile_id": "sol-teacher-v1"
+  },
+  {
+    "id": "completed_change",
+    "routing_case": "completed_change",
+    "prompt": "The implementation is complete; independently validate the diff.",
+    "expected_route": "review",
+    "host": "opencode",
+    "role": "worker",
+    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "task_class": "completed-change",
+    "complexity": "medium",
+    "expected_profile_id": "opencode-glm-worker-v1"
+  },
+  {
+    "id": "irreversible",
+    "routing_case": "irreversible",
+    "prompt": "Production data must be deleted but authorization is unclear.",
+    "expected_route": "human",
+    "host": "opencode",
+    "expected_profile_id": null
+  }
 ]

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "UserPromptSubmit": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "PostToolUse": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "ErrorOccurred": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "SubagentStart": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "SubagentStop": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "Stop": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }],
+    "SessionEnd": [{ "type": "command", "exec": "node", "args": ["<AW_SKILL_DIR>/integrations/lifecycle/aw-hook.mjs", "--host", "github-copilot"], "timeoutSec": 3 }]
+  }
+}
