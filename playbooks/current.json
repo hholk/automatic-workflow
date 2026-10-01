@@ -1,19 +1,19 @@
 {
   "schema_version": 4,
-  "version": "base-v2",
-  "generated_at": "2026-09-06T00:00:00.000Z",
+  "version": "acceptance-routing-v4",
+  "generated_at": "2026-09-21T00:00:00.000Z",
   "frozen": {
-    "evaluator": "quality-v1",
+    "evaluator": "quality-v2",
     "telemetry": "run-v4",
     "safety": "aw-v2",
     "worker_contract": "worker-v1",
     "teacher_contract": "teacher-v1",
-    "teacher_default": "gpt-5.6-sol",
+    "teacher_default": "opus-5.5",
     "teacher_max_asks": 3,
     "teacher_max_turns": 5
   },
   "defaults": {
-    "recipe_id": "base-v1",
+    "recipe_id": "bounded-v3",
     "prompt_profile_id": "model-bound-v1",
     "context_budget": 1600,
     "worker_step_budget": 8,

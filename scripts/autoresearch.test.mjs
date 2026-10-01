@@ -13,7 +13,7 @@ const runUsageAt = (targetState, ...args) => spawnSync(process.execPath, [usageS
 })
 const runUsage = (...args) => runUsageAt(state, ...args)
 
-const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainTokens = 20, workerActions = 8, accepted, fallback = false, pass = true, profile = "codex-glm-worker-v1" }) => ({
+const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainTokens = 20, workerActions = 8, accepted, fallback = false, pass = true, profile = "codex-mimo-worker-v1" }) => ({
   schema_version: 4,
   kind: "run",
   run_id: runID,
@@ -25,17 +25,17 @@ const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainToke
   harness_version: "test",
   prompt: {
     profile_id: profile,
-    component_ids: ["core/worker", "contracts/worker", "models/glm", "workflows/implement", recipe],
+    component_ids: ["core/worker", "contracts/worker", "models/mimo", "workflows/implement", recipe],
     component_tokens: 100,
-    loaded_files: ["prompts/core/worker.md", "contracts/worker.md", "prompts/models/glm-5.3-flash.md", "workflows/implement.md", `playbooks/recipes/${recipe}.md`],
+    loaded_files: ["prompts/core/worker.md", "contracts/worker.md", "prompts/models/mimo-v2.6-flash.md", "workflows/implement.md", `playbooks/recipes/${recipe}.md`],
     duplicate_context_tokens: 0,
   },
   actors: {
-    main: { used: true, requested_model: "gpt-5.6-sol", resolved_model: "gpt-5.6-sol", model_source: "native", token_source: "native", tokens: mainTokens },
+    main: { used: true, requested_model: "venice/mimo-2.6-flash", resolved_model: "venice/mimo-2.6-flash", model_source: "native", token_source: "native", tokens: mainTokens },
     worker: {
       used: true,
-      requested_model: "venice/glm-5.3-flash",
-      resolved_model: fallback ? "gpt-5.6-luna" : "venice/glm-5.3-flash",
+      requested_model: "venice/mimo-2.6-flash",
+      resolved_model: fallback ? "gpt-5.6-luna" : "venice/mimo-2.6-flash",
       fallback_reason: fallback ? "primary-http-402" : null,
       model_source: "native",
       token_source: "native",
@@ -98,7 +98,7 @@ test("records prompt-free actor and resolved-model evidence", () => {
   assert.equal(stored.tokens.operational_total, 100)
   assert.equal(stored.metrics.worker_token_share, 0.8)
   assert.equal(stored.metrics.worker_execution_share, null)
-  assert.equal(stored.prompt.profile_id, "codex-glm-worker-v1")
+  assert.equal(stored.prompt.profile_id, "codex-mimo-worker-v1")
   assert.equal("prompt_text" in stored, false)
   const latest = runUsage("latest", "--host", "codex")
   assert.equal(latest.status, 0)
@@ -118,8 +118,8 @@ test("does not claim total operational tokens when a used actor is unobserved", 
   const item = event({ runID: "unknown-teacher-cost", recipe: "base-v1", taskID: "task-teacher" })
   item.actors.teacher = {
     used: true,
-    requested_model: "gpt-5.6-sol",
-    resolved_model: "gpt-5.6-sol",
+    requested_model: "venice/opus-5.5",
+    resolved_model: "venice/opus-5.5",
     model_source: "native",
     token_source: "unknown",
     tokens: null,
@@ -230,8 +230,8 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "gpt-5.6-sol", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-glm-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
   for (let index = 0; index < 5; index += 1) {
@@ -264,27 +264,27 @@ test("promotes only a registered immutable prompt profile", () => {
   const current = {
     schema_version: 4,
     version: "base-v2",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "gpt-5.6-sol", teacher_max_asks: 3, teacher_max_turns: 5 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
     defaults: { recipe_id: "base-v1", prompt_profile_id: "model-bound-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
   for (let index = 0; index < 5; index += 1) {
     assert.equal(recordVerifiedAt(profileState, event({ runID: `profile-base-${index}`, recipe: "base-v1", variant: "base-v2", taskID: `profile-task-${index}`, profile: "model-bound-v1", tokens: 100 })).status, 0)
-    assert.equal(recordVerifiedAt(profileState, event({ runID: `profile-candidate-${index}`, recipe: "base-v1", variant: "profile-v1", taskID: `profile-task-${index}`, profile: "glm-tight-v1", tokens: 80, mainTokens: 10, workerActions: 9 })).status, 0)
+    assert.equal(recordVerifiedAt(profileState, event({ runID: `profile-candidate-${index}`, recipe: "base-v1", variant: "profile-v1", taskID: `profile-task-${index}`, profile: "mimo-tight-v1", tokens: 80, mainTokens: 10, workerActions: 9 })).status, 0)
   }
   writeFileSync(profilesPath, JSON.stringify({
     schema_version: 1,
     prompt_profiles: {
       "model-bound-v1": { overlays: {} },
-      "glm-tight-v1": { overlays: { "codex-glm-worker-v1": "prompts/experiments/glm-tight-v1.md" } },
+      "mimo-tight-v1": { overlays: { "codex-mimo-worker-v1": "prompts/experiments/mimo-tight-v1.md" } },
     },
   }))
   writeFileSync(playbookPath, JSON.stringify(current))
-  writeFileSync(candidatePath, JSON.stringify({ ...current, version: "profile-v1", defaults: { ...current.defaults, prompt_profile_id: "glm-tight-v1" } }))
+  writeFileSync(candidatePath, JSON.stringify({ ...current, version: "profile-v1", defaults: { ...current.defaults, prompt_profile_id: "mimo-tight-v1" } }))
 
   let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, "--profiles", profilesPath], { env: { ...process.env, AW_STATE_DIR: profileState }, encoding: "utf8" })
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.prompt_profile_id, "glm-tight-v1")
+  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.prompt_profile_id, "mimo-tight-v1")
 
   const promoted = JSON.parse(readFileSync(playbookPath, "utf8"))
   writeFileSync(candidatePath, JSON.stringify({ ...promoted, version: "unknown-profile-v1", defaults: { ...promoted.defaults, prompt_profile_id: "missing-profile" } }))
@@ -316,11 +316,11 @@ test("can promote one field into a new harness-specific playbook cell", () => {
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "gpt-5.6-sol", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-glm-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
-  const cellID = "codex|main:gpt-5.6-sol>gpt-5.6-sol@direct|worker:venice/glm-5.3-flash>venice/glm-5.3-flash@direct|teacher:no-teacher|implement|known-change|small|profile:codex-glm-worker-v1"
+  const cellID = "codex|main:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|worker:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|teacher:no-teacher|implement|known-change|small|profile:codex-mimo-worker-v1"
   for (let index = 0; index < 5; index += 1) {
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-base-${index}`, recipe: "base-v1", variant: "base-v1", taskID: `cell-task-${index}`, tokens: 100 })).status, 0)
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-candidate-${index}`, recipe: "base-v1", variant: "cell-v1", taskID: `cell-task-${index}`, tokens: 80, mainTokens: 10, workerActions: 9 })).status, 0)
@@ -340,8 +340,8 @@ test("does not trust a supplied promotion verdict without local paired evidence"
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "gpt-5.6-sol", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-glm-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
   writeFileSync(playbookPath, JSON.stringify(current))

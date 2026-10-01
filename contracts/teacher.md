@@ -26,7 +26,7 @@ FINAL:
   ASSUMPTIONS: <remaining assumptions or none>
 ```
 
-## Evidence response
+## Evidence response (main to teacher)
 
 ```text
 TYPE: EVIDENCE
@@ -38,6 +38,8 @@ UNKNOWN: <remaining missing information or none>
 ```
 
 One ASK has one target, expected evidence, and a stop condition. FINAL ends the
-thread. The existing worker answers inspect, reproduce, and verify; a fresh
-read-only worker answers compare or challenges conflicting evidence. The main
-agent validates every EVIDENCE message before forwarding it.
+thread. Workers always return the worker contract. The main agent constructs
+EVIDENCE from their validated DONE fields: observed result, source and exit code;
+map unmet checks to UNKNOWN and attach the matching ASK_ID. A TEACHER_REQUEST
+is unresolved information, never successful evidence. Only main sends EVIDENCE
+to the teacher.

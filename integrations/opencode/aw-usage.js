@@ -81,7 +81,12 @@ const start = (sessionID) => {
   }
 }
 const routeFromPath = (path = "") => path.match(/workflows\/(explore|diagnose|fix|implement|review)\.md$/)?.[1]
-const messageTokens = (message) => (message.tokens?.input || 0) + (message.tokens?.output || 0) + (message.tokens?.reasoning || 0)
+const messageTokens = ({ tokens = {} }) => Number.isFinite(tokens.total)
+  ? tokens.total
+  : (tokens.input || 0) + (tokens.output || 0) + (tokens.reasoning || 0)
+    + (tokens.cache?.read || 0) + (tokens.cache?.write || 0)
+const sessionActor = (sessionID, rootID) => sessionID === rootID
+  ? "main" : get(sessionID).agent === "aw-opus-teacher" ? "teacher" : "worker"
 const sessionTokens = (sessionID) => [...get(sessionID).messages.values()].reduce((sum, message) => sum + message.tokens, 0)
 const resolvedModels = (sessionIDs) => [...new Set(sessionIDs.flatMap((sessionID) => [...get(sessionID).messages.values()].map((message) => message.model).filter(Boolean)))]
 const actor = (tokens, resolvedModel, requestedModel = resolvedModel, used = Boolean(resolvedModel || Number.isFinite(tokens)), fallbackReason = null) => ({
@@ -105,7 +110,7 @@ const componentFromPath = (path = "") => path.match(/(?:^|\/)((?:prompts|contrac
 const timelineEvent = (active, sessionID, rootID, event, values = {}) => {
   active.timeline.push({
     at_ms: Math.max(0, Date.now() - active.startedAt),
-    actor: sessionID === rootID ? "main" : "worker",
+    actor: sessionActor(sessionID, rootID),
     phase: active.routes.at(-1) || "unknown",
     event,
     duration_ms: null,
@@ -133,8 +138,13 @@ export const AwUsagePlugin = async () => ({
     if (route && active.routes.at(-1) !== route) active.routes.push(route)
     const component = input.tool === "read" ? componentFromPath(args.filePath) : null
     if (component) active.loadedFiles.add(component)
-    if (input.tool === "task" || input.tool === "subagent") active.workerCalls += 1
-    const teacherCall = (input.tool === "bash" || input.tool === "shell") && /\bcodex exec\b/.test(args.command || "")
+    const dispatch = input.tool === "task" || input.tool === "subagent"
+    const teacherCall = dispatch && args.subagent_type === "aw-opus-teacher"
+    if (dispatch && !teacherCall) active.workerCalls += 1
+    if (sessionActor(sessionID, rootID) === "teacher") {
+      active.errors += 1
+      active.primaryFailure ||= "teacher-tool-use"
+    }
     if (teacherCall) {
       active.teacherTurns += 1
       active.teacher.push({
@@ -186,6 +196,7 @@ export const AwUsagePlugin = async () => ({
       if (info?.role !== "assistant" || !info.sessionID || !info.tokens) return
       const model = info.providerID && info.modelID ? `${info.providerID}/${info.modelID}` : null
       const messageState = get(info.sessionID)
+      if (info.agent) messageState.agent = info.agent
       const prior = messageState.messages.get(info.id)
       const tokens = messageTokens(info)
       messageState.messages.set(info.id, { tokens, model })
@@ -194,11 +205,11 @@ export const AwUsagePlugin = async () => ({
         const active = get(rootID).active
         active.timeline.push({
           at_ms: Math.max(0, Date.now() - active.startedAt),
-          actor: info.sessionID === rootID ? "main" : "worker",
+          actor: sessionActor(info.sessionID, rootID),
           phase: active.routes.at(-1) || "unknown",
           event: "message",
           duration_ms: null,
-          input_tokens: info.tokens.input || 0,
+           input_tokens: (info.tokens.input || 0) + (info.tokens.cache?.read || 0) + (info.tokens.cache?.write || 0),
           output_tokens: (info.tokens.output || 0) + (info.tokens.reasoning || 0),
           tool_category: null,
           result_code: null,
@@ -222,12 +233,17 @@ export const AwUsagePlugin = async () => ({
     if (event.type !== "session.idle" || sessionID !== rootID) return
     const active = state.active
     const childIDs = [...active.childIDs]
+    const teacherIDs = childIDs.filter(id => sessionActor(id, rootID) === "teacher")
+    const workerIDs = childIDs.filter(id => sessionActor(id, rootID) === "worker")
     const mainModels = resolvedModels([rootID])
-    const workerModels = resolvedModels(childIDs)
+    const workerModels = resolvedModels(workerIDs)
+    const teacherModels = resolvedModels(teacherIDs)
     const mainModel = mainModels.length === 1 ? mainModels[0] : mainModels.length > 1 ? `mixed:${mainModels.join(",")}` : null
     const workerModel = workerModels.length === 1 ? workerModels[0] : workerModels.length > 1 ? `mixed:${workerModels.join(",")}` : null
     const mainTokens = mainModels.length ? sessionTokens(rootID) : null
-    const workerTokens = workerModels.length ? childIDs.reduce((sum, childID) => sum + sessionTokens(childID), 0) : null
+    const workerTokens = workerModels.length ? workerIDs.reduce((sum, childID) => sum + sessionTokens(childID), 0) : null
+    const teacherModel = teacherModels.length === 1 ? teacherModels[0] : teacherModels.length > 1 ? `mixed:${teacherModels.join(",")}` : null
+    const teacherTokens = teacherModels.length ? teacherIDs.reduce((sum, id) => sum + sessionTokens(id), 0) : null
     const route = active.routes.at(-1) || (active.teacherTurns ? "teacher" : active.workerCalls ? "unknown" : "direct")
     appendRun({
       schema_version: 4,
@@ -248,8 +264,8 @@ export const AwUsagePlugin = async () => ({
       },
       actors: {
         main: actor(mainTokens, mainModel, mainModel, true),
-        worker: actor(workerTokens, workerModel, "venice/z-ai-glm-5-3-flash", active.workerCalls > 0 || childIDs.length > 0, active.primaryFailure),
-        teacher: active.teacherTurns ? actor(null, null, "gpt-5.6-sol", true) : actor(null, null),
+        worker: actor(workerTokens, workerModel, "venice/xiaomi-mimo-v2-6-flash", active.workerCalls > 0 || workerIDs.length > 0, active.primaryFailure),
+        teacher: actor(teacherTokens, teacherModel, "venice/claude-opus-5-5", active.teacherTurns > 0 || teacherIDs.length > 0),
       },
       quality: {
         verify_id: null,

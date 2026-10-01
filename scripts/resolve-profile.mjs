@@ -37,11 +37,12 @@ export const resolveSelection = (input, overrides = {}) => {
 
   if (input.role === "teacher") {
     if (input.route !== "teacher") throw new Error(`unknown route for teacher: ${input.route}`)
-    const model = input.model || registry.teacher_default
-    if (model !== registry.teacher_default
-      && (!input.explicitModelRequest || !registry.teacher_explicit_overrides.includes(model))) {
-      throw new Error(`${model} requires an explicit user request`)
+    const binding = registry.teacher_bindings?.[input.host]
+    if (!binding) throw new Error(`unsupported teacher host: ${input.host}`)
+    if (input.model && ![registry.teacher_default, binding.model].includes(input.model)) {
+      throw new Error(`unsupported teacher model: ${input.model}`)
     }
+    const model = registry.teacher_default
     const profile = registry.teacher_profiles[model]
     if (!profile) throw new Error(`unknown teacher profile: ${model}`)
     const promptProfile = resolvePromptProfile(input, registry, playbook, profile)
@@ -51,7 +52,7 @@ export const resolveSelection = (input, overrides = {}) => {
       host: input.host,
       role: input.role,
       route: input.route,
-      model,
+      ...binding,
       profile_id: profile.id,
       prompt_profile_id: promptProfile.id,
       recipe_id: null,
@@ -64,18 +65,21 @@ export const resolveSelection = (input, overrides = {}) => {
   }
 
   if (!workerRoutes.has(input.route)) throw new Error(`unknown route: ${input.route}`)
-  const profile = registry.worker_profiles[`${input.host}|${input.model}`]
-  if (!profile) throw new Error(`unknown worker profile: ${input.host}|${input.model}`)
+  const model = input.model || registry.worker_defaults?.[input.host]
+  if (!model) throw new Error(`missing default worker model: ${input.host}`)
+  const profile = registry.worker_profiles[`${input.host}|${model}`]
+  if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
+  if (profile.retired) throw new Error(`retired worker profile: ${input.host}|${model}`)
   const promptProfile = resolvePromptProfile(input, registry, playbook, profile)
   const recipeID = playbook.defaults.recipe_id
-  const components = [
+  const components = [...new Set([
     profile.core,
     profile.contract,
     profile.model_delta,
     promptProfile.overlay,
     `workflows/${input.route}.md`,
     `playbooks/recipes/${recipeID}.md`,
-  ].filter(Boolean)
+  ].filter(Boolean))]
   assertComponents(components)
   return {
     host: input.host,
@@ -83,7 +87,18 @@ export const resolveSelection = (input, overrides = {}) => {
     route: input.route,
     task_class: input.taskClass || null,
     complexity: input.complexity || null,
-    model: input.model,
+    model,
+    model_provider: input.host === "codex" ? "codex-router" : "venice",
+    native_agent: input.host === "opencode" && input.model === "venice/z-ai-glm-5-3-flash"
+      ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
+      : input.host === "github-copilot"
+        ? "aw-worker"
+        : (["fix", "implement"].includes(input.route) ? "aw-mimo-worker" : "aw-mimo-review"),
+    budget: {
+      context_tokens: playbook.defaults.context_budget,
+      worker_steps: playbook.defaults.worker_step_budget,
+      failed_hypotheses: playbook.defaults.teacher_after_failed_hypotheses,
+    },
     profile_id: profile.id,
     prompt_profile_id: promptProfile.id,
     recipe_id: recipeID,

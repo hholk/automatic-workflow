@@ -10,8 +10,7 @@ When observable behavior changes at a known public seam, use:
 SEAM -> RED -> MINIMAL CHANGE -> GREEN
 ```
 
-Uncertain seams, mocking strategy, or integration-test design require the full
-`mattpocock-skills:tdd` skill. Documentation and configuration use a targeted
+Use `mattpocock-skills:tdd` when the user requests its full workflow. Documentation and configuration use a targeted
 probe without an artificial RED. The worker runs the declared verification and
 returns `DONE` or `TEACHER_REQUEST`; the main reruns the narrowest acceptance
 probe before accepting the result.

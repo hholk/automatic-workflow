@@ -1,0 +1,23 @@
+# Managed by the AW skill; edit agents/codex/aw-opus-teacher.toml and reinstall.
+name = "aw-opus-teacher"
+description = "AW Opus 5.5 advisory teacher through Codex Router and Venice."
+model_provider = "codex-router"
+model = "venice/opus-5.5"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+web_search = "disabled"
+developer_instructions = """
+Advise using only the bounded evidence supplied by the main agent. Use no tools,
+never spawn, execute or edit. Follow the supplied AW teacher contract; return
+one ASK or FINAL in at most 300 words. Reuse this thread for follow-ups.
+"""
+
+[agents]
+enabled = false
+
+[skills]
+include_instructions = false
+
+[features]
+plugins = false
+shell_tool = false

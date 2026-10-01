@@ -10,7 +10,7 @@ SEAM -> RED -> MINIMAL CHANGE -> GREEN
 ```
 
 Run the failing probe before the causal change, then rerun the same probe.
-Uncertain seams, mocking strategy, or integration-test design require the full
-`mattpocock-skills:tdd` skill. Documentation and configuration use a targeted
+Use `mattpocock-skills:tdd` when the user requests its full workflow. Documentation and configuration use a targeted
 probe without an artificial RED. Preserve unrelated edits. After two distinct
-failed causal fixes, return `TEACHER_REQUEST`; never start the teacher.
+failed causal fixes, hand back using the worker contract. Request a teacher
+only for an unresolved material technical decision.

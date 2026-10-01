@@ -34,7 +34,7 @@ against a partly implemented schema transition.
 - `prompts/profiles.json` — exact harness/model-to-component registry.
 - `prompts/core/worker.md` — shared worker invariants.
 - `prompts/core/teacher.md` — shared teacher invariants.
-- `prompts/models/glm-5.3-flash.md` — GLM execution delta.
+- `prompts/models/deepseek-v4-1-flash.md` — DeepSeek execution delta.
 - `prompts/models/gpt-5.6-luna.md` — Luna fallback delta.
 - `prompts/models/gpt-5.6-sol.md` — Sol teacher delta.
 - `prompts/models/gpt-6-astra.md` — explicit Astra override delta.
@@ -57,7 +57,7 @@ against a partly implemented schema transition.
 - `references/autoresearch-backlog.md` — deferred research variants after v4.
 - `references/runtimes-{codex,opencode,copilot}.md` — native harness application.
 - `workflows/{diagnose,fix,implement,review}.md` — escalation and lean-TDD rules.
-- `agents/opencode/{aw-glm-worker,aw-glm-review,aw-luna-worker}.md` — dedicated profiles.
+- `agents/opencode/{aw-deepseek-worker,aw-deepseek-review,aw-luna-worker}.md` — dedicated profiles.
 - `agents/copilot/aw-worker.agent.md` — frozen worker contract reference.
 - `scripts/evidence.mjs` — v4 run normalization and comparison.
 - `scripts/usage.mjs` — trace inspection and waste summary commands.
@@ -222,7 +222,7 @@ git commit -m "feat: define AW teacher contracts"
 - Create: `prompts/profiles.json`
 - Create: `prompts/core/worker.md`
 - Create: `prompts/core/teacher.md`
-- Create: `prompts/models/glm-5.3-flash.md`
+- Create: `prompts/models/deepseek-v4-1-flash.md`
 - Create: `prompts/models/gpt-5.6-luna.md`
 - Create: `prompts/models/gpt-5.6-sol.md`
 - Create: `prompts/models/gpt-6-astra.md`
@@ -239,20 +239,20 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { resolveSelection } from "./resolve-profile.mjs"
 
-test("selects only the OpenCode GLM worker components", () => {
+test("selects only the OpenCode DeepSeek worker components", () => {
   const value = resolveSelection({
     host: "opencode",
     role: "worker",
-    model: "venice/z-ai-glm-5-3-flash",
+    model: "venice/deepseek-v4-1-flash",
     route: "fix",
     taskClass: "bug",
     complexity: "small",
   })
-  assert.equal(value.profile_id, "opencode-glm-worker-v1")
+  assert.equal(value.profile_id, "opencode-deepseek-worker-v1")
   assert.deepEqual(value.components, [
     "prompts/core/worker.md",
     "contracts/worker.md",
-    "prompts/models/glm-5.3-flash.md",
+    "prompts/models/deepseek-v4-1-flash.md",
     "workflows/fix.md",
     "playbooks/recipes/base-v1.md",
   ])
@@ -300,17 +300,17 @@ Create `prompts/profiles.json`:
 {
   "schema_version": 1,
   "worker_profiles": {
-    "codex|venice/glm-5.3-flash": {
-      "id": "codex-glm-worker-v1",
+    "codex|venice/deepseek-v4-1-flash": {
+      "id": "codex-deepseek-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/glm-5.3-flash.md"
+      "model_delta": "prompts/models/deepseek-v4-1-flash.md"
     },
-    "opencode|venice/z-ai-glm-5-3-flash": {
-      "id": "opencode-glm-worker-v1",
+    "opencode|venice/deepseek-v4-1-flash": {
+      "id": "opencode-deepseek-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/glm-5.3-flash.md"
+      "model_delta": "prompts/models/deepseek-v4-1-flash.md"
     },
     "codex|gpt-5.6-luna": {
       "id": "codex-luna-worker-v1",
@@ -361,7 +361,7 @@ evidence. Return one valid teacher-contract message and never orchestrate.
 ```
 
 ```markdown
-<!-- prompts/models/glm-5.3-flash.md -->
+<!-- prompts/models/deepseek-v4-1-flash.md -->
 Execute one atomic objective. Start with the cheapest discriminating action,
 run the declared probe, and correct only when its result changes the evidence.
 Request the teacher when decisive evidence is missing, conflicting, or exhausted.
@@ -908,8 +908,8 @@ git commit -m "feat: optimize AW from diagnosed waste"
 ## Task 8: Bind dedicated native harness profiles
 
 **Files:**
-- Modify: `agents/opencode/aw-glm-worker.md`
-- Modify: `agents/opencode/aw-glm-review.md`
+- Modify: `agents/opencode/aw-deepseek-worker.md`
+- Modify: `agents/opencode/aw-deepseek-review.md`
 - Modify: `agents/opencode/aw-luna-worker.md`
 - Modify: `agents/copilot/aw-worker.agent.md`
 - Modify: `references/runtimes-opencode.md`
@@ -919,9 +919,9 @@ git commit -m "feat: optimize AW from diagnosed waste"
 
 - [ ] **Step 1: Write failing harness-profile assertions**
 
-Assert that OpenCode's runtime names `aw-glm-worker`, `aw-glm-review`, and
+Assert that OpenCode's runtime names `aw-deepseek-worker`, `aw-deepseek-review`, and
 `aw-luna-worker` as the AW profiles and no longer uses global `general` or
-`explore` model defaults for evidence cells. Assert exact GLM/Luna model slugs,
+`explore` model defaults for evidence cells. Assert exact DeepSeek/Luna model slugs,
 no recursive task permission, and the worker contract output types. Assert
 Codex uses explicit native model selection and Copilot records unsupported or
 unresolved models as unknown.
@@ -946,7 +946,7 @@ TEACHER_REQUEST. Never start another agent.
 ```
 
 The reviewer remains read-only. Luna states that it is valid only after a
-recorded GLM availability failure.
+recorded DeepSeek availability failure.
 
 - [ ] **Step 4: Update runtime documentation**
 
@@ -960,16 +960,16 @@ available custom-agent models and excludes unresolved model evidence.
 For each profile, first run:
 
 ```bash
-test ! -e "$HOME/.config/opencode/agents/aw-glm-worker.md"
-test ! -e "$HOME/.config/opencode/agents/aw-glm-review.md"
+test ! -e "$HOME/.config/opencode/agents/aw-deepseek-worker.md"
+test ! -e "$HOME/.config/opencode/agents/aw-deepseek-review.md"
 test ! -e "$HOME/.config/opencode/agents/aw-luna-worker.md"
 ```
 
 Expected: all three commands exit 0. Then create explicit symlinks:
 
 ```bash
-ln -s "$HOME/.config/opencode/skills/aw/agents/opencode/aw-glm-worker.md" "$HOME/.config/opencode/agents/aw-glm-worker.md"
-ln -s "$HOME/.config/opencode/skills/aw/agents/opencode/aw-glm-review.md" "$HOME/.config/opencode/agents/aw-glm-review.md"
+ln -s "$HOME/.config/opencode/skills/aw/agents/opencode/aw-deepseek-worker.md" "$HOME/.config/opencode/agents/aw-deepseek-worker.md"
+ln -s "$HOME/.config/opencode/skills/aw/agents/opencode/aw-deepseek-review.md" "$HOME/.config/opencode/agents/aw-deepseek-review.md"
 ln -s "$HOME/.config/opencode/skills/aw/agents/opencode/aw-luna-worker.md" "$HOME/.config/opencode/agents/aw-luna-worker.md"
 ```
 
@@ -1037,11 +1037,11 @@ explicitly identifies the component responsible for a regression.
 After restarting OpenCode, run a read-only profile probe:
 
 ```bash
-opencode run --agent aw-glm-worker --format json "Return only TYPE: DONE, CHANGED: none, EVIDENCE: profile-probe, VERIFY: n/a, RISKS: none"
+opencode run --agent aw-deepseek-worker --format json "Return only TYPE: DONE, CHANGED: none, EVIDENCE: profile-probe, VERIFY: n/a, RISKS: none"
 ```
 
 Expected: assistant event metadata resolves to
-`venice/z-ai-glm-5-3-flash`. Do not treat assistant self-identification text as
+`venice/deepseek-v4-1-flash`. Do not treat assistant self-identification text as
 proof. If the native metadata differs or is absent, stop before a live AW
 canary and record the blocker.
 
@@ -1087,5 +1087,5 @@ Acceptance requires:
 - lean TDD and Grilling use the approved routing boundaries;
 - v4 traces identify actor, phase, and waste without raw protected content;
 - paired promotion rejects teacher-quality regressions;
-- the OpenCode profile resolves to GLM before any live result is admitted to a
-  GLM evidence cell.
+- the OpenCode profile resolves to DeepSeek before any live result is admitted to a
+  DeepSeek evidence cell.

@@ -70,7 +70,11 @@ const routeContexts = cases.map((item) => {
 const entrypoint = metric(["SKILL.md"])
 const averageRouteTokens = Math.round(routeContexts.reduce((sum, item) => sum + item.estimated_tokens, 0) / routeContexts.length)
 const obsolete = ["bin.mjs", "bin.mjs.map", "plugin", "supervisor", "quality", "expert-skills", "scripts/aw-v2-contract.test.mjs"].filter((path) => existsSync(join(root, path)))
-const runtime = `${read("references/runtimes-opencode.md")}\n${read("references/runtimes-codex.md")}`
+const runtime = [
+  read("references/runtimes-opencode.md"),
+  read("references/runtimes-codex.md"),
+  read("references/runtimes-copilot.md"),
+].join("\n")
 const teacher = read("references/teacher.md")
 
 const result = {
@@ -94,11 +98,13 @@ const result = {
     cases: routeContexts.map(({ id, prompt_profile_id, prompt_profile_pass }) => ({ id, prompt_profile_id, pass: prompt_profile_pass })),
   },
   invariants: {
-    codex_glm: runtime.includes("venice/glm-5.3-flash"),
-    opencode_glm: runtime.includes("venice/z-ai-glm-5-3-flash"),
-    codex_sol_teacher: teacher.includes("gpt-5.6-sol") && /Codex\s+subscription/i.test(teacher),
+    codex_mimo: runtime.includes("venice/mimo-2.6-flash"),
+    opencode_mimo: runtime.includes("venice/xiaomi-mimo-v2-6-flash"),
+    copilot_mimo: runtime.includes("venice/mimo-2.6-flash"),
+    codex_opus_teacher: teacher.includes("venice/opus-5.5"),
+    opencode_opus_teacher: teacher.includes("venice/claude-opus-5-5"),
     no_venice_sol: !`${runtime}\n${teacher}`.includes("venice/openai-gpt-56-sol"),
-    teacher_five_turn_cap: /Maximum five Sol responses/.test(teacher),
+    teacher_five_turn_cap: /Maximum five teacher responses/.test(teacher),
     custom_runtime_removed: obsolete.length === 0,
   },
   obsolete,
@@ -116,7 +122,7 @@ if (live) {
     JSON.stringify(cases.map(({ id, prompt }) => ({ id, prompt }))),
   ].join("\n\n")
   const run = spawnSync("opencode", [
-    "run", "--pure", "--format", "json", "--model", "venice/z-ai-glm-5-3-flash",
+    "run", "--pure", "--format", "json", "--model", "venice/xiaomi-mimo-v2-6-flash",
     "--dir", root, prompt,
   ], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 })
   if (run.status !== 0) {
@@ -131,7 +137,7 @@ if (live) {
   result.live = {
     status: "current",
     engine: "opencode --pure",
-    model: "venice/z-ai-glm-5-3-flash",
+    model: "venice/xiaomi-mimo-v2-6-flash",
     instruction_characters: instructions.length,
     passed: scored.filter((item) => item.pass).length,
     total: scored.length,

@@ -1,0 +1,22 @@
+# Managed by the AW skill; edit agents/codex/aw-mimo-review.toml and reinstall.
+name = "aw-mimo-review"
+description = "AW MiMo V2.6 Flash read-only exploration, diagnosis, comparison and review."
+model_provider = "codex-router"
+model = "venice/mimo-2.6-flash"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+web_search = "disabled"
+developer_instructions = """
+Inspect only the assigned scope and rerun the declared read-only probes. Do not
+edit, spawn or load parent history. Use the supplied AW components once.
+Maximum 8 tool steps; stop after two failed hypotheses or no information gain.
+Return DONE or TEACHER_REQUEST in at most 300 words with paths, real exit codes,
+semantic results and scope n/N. Missing evidence is UNKNOWN, never PASS.
+Use configured MCPs or permitted fetch/browser tools, not hosted web_search.
+"""
+
+[agents]
+enabled = false
+
+[skills]
+include_instructions = false

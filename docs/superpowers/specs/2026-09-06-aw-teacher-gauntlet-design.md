@@ -124,7 +124,7 @@ recipes/<recipe-id>
 task
 ```
 
-GLM 5.3 Flash receives an atomic objective, exact scope, one primary
+DeepSeek V4.1 Flash receives an atomic objective, exact scope, one primary
 verification target, a short evidence contract, and permission to emit a
 teacher request. GPT-5.6 Luna is a separately measured explicit fallback and
 receives a narrower task, tool set, and output contract plus the recorded
@@ -433,7 +433,7 @@ usage plugin remains observation-only.
 ### GitHub Copilot
 
 Use dedicated custom-agent profiles and only models the harness exposes. Do
-not assume that Venice GLM or Codex subscription models are available. Runs
+not assume that Venice DeepSeek or Codex subscription models are available. Runs
 without trustworthy resolved-model metadata are excluded from model-specific
 comparisons.
 

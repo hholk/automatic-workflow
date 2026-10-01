@@ -14,10 +14,10 @@
     "expected_route": "explore",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
     "task_class": "read-only-map",
     "complexity": "small",
-    "expected_profile_id": "opencode-glm-worker-v1"
+    "expected_profile_id": "opencode-mimo-worker-v1"
   },
   {
     "id": "unknown_bug",
@@ -26,10 +26,10 @@
     "expected_route": "diagnose",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
     "task_class": "unknown-bug",
     "complexity": "medium",
-    "expected_profile_id": "opencode-glm-worker-v1"
+    "expected_profile_id": "opencode-mimo-worker-v1"
   },
   {
     "id": "diagnosed_bug",
@@ -38,10 +38,10 @@
     "expected_route": "fix",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
     "task_class": "diagnosed-bug",
     "complexity": "small",
-    "expected_profile_id": "opencode-glm-worker-v1"
+    "expected_profile_id": "opencode-mimo-worker-v1"
   },
   {
     "id": "known_change",
@@ -50,47 +50,47 @@
     "expected_route": "implement",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
     "task_class": "known-change",
     "complexity": "medium",
-    "expected_profile_id": "opencode-glm-worker-v1"
+    "expected_profile_id": "opencode-mimo-worker-v1"
   },
   {
     "id": "architecture",
     "routing_case": "architecture",
-    "prompt": "Choose a durable boundary between sync and storage with material tradeoffs.",
+    "prompt": "A durable sync/storage boundary decision remains unresolved by main after a useful probe; the teacher eligibility evidence is complete.",
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "gpt-5.6-sol",
+    "teacher_model": "venice/opus-5.5",
     "task_class": "architecture",
     "complexity": "large",
-    "expected_profile_id": "sol-teacher-v1"
+    "expected_profile_id": "opus-teacher-v1"
   },
   {
-    "id": "architecture_astra",
+    "id": "architecture_opus",
     "routing_case": "architecture",
-    "prompt": "The user explicitly requests GPT-6 Astra for the durable boundary decision.",
+    "prompt": "The user explicitly requests Claude Opus 5.5 for the durable boundary decision.",
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "gpt-6-astra",
+    "teacher_model": "venice/opus-5.5",
     "explicit_model_request": true,
     "task_class": "architecture",
     "complexity": "large",
-    "expected_profile_id": "astra-teacher-v1"
+    "expected_profile_id": "opus-teacher-v1"
   },
   {
     "id": "hard_fix",
     "routing_case": "hard_fix",
-    "prompt": "Two distinct evidence-driven fixes failed and the hypotheses now conflict.",
+    "prompt": "Two distinct evidence-driven fixes failed; main cannot resolve the material technical decision and a useful probe has exhausted the cheaper checks.",
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "gpt-5.6-sol",
+    "teacher_model": "venice/opus-5.5",
     "task_class": "hard-fix",
     "complexity": "large",
-    "expected_profile_id": "sol-teacher-v1"
+    "expected_profile_id": "opus-teacher-v1"
   },
   {
     "id": "completed_change",
@@ -99,10 +99,10 @@
     "expected_route": "review",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/z-ai-glm-5-3-flash",
+    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
     "task_class": "completed-change",
     "complexity": "medium",
-    "expected_profile_id": "opencode-glm-worker-v1"
+    "expected_profile_id": "opencode-mimo-worker-v1"
   },
   {
     "id": "irreversible",
@@ -110,6 +110,14 @@
     "prompt": "Production data must be deleted but authorization is unclear.",
     "expected_route": "human",
     "host": "opencode",
+    "expected_profile_id": null
+  },
+  {
+    "id": "tiny_read_only",
+    "routing_case": "tiny_local",
+    "prompt": "Answer which file owns the queue using the supplied verified evidence; main can answer and verify more cheaply than a handoff.",
+    "expected_route": "direct",
+    "host": "codex",
     "expected_profile_id": null
   }
 ]

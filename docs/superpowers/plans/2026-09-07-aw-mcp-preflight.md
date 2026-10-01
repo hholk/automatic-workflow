@@ -94,8 +94,8 @@ Expected: PASS.
 
 **Files:**
 - Modify: `scripts/aw-v4-contract.test.mjs`
-- Modify: `agents/opencode/aw-glm-worker.md`
-- Modify: `agents/opencode/aw-glm-review.md`
+- Modify: `agents/opencode/aw-deepseek-worker.md`
+- Modify: `agents/opencode/aw-deepseek-review.md`
 - Modify: `agents/opencode/aw-luna-worker.md`
 - Modify: `agents/copilot/aw-worker.agent.md`
 - Modify: `benchmarks/latest.json`
@@ -106,7 +106,7 @@ Expected: PASS.
 Extend the harness-profile test with:
 
 ```js
-for (const name of ["aw-glm-worker", "aw-glm-review", "aw-luna-worker"]) {
+for (const name of ["aw-deepseek-worker", "aw-deepseek-review", "aw-luna-worker"]) {
   const profile = read(`agents/opencode/${name}.md`)
   assert.match(profile, /codebase-memory-mcp_\*/)
   assert.match(profile, /context7_\*/)

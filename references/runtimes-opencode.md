@@ -1,45 +1,26 @@
 # OpenCode runtime
 
-## Dedicated native profiles
+Dedicated AW profiles are the default. Native `task` has no model override.
 
-Dedicated AW profiles are the default; mutable global agent defaults are never
-evidence for an AW cell.
+| Route | subagent_type | Model |
+|---|---|---|
+| fix, implement | `aw-mimo-worker` | `venice/xiaomi-mimo-v2-6-flash` |
+| explore, diagnose, review, compare | `aw-mimo-review` | same MiMo |
+| explicit GLM request, fix/implement | `aw-glm53-worker` | `venice/z-ai-glm-5-3-flash` |
+| explicit GLM request, explore/diagnose/review | `aw-glm53-review` | same GLM |
+| teacher | `aw-opus-teacher` | `venice/claude-opus-5-5` |
 
-| Route | Native `task` profile |
-|---|---|
-| fix, implement | `subagent_type: aw-glm-worker` |
-| explore, diagnose, review, compare | `subagent_type: aw-glm-review` |
-| explicit fallback after recorded GLM failure | `subagent_type: aw-luna-worker` |
+Workers deny recursive task calls and explicitly allow both MCP namespaces.
+Teacher denies all tools. Workers have `steps: 8`; the cap is not completion.
+Resume through `task_id` with new evidence only. Main validates n/N checks.
 
-All three profiles deny recursive `task` calls. Native dispatch remains the
-only worker mechanism; no wrapper, poller, or external runner is added. The Sol
-teacher uses the isolated Codex CLI thread from `references/teacher.md`.
-Profiles explicitly allow both MCP namespaces.
+From the absolute skill directory:
+`node scripts/resolve-profile.mjs --host opencode --role worker --route fix`.
+Teacher: `--role teacher --route teacher`. Load returned components once.
 
-## Required model preflight
-
-Configuration output is necessary but not sufficient because a running
-OpenCode session may cache an earlier profile.
-
-1. Restart or reload OpenCode after profile changes.
-2. Run a read-only child probe through the exact dedicated profile.
-3. Read native assistant metadata and require the expected `providerID` and
-   `modelID`: GLM is `venice/z-ai-glm-5-3-flash`; Luna is
-   `openai-codex/gpt-5.6-luna`.
-4. On mismatch or missing metadata, stop. Agent names and self-identification
-   text are never proof.
-
-The native `task` tool has no per-call model parameter. Profile frontmatter
-binds model and stable prompt prefix. A Luna retry starts a new run/evidence
-cell and requires the exact primary failure; never pool or silently substitute.
-
-## Installation and telemetry
-
-Install repository profiles as symlinks in `~/.config/opencode/agents/` only
-when the destination is absent or already resolves to the same source. Never
-replace an unrelated file. The v4 usage plugin records native model metadata,
-tokens, component IDs, actor timeline, and hashed signatures; its trace remains
-quality-ineligible until the main host appends an attestation.
-
-Prefer one worker. The main owns integration, final verification, commits, and
-external effects.
+Preflight once per unchanged session/profile: a cheap native child must prove
+`providerID`/`modelID` = `venice`/`xiaomi-mimo-v2-6-flash` or
+`venice`/`claude-opus-5-5` (GLM: `venice`/`z-ai-glm-5-3-flash`). Config and self-identification are not proof.
+On mismatch, missing metadata or missing agent, stop. Never use stale cached
+profiles or substitute general/explore. For installation/reload failures only,
+read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.

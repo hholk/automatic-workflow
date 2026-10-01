@@ -468,13 +468,7 @@ export const compareRecipes = (runs, baseline, candidate, minimumPairs = 5) => {
       && Number.isFinite(after.get(taskID).tokens.operational_total)).length
     const quantityReady = taskIDs.length >= minimumPairs && tokenPairs >= minimumPairs
     const qualityPairs = taskIDs.filter((taskID) => before.get(taskID).quality.eligible && after.get(taskID).quality.eligible).length
-    const leverageObserved = [
-      baselineSummary.worker_token_share,
-      candidateSummary.worker_token_share,
-      baselineSummary.worker_execution_share,
-      candidateSummary.worker_execution_share,
-    ].every(Number.isFinite)
-    const comparable = quantityReady && qualityPairs === taskIDs.length && leverageObserved
+    const comparable = quantityReady && qualityPairs === taskIDs.length
     const nonDecreasing = (next, prior) => next === null || prior === null || next >= prior
     const nonIncreasing = (next, prior) => next === null || prior === null || next <= prior
     const regressed = quantityReady && !(
@@ -482,8 +476,6 @@ export const compareRecipes = (runs, baseline, candidate, minimumPairs = 5) => {
       && nonIncreasing(candidateSummary.median_tokens, baselineSummary.median_tokens)
       && nonIncreasing(candidateSummary.p90_tokens, baselineSummary.p90_tokens)
       && nonIncreasing(candidateSummary.friction_per_run, baselineSummary.friction_per_run)
-      && nonDecreasing(candidateSummary.worker_token_share, baselineSummary.worker_token_share)
-      && nonDecreasing(candidateSummary.worker_execution_share, baselineSummary.worker_execution_share)
       && nonIncreasing(candidateSummary.measured_waste_per_run, baselineSummary.measured_waste_per_run)
       && nonDecreasing(candidateSummary.teacher_answer_rate, baselineSummary.teacher_answer_rate)
       && nonDecreasing(candidateSummary.teacher_final_actionable, baselineSummary.teacher_final_actionable)
@@ -498,8 +490,6 @@ export const compareRecipes = (runs, baseline, candidate, minimumPairs = 5) => {
       || candidateSummary.median_tokens < baselineSummary.median_tokens
       || candidateSummary.p90_tokens < baselineSummary.p90_tokens
       || candidateSummary.friction_per_run < baselineSummary.friction_per_run
-      || candidateSummary.worker_token_share > baselineSummary.worker_token_share
-      || candidateSummary.worker_execution_share > baselineSummary.worker_execution_share
       || candidateSummary.measured_waste_per_run < baselineSummary.measured_waste_per_run
       || candidateSummary.teacher_answer_rate > baselineSummary.teacher_answer_rate
       || candidateSummary.teacher_final_actionable > baselineSummary.teacher_final_actionable

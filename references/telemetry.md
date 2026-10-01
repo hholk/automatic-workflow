@@ -29,12 +29,15 @@ signature, measured/estimated waste, and bounded excerpts. Supported kinds are
 `zero_information_gain`, `unusable_evidence`, `main_repair`, `scope_rework`,
 `model_mismatch`, and `fallback`.
 
-## Quality gate
+## Quality gate (comparison eligibility)
 
 A run claim is diagnostic only. Verified success requires a separate main-host
 attestation with a stable verification ID, exit code 0, semantic success, full
 scope coverage, independent review pass, zero forbidden changes, complete model
 provenance, and required actor participation. Missing evidence is UNKNOWN.
+This stricter measurement gate does not require an independent reviewer for every
+ordinary task. When review is unnecessary, record its absence honestly; that
+run remains ineligible for comparative quality claims.
 
 ```sh
 node scripts/usage.mjs attest --run-id "$AW_RUN_ID" \
@@ -55,7 +58,13 @@ node scripts/usage.mjs analyze --baseline <version> --candidate <version> --min-
 Cells separate harness, requested/resolved actor models, fallback, route, task
 class, complexity, and prompt profile. Paired analysis matches the same task
 snapshot across baseline and candidate while allowing one declared profile
-mutation. Quality is a hard gate. Tokens, friction, worker shares, measured
+mutation. Quality is a hard gate. Tokens, friction, measured
 waste, answerability, actionable finals, post-teacher green, repeated requests,
 zero-information turns, human redirects, and main repairs must not regress; at
 least one efficiency measure must improve strictly.
+
+Worker token share and execution share are diagnostic only: increasing either
+is not an improvement, and decreasing either is not a regression. All actors'
+tokens count, including main repair. Token totals are not monetary cost; report
+provider cost separately when available. See `lessons.md` for the separate
+main-only versus delegation experiment; automatic cells retain actor provenance.

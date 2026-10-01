@@ -1,7 +1,8 @@
 ---
-description: AW bounded GLM implementation worker
-model: venice/z-ai-glm-5-3-flash
+description: AW bounded MiMo V2.6 Flash implementation worker
+model: venice/xiaomi-mimo-v2-6-flash
 mode: all
+steps: 8
 permission:
   edit: allow
   write: allow

@@ -72,7 +72,9 @@ export const handleHook = (host, event, options = {}) => {
   const playbookPath = options.playbookPath || process.env.AW_PLAYBOOK_PATH || defaultPlaybookPath
   const primaryWorkerModel = options.primaryWorkerModel !== undefined
     ? options.primaryWorkerModel
-    : process.env.AW_PRIMARY_WORKER_MODEL || (host === "codex" ? "venice/glm-5.3-flash" : null)
+    : process.env.AW_PRIMARY_WORKER_MODEL || (host === "codex" || host === "github-copilot"
+      ? "venice/mimo-2.6-flash"
+      : null)
   const path = hookPath(stateDir, host, id)
   const name = eventName(event)
 

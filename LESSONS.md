@@ -1,12 +1,35 @@
 # AW skill improvement experiments
 
-This file contains only measured changes to AW itself. Every new entry must
-include a benchmark command plus numeric before/after values. Runtime lessons
-from target repositories belong in `LESSONS-REPO.md`. Entries without numbers
-are deleted; validated entries already folded into the skill are compressed to
-one line (see `references/lessons.md`).
+This file contains AW improvement experiments and actionable usage lessons.
+Performance claims require numeric before/after values and a verify command.
+Qualitative lessons retain Failure / Cause / Prevention / Evidence; unresolved
+hypotheses stay explicit. Repository root causes belong in LESSONS-REPO.md.
+See `references/lessons.md` for measurement and retention rules.
 
-<!-- lessons -->
+ <!-- lessons -->
+
+## 2026-09-21 — Acceptance-first routing and consistent handbacks
+
+- Change: direct execution precedes ordinary delegation; one worker return contract with explicit unfinished work; main constructs teacher evidence; bounded-v3 permits one explicitly authorized new probe; main verifies the integrated output; teacher/review are conditional; qualitative lessons are retained; quality-v2 treats worker shares as diagnostics. Active playbook: acceptance-routing-v4. Existing model bindings are unchanged.
+- Hypothesis: fewer unnecessary handoffs and contract repairs lower total cost per accepted task without reducing main-agent output quality.
+- Benchmark: `node --test scripts/*.test.mjs integrations/opencode/*.test.mjs integrations/lifecycle/*.test.mjs`; `node scripts/benchmark.mjs`; `git diff --check`.
+- Before / After / Delta: tests 52/52 → 54/54 (+2 regressions, both observed failing before fixes); static routing/profile cases 10/10 → 11/11; entrypoint 367 → 366 words (−1), 698 → 695 estimated tokens (−3); mean context over the same original ten cases 1445 → 1542 estimated tokens (+97, +6.7%). The new direct case is excluded from that mean for comparability.
+- Evidence: local baseline telemetry had 36 v4 runs, 5 quality-eligible runs, and 0 combining eligibility with complete total-token data. Independent read-only review found no material defects. Static checks do not establish live routing accuracy, savings or output quality parity.
+- Result: keep corrected instructions and evaluator; measured efficiency remains insufficient-data. Next evidence is five matched main-only/AW task pairs with identical acceptance criteria and all actor costs included, following references/lessons.md.
+- Lesson: handoff cost includes context, verification and repair. Higher worker share is not a useful optimization target; DONE ends a worker turn and cannot substitute for accepted task completion.
+- Status: pending
+
+
+## 2026-09-13 — Host-bound Astra teacher, DeepSeek-only workers, bounded context
+
+- Change: resolver now returns model+provider+native agent+budget together; Astra teacher is `gpt-6-astra` via `openai` on Codex and `venice/openai-gpt-6-astra` on OpenCode; every worker route is DeepSeek with no alternate-model fallback; new `bounded-v2` recipe (1600-token brief, 8 steps, 2 failed hypotheses, 300-word single contract); Codex agents installed as regular 0600 files (O_NOFOLLOW); child skill instructions and plugins disabled; hidden Luna vision bridge off; only Matt skills + AW active
+- Benchmark: `node --test scripts/*.test.mjs integrations/opencode/*.test.mjs integrations/lifecycle/*.test.mjs`; `node scripts/benchmark.mjs`; `python3 scripts/verify_aw_setup.py`; native OpenCode DeepSeek/Astra probes; native Codex Astra→DeepSeek spawn canary
+- Before: 45/46 tests (1 failing), entrypoint 357 words (~670 est. tokens), average route 1,538 est. tokens, broken GLM symlinks, Codex default child GLM, teacher Sol
+- After: 52/52 tests, entrypoint 348 words (~666 est. tokens), average route 1,410 est. tokens, routing 10/10, profiles 10/10, setup checks 32/32; OpenCode proved `venice/deepseek-v4-1-flash` and `venice/openai-gpt-6-astra` from native metadata; Codex proved `openai/gpt-6-astra` root and `codex-router/venice/deepseek-v4-1-flash` child
+- Delta: tests +7; entrypoint −9 words and −4 est. tokens; average route −128 est. tokens (−8.3%); Codex root input 101,798→72,520 (−28.8%) after disabling child skill instructions/plugins; OpenCode Astra teacher 1,874 tokens with zero tools; DeepSeek child still 137,249 input tokens
+- Result: keep; productive efficiency remains `insufficient-data` until five matched, token-bearing pairs per cell
+- Lesson: bind provider and agent with the model, install Codex roles as regular files (symlinks are discovered but rejected at spawn), and disable child skill/plugin context — but Codex child fork/context overhead can still dominate and must be measured per run
+- Status: pending
 
 ## 2026-09-07 — Native standard-MCP permissions for worker profiles
 

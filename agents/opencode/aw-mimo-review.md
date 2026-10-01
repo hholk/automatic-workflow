@@ -1,7 +1,8 @@
 ---
-description: AW independent GLM read-only reviewer
-model: venice/z-ai-glm-5-3-flash
+description: AW independent MiMo V2.6 Flash read-only reviewer
+model: venice/xiaomi-mimo-v2-6-flash
 mode: all
+steps: 8
 permission:
   edit: deny
   write: deny
@@ -23,6 +24,8 @@ permission:
     "pytest*": allow
     "go test*": allow
     "cargo test*": allow
+    "node --test*": allow
+    "node scripts/benchmark.mjs": allow
     "git status*": allow
     "git diff*": allow
     "rg *": allow

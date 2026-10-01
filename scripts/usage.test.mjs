@@ -8,7 +8,7 @@ import { compareRecipes, normalizeRun } from "./evidence.mjs"
 
 const usageScript = new URL("./usage.mjs", import.meta.url).pathname
 
-const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change", tokens = 100, mainTokens = 20, requestedWorker = "worker", resolvedWorker = "worker", fallbackReason = null, profile = "worker-profile-v1", teacher = [], wasteEvents = [] }) => {
+const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change", tokens = 100, mainTokens = 20, requestedWorker = "worker", resolvedWorker = "worker", fallbackReason = null, profile = "worker-profile-v1", teacher = [], wasteEvents = [], mainActions = 2, workerActions = 8 }) => {
   const quality = {
     verify_id: "test",
     verify_exit_code: 0,
@@ -17,7 +17,7 @@ const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change"
     scope_total: 1,
     review_pass: true,
     forbidden_changes: 0,
-    accepted_worker_actions: 8,
+    accepted_worker_actions: workerActions,
     parent_rework: 0,
   }
   return normalizeRun({
@@ -41,11 +41,11 @@ const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change"
     main: { used: true, requested_model: "main", resolved_model: "main", model_source: "native", token_source: "native", tokens: mainTokens },
     worker: { used: true, requested_model: requestedWorker, resolved_model: resolvedWorker, fallback_reason: fallbackReason, model_source: "native", token_source: "native", tokens: tokens - mainTokens },
     teacher: teacher.length
-      ? { used: true, requested_model: "gpt-5.6-sol", resolved_model: "gpt-5.6-sol", model_source: "native", token_source: "native", tokens: 0 }
+      ? { used: true, requested_model: "venice/opus-5.5", resolved_model: "venice/opus-5.5", model_source: "native", token_source: "native", tokens: 0 }
       : { used: false, requested_model: null, resolved_model: null, model_source: "unknown", token_source: "unknown", tokens: null },
   },
   quality,
-  work: { main_actions: 2, worker_actions: 8, accepted_worker_actions: 8, parent_rework: 0 },
+  work: { main_actions: mainActions, worker_actions: workerActions, accepted_worker_actions: workerActions, parent_rework: 0 },
   friction: { reroutes: 0, followups: 0, teacher_turns: teacher.length, errors: 0 },
   timeline: [],
   gauntlet: [],
@@ -82,12 +82,12 @@ test("keeps task classes in separate evidence cells", () => {
   assert.ok(result.cells.every((cell) => cell.matched_pairs === 5))
 })
 
-test("keeps direct Luna and GLM-to-Luna fallback in separate evidence cells", () => {
+test("keeps direct Luna and MiMo-to-Luna fallback in separate evidence cells", () => {
   const direct = run({ runID: "direct", recipe: "base", taskID: "task", requestedWorker: "luna", resolvedWorker: "luna" })
-  const fallback = run({ runID: "fallback", recipe: "candidate", taskID: "task", requestedWorker: "glm", resolvedWorker: "luna", fallbackReason: "primary-http-402" })
+  const fallback = run({ runID: "fallback", recipe: "candidate", taskID: "task", requestedWorker: "mimo", resolvedWorker: "luna", fallbackReason: "primary-http-402" })
   assert.notEqual(direct.cell_id, fallback.cell_id)
   assert.match(direct.cell_id, /worker:luna>luna@direct/)
-  assert.match(fallback.cell_id, /worker:glm>luna@primary-http-402/)
+  assert.match(fallback.cell_id, /worker:mimo>luna@primary-http-402/)
 })
 
 test("returns no-change when a candidate has no strict efficiency gain", () => {
@@ -122,7 +122,7 @@ test("queries waste causes and teacher efficiency by profile", () => {
     runID: "teacher-run",
     recipe: "base",
     taskID: "teacher-task",
-    profile: "sol-teacher-v1",
+    profile: "opus-teacher-v1",
     teacher: [
       { turn: 1, response_type: "ASK", question_type: "inspect", ask_id: "a1", evidence_received: true, decision_changed: false },
       { turn: 2, response_type: "FINAL", actionable: true, post_teacher_green: true, decision_changed: true },
@@ -139,9 +139,9 @@ test("queries waste causes and teacher efficiency by profile", () => {
   assert.equal(result.status, 0)
   let parsed = JSON.parse(result.stdout)
   assert.equal(parsed.groups[0].estimated_wasted_tokens, 12)
-  assert.equal(parsed.groups[0].prompt_profile_id, "sol-teacher-v1")
+  assert.equal(parsed.groups[0].prompt_profile_id, "opus-teacher-v1")
 
-  result = invoke("teacher", "--profile", "sol-teacher-v1")
+  result = invoke("teacher", "--profile", "opus-teacher-v1")
   assert.equal(result.status, 0)
   parsed = JSON.parse(result.stdout)
   assert.equal(parsed.ask_count, 1)
@@ -149,4 +149,17 @@ test("queries waste causes and teacher efficiency by profile", () => {
   assert.equal(parsed.actionable_final_rate, 1)
   assert.equal(parsed.post_teacher_green_rate, 1)
   assert.equal(parsed.human_redirects, 0)
+})
+
+
+test("worker shares are diagnostic, not a promotion objective", () => {
+  const runs = []
+  for (let index = 0; index < 5; index += 1) {
+    const taskID = `share-${index}`
+    runs.push(run({ runID: `base-${index}`, recipe: "base", taskID }))
+    runs.push(run({ runID: `cheaper-${index}`, recipe: "cheaper", taskID, tokens: 80, mainTokens: 30, workerActions: 2, mainActions: 8 }))
+    runs.push(run({ runID: `share-only-${index}`, recipe: "share-only", taskID, mainTokens: 10, workerActions: 9, mainActions: 1 }))
+  }
+  assert.equal(compareRecipes(runs, "base", "cheaper", 5).verdict, "eligible-to-promote")
+  assert.equal(compareRecipes(runs, "base", "share-only", 5).verdict, "no-change")
 })

@@ -13,7 +13,7 @@ A candidate changes exactly one of `recipe_id`, `prompt_profile_id`,
 `context_budget`, `worker_step_budget`, or
 `teacher_after_failed_hypotheses`. Prompt changes receive a new immutable
 profile ID that resolves through `prompts/profiles.json`. Research may measure
-Astra only as an explicit user-selected teacher; it cannot change Sol as the
+the configured Opus teacher; it cannot change Opus as the
 operational default.
 
 ## Weekly flywheel
@@ -42,6 +42,6 @@ operational default.
    evidence to `LESSONS.md`, then call `research.mjs close`.
 
 Promotion recomputes paired evidence locally. A weekly run never guarantees a
-new version. GLM and Luna fallback runs remain separate cells with an exact
-fallback reason. Direct harness preflights are measurement probes; never pool
+new version. Historical alternate-model runs remain separate cells and are not
+current dispatch options. Direct harness preflights are measurement probes; never pool
 their tokens with native task-subagent runs.

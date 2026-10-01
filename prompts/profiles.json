@@ -1,25 +1,45 @@
 {
   "schema_version": 1,
+  "main_default": "venice/mimo-2.6-flash",
+  "worker_defaults": {
+    "codex": "venice/mimo-2.6-flash",
+    "opencode": "venice/xiaomi-mimo-v2-6-flash",
+    "github-copilot": "venice/mimo-2.6-flash"
+  },
   "worker_profiles": {
-    "codex|venice/glm-5.3-flash": {
-      "id": "codex-glm-worker-v1",
+    "codex|venice/mimo-2.6-flash": {
+      "id": "codex-mimo-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/glm-5.3-flash.md"
+      "model_delta": "prompts/models/mimo-v2.6-flash.md"
+    },
+    "opencode|venice/xiaomi-mimo-v2-6-flash": {
+      "id": "opencode-mimo-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/mimo-v2.6-flash.md"
+    },
+    "github-copilot|venice/mimo-2.6-flash": {
+      "id": "copilot-mimo-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/mimo-v2.6-flash.md"
     },
     "opencode|venice/z-ai-glm-5-3-flash": {
-      "id": "opencode-glm-worker-v1",
+      "id": "opencode-glm53-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/glm-5.3-flash.md"
+      "model_delta": "prompts/models/glm-5.3-flash-v4.md"
     },
     "codex|gpt-5.6-luna": {
+      "retired": true,
       "id": "codex-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
       "model_delta": "prompts/models/gpt-5.6-luna.md"
     },
     "opencode|openai-codex/gpt-5.6-luna": {
+      "retired": true,
       "id": "opencode-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
@@ -27,17 +47,11 @@
     }
   },
   "teacher_profiles": {
-    "gpt-5.6-sol": {
-      "id": "sol-teacher-v1",
+    "opus-5.5": {
+      "id": "opus-teacher-v1",
       "core": "prompts/core/teacher.md",
       "contract": "contracts/teacher.md",
-      "model_delta": "prompts/models/gpt-5.6-sol.md"
-    },
-    "gpt-6-astra": {
-      "id": "astra-teacher-v1",
-      "core": "prompts/core/teacher.md",
-      "contract": "contracts/teacher.md",
-      "model_delta": "prompts/models/gpt-6-astra.md"
+      "model_delta": "prompts/models/opus-5.5.md"
     }
   },
   "prompt_profiles": {
@@ -45,6 +59,10 @@
       "overlays": {}
     }
   },
-  "teacher_default": "gpt-5.6-sol",
-  "teacher_explicit_overrides": ["gpt-6-astra"]
+  "teacher_default": "opus-5.5",
+  "teacher_explicit_overrides": [],
+  "teacher_bindings": {
+    "codex": { "model": "venice/opus-5.5", "model_provider": "codex-router", "native_agent": "aw-opus-teacher" },
+    "opencode": { "model": "venice/claude-opus-5-5", "model_provider": "venice", "native_agent": "aw-opus-teacher" }
+  }
 }

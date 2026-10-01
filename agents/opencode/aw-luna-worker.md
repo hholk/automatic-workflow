@@ -9,6 +9,6 @@ permission:
   "codebase-memory-mcp_*": allow
   "context7_*": allow
 ---
-Use only after a recorded GLM availability failure. Follow the parent-supplied
+Use only after a recorded MiMo availability failure. Follow the parent-supplied
 AW components and frozen worker contract. Return `DONE` or `TEACHER_REQUEST`.
 Preserve unrelated edits and never start another agent.

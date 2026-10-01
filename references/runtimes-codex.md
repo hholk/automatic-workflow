@@ -1,40 +1,28 @@
 # Codex runtime
 
-- Use explicit native model selection for every child and bind that resolved
-  model to the selected prompt profile. Spawn work with native collaboration
-  tools, `agent_type: glm_flash_worker`, `model: venice/glm-5.3-flash`, and
-  `fork_turns: none`.
-- Prove the resolved model from native execution metadata. When GLM is
-  unavailable, record the failed primary attempt and retry once with native
-  `gpt-5.6-luna` only as an explicit fallback. Record the exact reason; never
-  mix the GLM and Luna runs in one evidence cell.
-- Give each child exact file ownership or read-only responsibility; state that
-  other workers may exist and unrelated edits must be preserved.
-- Pull the final result, then interrupt the finished child so it leaves working state.
-- Use one Sol child only through `references/teacher.md`, resume the same
-  teacher thread, and select Astra only after an explicit user request.
-- Emit or attest the prompt-free v4 event from `references/telemetry.md`.
-- Workers use the configured native MCPs.
+Use explicit native model selection and the resolved prompt profile.
 
-## Lifecycle evidence
+| Route | agent_type | model | model_provider |
+|---|---|---|---|
+| fix, implement | `aw-mimo-worker` | `venice/mimo-2.6-flash` | `codex-router` |
+| explore, diagnose, review, compare | `aw-mimo-review` | same MiMo | `codex-router` |
+| teacher | `aw-opus-teacher` | `venice/opus-5.5` | `codex-router` |
 
-Codex command hooks can observe `UserPromptSubmit`, tool use,
-`SubagentStart`/`SubagentStop`, `Stop`, and `SessionEnd`. Install the fragment at
-`integrations/codex/hooks.json.example` into a trusted Codex hook layer only
-with user approval, replace `<AW_SKILL_DIR>` with the absolute skill path, then
-review it with `/hooks`. The adapter activates only for prompts containing
-`$aw` or `/aw`; it derives aggregates and never stores the prompt, tool input,
-assistant output, or transcript path.
+Agent files bind model/provider/high effort, not inherited Ultra, and disable
+child skill-catalog instructions. Use native spawn/resume tools; set
+`fork_turns: none` and model overrides only if exposed by the live schema.
+Send delta-only follow-ups. Close/interrupt finished children with the offered
+tool. No recursive agents or alternate-model retries. A child that still
+inherits a large context is a measured cost, not a reason to fork more.
 
-Native hook input proves the active model slug but does not expose usage
-tokens. Record those tokens as null unless a separate native/provider usage
-source supplies exact values; never infer them from characters or transcript
-size. After host verification, locate the trace with
-`node scripts/usage.mjs latest --host codex` and attest its run ID.
+From the absolute skill directory:
+`node scripts/resolve-profile.mjs --host codex --role worker --route fix`.
+Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
+using native metadata and router request evidence, never model self-reports.
+Stop on unknown/mismatched routing. For installation or unavailable agents,
+read [setup](setup.md); Codex role files must not be symlinks.
 
-## Dispatch rule
-
-Prefer one worker. Add workers only for independent tasks whose reconciliation
-costs less than serial work. Never overlap write ownership. The host reviews the
-diff and runs final verification; workers never commit, push, deploy, release,
-or act destructively without the user's explicit authorization.
+Use configured native MCPs or fetch/browser, not hosted web_search on Venice.
+Eight tool steps is a workflow budget, not a claimed native hard cap. Main
+stops no-gain loops and verifies results. Missing exact usage tokens stay null;
+load telemetry details only when attesting, never read transcripts.

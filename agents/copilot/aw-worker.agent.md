@@ -2,6 +2,7 @@
 name: AW Worker
 description: Executes one bounded AW worker brief with observed evidence and no recursive delegation.
 target: github-copilot
+model: venice/mimo-2.6-flash
 tools:
   - read
   - search
