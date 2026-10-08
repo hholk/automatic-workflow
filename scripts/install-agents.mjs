@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
-const names = ["aw-mimo-worker", "aw-mimo-review", "aw-opus-teacher"]
+const names = ["aw-worker", "aw-mimo-review", "aw-opus-teacher"]
 const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex")
 // The marker line is added by this installer; strip it so a file installed
 // before the marker existed is still recognized as owned.

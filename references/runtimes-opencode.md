@@ -4,7 +4,7 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 
 | Route | subagent_type | Model |
 |---|---|---|
-| fix, implement | `aw-mimo-worker` | `venice/claude-haiku-5-5` |
+| fix, implement | `aw-worker` | `venice/claude-haiku-5-5` |
 | explore, diagnose, review, compare | `aw-mimo-review` | `venice/claude-haiku-5-5` |
 | explicit GLM request, fix/implement | `aw-glm53-worker` | `venice/z-ai-glm-5-3-flash` |
 | explicit GLM request, explore/diagnose/review | `aw-glm53-review` | same GLM |

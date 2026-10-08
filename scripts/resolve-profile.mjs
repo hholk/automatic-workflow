@@ -93,7 +93,7 @@ export const resolveSelection = (input, overrides = {}) => {
       ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
       : input.host === "github-copilot"
         ? "aw-worker"
-        : (["fix", "implement"].includes(input.route) ? "aw-mimo-worker" : "aw-mimo-review"),
+        : (["fix", "implement"].includes(input.route) ? "aw-worker" : "aw-mimo-review"),
     budget: {
       context_tokens: playbook.defaults.context_budget,
       worker_steps: playbook.defaults.worker_step_budget,

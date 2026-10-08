@@ -12,7 +12,7 @@ test("separates native Opus teacher usage and includes cached tokens without dou
   await hooks["tool.execute.before"]({ tool: "skill", sessionID: "root" }, { args: { name: "aw" } })
   for (const [id, agent, model, tokens] of [
     ["root", "build", "mimo-2.6-flash", { total: 110, input: 5, output: 5, cache: { read: 100 } }],
-    ["worker", "aw-mimo-worker", "xiaomi-mimo-v2-6-flash", { input: 5, output: 5, cache: { read: 15, write: 5 } }],
+    ["worker", "aw-worker", "xiaomi-mimo-v2-6-flash", { input: 5, output: 5, cache: { read: 15, write: 5 } }],
     ["teacher", "aw-opus-teacher", "claude-opus-5-5", { total: 50, input: 5, output: 5, cache: { read: 40 } }],
   ]) {
     if (id !== "root") {

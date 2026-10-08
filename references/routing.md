@@ -1,6 +1,7 @@
 # Routing
 
-Use when the fast route in `SKILL.md` is ambiguous. First match wins.
+Authoritative routing table. `SKILL.md` carries the short form; keep signals in sync.
+First match wins.
 
 | Case | Signal | Route | Load |
 |---|---|---|---|

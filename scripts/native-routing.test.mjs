@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs"
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
 
 test("native agents exist and enforce provider, effort and recursion boundaries", () => {
-  for (const name of ["aw-mimo-worker", "aw-mimo-review"]) {
+  for (const name of ["aw-worker", "aw-mimo-review"]) {
     const oc = read(`agents/opencode/${name}.md`)
     assert.match(oc, /steps: 32/)
     assert.match(oc, /task: deny/)

@@ -1,5 +1,5 @@
-# Managed by the AW skill; edit agents/codex/aw-mimo-worker.toml and reinstall.
-name = "aw-mimo-worker"
+# Managed by the AW skill; edit agents/codex/aw-worker.toml and reinstall.
+name = "aw-worker"
 description = "AW bounded Claude Haiku 5.5 worker for implementation and fixes."
 model_provider = "codex-router"
 model = "venice/claude-haiku-5-5"

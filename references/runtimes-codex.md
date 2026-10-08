@@ -4,7 +4,7 @@ Use explicit native model selection and the resolved prompt profile.
 
 | Route | agent_type | model | model_provider |
 |---|---|---|---|
-| fix, implement | `aw-mimo-worker` | `venice/claude-haiku-5-5` | `codex-router` |
+| fix, implement | `aw-worker` | `venice/claude-haiku-5-5` | `codex-router` |
 | explore, diagnose, review, compare | `aw-mimo-review` | `venice/claude-haiku-5-5` | `codex-router` |
 | teacher | `aw-opus-teacher` | `venice/opus-5.5` | `codex-router` |
 

@@ -9,34 +9,38 @@ Main alone orchestrates. Claude Haiku 5.5 through Venice is the non-teacher defa
 supported host. Claude Opus 5.5 through Venice is the advisory teacher.
 No alternate-model fallback; unavailable profiles stop with BLOCKED_ENVIRONMENT.
 
-## Modes
+Optimize total cost to accepted completion at main-agent quality. Honor explicit
+requests for independent judgment.
 
-- `$aw research` / `/aw research` → [autoresearch](references/autoresearch.md).
-- `$aw learn` → [lessons](references/lessons.md).
-- Otherwise follow the first matching route.
+## Route
 
-## Fast route
+First matching row wins. Details and load paths: [routing](references/routing.md).
 
-Optimize total cost to accepted completion at main-agent quality, including
-briefing, child context, verification and repair. Honor explicitly requested
-independent judgment.
+| Signal | Route |
+|---|---|
+| Required authority or material user choice missing | human |
+| Main can finish and verify safely for less than a handoff | direct |
+| Decisive technical gap after a useful probe, or architecture/hard-fix unresolved | teacher |
+| Completed change needs independent evidence | review |
+| Root cause evidenced | fix |
+| Target state and verification known | implement |
+| Is/should gap, cause unknown | diagnose |
+| Read-only structure, ownership or callers question | explore |
 
-1. Required authority or material user choice is missing → human.
-2. Main can finish safely for less than a handoff → direct.
-3. Material technical decision remains unresolved after useful probes → teacher.
-4. Completed change needs independent evidence → review.
-5. Known cause → fix; known target state → implement.
-6. Unknown is/should gap → diagnose; read-only question → explore.
+Direct executes and verifies; human asks for the missing decision. Other routes continue below.
 
-If ambiguous, read [routing](references/routing.md). Direct executes and verifies;
-human asks for the missing decision. Delegated routes continue below.
+Modes outside the task route: `$aw research` and `$aw learn` (see
+[autoresearch](references/autoresearch.md) and [lessons](references/lessons.md)).
+Run them only when explicitly requested.
 
 ## Execute
 
 Use Codebase Memory for structure or Context7 for library behavior when either is likely
 cheaper than manual discovery; reuse sufficient supplied evidence.
 
-1. Freeze `OBJECTIVE | SUCCESS | CONTEXT | PATHS | NON_GOALS | VERIFY`.
+1. Freeze `OBJECTIVE | SUCCESS | CONTEXT | PATHS | NON_GOALS | VERIFY` before dispatch.
+   `SUCCESS` lists numbered, falsifiable criteria; `VERIFY` names one command.
+   A brief without both is not dispatched.
 2. Read one runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
 3. Run `node scripts/resolve-profile.mjs`; load only the returned component paths

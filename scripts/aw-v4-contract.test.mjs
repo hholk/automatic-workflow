@@ -90,7 +90,7 @@ test("prefers useful MCP evidence without forcing redundant calls", () => {
 })
 
 test("binds dedicated native harness profiles without recursive agents", () => {
-  for (const name of ["aw-mimo-worker", "aw-mimo-review"]) {
+  for (const name of ["aw-worker", "aw-mimo-review"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
     assert.match(profile, /model: venice\/claude-haiku-5-5/)
@@ -100,7 +100,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
     assert.match(config, /"context7_\*": allow/)
     assert.match(profile, /DONE.*TEACHER_REQUEST/is)
     assert.doesNotMatch(profile, /HUMAN_REQUEST/)
-    if (name === "aw-mimo-worker") {
+    if (name === "aw-worker") {
       assert.match(config, /edit: allow/)
       assert.match(config, /write: allow/)
     }
@@ -119,7 +119,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   assert.match(frontmatter("agents/opencode/aw-mimo-review.md"), /write: deny/)
 
   const opencode = read("references/runtimes-opencode.md")
-  assert.match(opencode, /aw-mimo-worker/)
+  assert.match(opencode, /aw-worker/)
   assert.match(opencode, /aw-mimo-review/)
   assert.match(opencode, /aw-opus-teacher/)
   assert.match(opencode, /dedicated AW profiles are the default/i)
@@ -164,7 +164,7 @@ test("benchmarks resolved v4 component sets including explicit Opus", () => {
 test("direct routing precedes ordinary work and handoffs share one contract", () => {
   const skill = read("SKILL.md")
   const routing = read("references/routing.md")
-  assert.ok(skill.indexOf("→ direct") < skill.indexOf("→ implement"))
+  assert.ok(skill.indexOf("| Main can finish") < skill.indexOf("| Target state"))
   assert.ok(routing.indexOf("`tiny_local`") < routing.indexOf("`known_change`"))
   const explore = read("workflows/explore.md")
   assert.match(explore, /contracts\/worker\.md/)

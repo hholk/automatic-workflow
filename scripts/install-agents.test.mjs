@@ -34,6 +34,6 @@ test("an unrelated agent blocks the whole installation before any writes", () =>
     writeFileSync(target, "user content")
     assert.throws(() => installAgents({ home, apply: true }), /Refusing unrelated destination/)
     assert.equal(readFileSync(target, "utf8"), "user content")
-    assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-mimo-worker.md")), /ENOENT/)
+    assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
   } finally { rmSync(home, { recursive: true }) }
 })

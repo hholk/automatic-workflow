@@ -7,13 +7,15 @@ Return exactly one message type.
 ```text
 TYPE: DONE
 CHANGED: <paths or none>
-EVIDENCE: <path, command, exit code, and semantic result references>
-VERIFY: <command | exit code | semantic result>
+EVIDENCE: <path, command, exit code, and semantic result references; coverage n/N>
+VERIFY: <command> | exit <n> | <semantic result>
 RISKS: <concrete risks or none>
 ```
 
-DONE reports the worker turn, not acceptance. EVIDENCE includes the answer or
-artifact and coverage n/N against SUCCESS. RISKS names every unfinished item,
+DONE reports the worker turn, not acceptance. VERIFY is mandatory: run the
+verification command named in the brief and report its exit code. A DONE without
+a passing VERIFY line is never accepted as verified. EVIDENCE includes the answer
+or artifact and coverage n/N against SUCCESS. RISKS names every unfinished item,
 unmet criterion and missing check. On budget exhaustion or an environment block,
 return DONE with partial evidence and the exact blocker; never imply success.
 Main integrates and verifies the full outcome before accepting it.
