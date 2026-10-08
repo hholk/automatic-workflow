@@ -57,22 +57,34 @@ test("routes evidence collection by independence need", () => {
   assert.equal(selectEvidenceWorker({ type: "inspect", conflicting: true }), "fresh-read-only")
 })
 
-test("enforces three asks, five turns, and one ASK repair", () => {
+const limits = { maxAsks: 5, maxTurnsPerAsk: 7 }
+
+test("enforces five asks, seven turns per ask, and one ASK repair", () => {
   const exhausted = acceptTeacherReply(
-    { asks: 3, turns: 4, askRepairs: 0, informationGain: true },
+    { asks: 5, turns: 6, askRepairs: 0, informationGain: true },
     { type: "ASK", valid: true },
+    limits,
   )
   assert.equal(exhausted.terminal, "TEACHER_EXHAUSTED")
+
+  const withinBudget = acceptTeacherReply(
+    { asks: 1, turns: 6, askRepairs: 0, informationGain: true },
+    { type: "ASK", valid: true },
+    limits,
+  )
+  assert.equal(withinBudget.action, "COLLECT_EVIDENCE")
 
   const repair = acceptTeacherReply(
     { asks: 1, turns: 2, askRepairs: 0, informationGain: true },
     { type: "ASK", valid: false },
+    limits,
   )
   assert.equal(repair.action, "REPAIR_ASK")
 
   const force = acceptTeacherReply(
     { asks: 1, turns: 3, askRepairs: 1, informationGain: true },
     { type: "ASK", valid: false },
+    limits,
   )
   assert.equal(force.action, "FORCE_FINAL")
 })
@@ -81,6 +93,7 @@ test("stops more questions after zero information gain", () => {
   const value = acceptTeacherReply(
     { asks: 1, turns: 2, askRepairs: 0, informationGain: false },
     { type: "ASK", valid: true },
+    limits,
   )
   assert.equal(value.action, "FORCE_FINAL")
   assert.equal(value.reason, "NO_INFORMATION_GAIN")
@@ -90,6 +103,7 @@ test("FINAL ends the thread immediately", () => {
   const value = acceptTeacherReply(
     { asks: 1, turns: 2, askRepairs: 0, informationGain: true },
     { type: "FINAL", valid: true },
+    limits,
   )
   assert.equal(value.terminal, "FINAL")
   assert.equal(value.turns, 3)

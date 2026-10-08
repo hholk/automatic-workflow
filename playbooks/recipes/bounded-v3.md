@@ -11,7 +11,7 @@ Cap the task brief at 1600 estimated tokens; pass paths and decisive excerpts,
 not histories, logs, full diffs, or the entire skill. Supply selected components
 once; on resume send only new evidence. Do not reload unchanged files or lessons.
 
-One slice gets 8 tool steps. Batch independent targeted reads/tests. After two
+One slice gets 125 tool steps. Batch independent targeted reads/tests. After two
 failed hypotheses, a repeated no-gain probe, or budget exhaustion, hand back
 using the worker contract. Budget exhaustion alone returns DONE with unfinished
 work in RISKS; TEACHER_REQUEST needs a material technical decision.

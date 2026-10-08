@@ -31,7 +31,7 @@ test("native agents exist and enforce provider, effort and recursion boundaries"
 test("active recipe uses one output contract and bounded context", () => {
   const recipe = read("playbooks/recipes/bounded-v3.md")
   assert.match(recipe, /1600/)
-  assert.match(recipe, /8 tool steps/)
+  assert.match(recipe, /125 tool steps/)
   assert.match(recipe, /300 words/)
   assert.match(recipe, /contracts\/worker.md/)
   assert.doesNotMatch(recipe, /STATUS \| CHANGED/)

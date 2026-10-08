@@ -71,7 +71,7 @@ test("uses the MiMo default for every worker host with actionable bounded budget
           ? "aw-worker"
           : ["fix", "implement"].includes(route) ? "aw-worker" : "aw-mimo-review",
       )
-      assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 8, failed_hypotheses: 2 })
+      assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 125, failed_hypotheses: 3 })
       assert.equal(new Set(value.components).size, value.components.length)
     }
     if (host === "github-copilot") continue

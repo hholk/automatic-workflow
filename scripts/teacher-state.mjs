@@ -24,7 +24,8 @@ export const selectEvidenceWorker = ({ type, conflicting = false }) => {
   return type === "compare" || conflicting ? "fresh-read-only" : "existing"
 }
 
-export const acceptTeacherReply = (state, reply) => {
+export const acceptTeacherReply = (state, reply, limits) => {
+  const { maxAsks, maxTurnsPerAsk } = limits
   const asks = Number(state.asks || 0)
   const turns = Number(state.turns || 0)
   const askRepairs = Number(state.askRepairs || 0)
@@ -34,7 +35,7 @@ export const acceptTeacherReply = (state, reply) => {
   if (reply.type === "FINAL") {
     return { asks, turns: nextTurns, askRepairs, action: "STOP", terminal: "FINAL", reason: null }
   }
-  if (nextTurns >= 5 || asks >= 3) {
+  if (asks >= maxAsks || nextTurns > Math.max(asks, 1) * maxTurnsPerAsk) {
     return {
       asks,
       turns: nextTurns,

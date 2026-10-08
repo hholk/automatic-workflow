@@ -230,8 +230,8 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 5, teacher_max_turns_per_ask: 7 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }
   for (let index = 0; index < 5; index += 1) {
@@ -264,8 +264,8 @@ test("promotes only a registered immutable prompt profile", () => {
   const current = {
     schema_version: 4,
     version: "base-v2",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "model-bound-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 5, teacher_max_turns_per_ask: 7 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "model-bound-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }
   for (let index = 0; index < 5; index += 1) {
@@ -316,8 +316,8 @@ test("can promote one field into a new harness-specific playbook cell", () => {
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 5, teacher_max_turns_per_ask: 7 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }
   const cellID = "codex|main:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|worker:venice/claude-haiku-5-5>venice/claude-haiku-5-5@direct|teacher:no-teacher|implement|known-change|small|profile:codex-haiku-worker-v1"
@@ -340,8 +340,8 @@ test("does not trust a supplied promotion verdict without local paired evidence"
   const current = {
     schema_version: 4,
     version: "base-v1",
-    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 5, teacher_max_turns_per_ask: 7 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }
   writeFileSync(playbookPath, JSON.stringify(current))

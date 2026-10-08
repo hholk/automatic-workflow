@@ -37,6 +37,18 @@ EXIT: <exit code or n/a>
 UNKNOWN: <remaining missing information or none>
 ```
 
+## Human question (teacher to main)
+
+```text
+HUMAN_QUESTION:
+  DECISION: <decision that needs human authority or knowledge>
+  QUESTION: <one concrete question for the user>
+  WHY: <why no worker can answer it>
+```
+
+The main agent relays HUMAN_QUESTION to the user as one question and resumes the
+teacher thread with the answer as EVIDENCE. The teacher never asks the user directly.
+
 One ASK has one target, expected evidence, and a stop condition. FINAL ends the
 thread. Workers always return the worker contract. The main agent constructs
 EVIDENCE from their validated DONE fields: observed result, source and exit code;

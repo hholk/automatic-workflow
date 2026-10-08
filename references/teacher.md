@@ -55,6 +55,6 @@ or `FINAL` stop the loop. Terminal outcomes are `VERIFIED`,
 Use the selected runtime's native `aw-opus-teacher`, not a nested CLI or
 another harness. Start without forked history; send only the contract and
 bounded decision evidence once, then delta-only follow-ups on the same thread.
-Maximum 300 words per response. OpenCode denies tools; Codex uses read-only,
+Be concise and precise; ask focused questions. OpenCode denies tools; Codex uses read-only,
 disabled subagents and a no-tools instruction. Any teacher tool use invalidates
 the advisory result. Unsupported hosts stop rather than substituting a model.

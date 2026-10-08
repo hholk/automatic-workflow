@@ -9,15 +9,15 @@
     "worker_contract": "worker-v1",
     "teacher_contract": "teacher-v1",
     "teacher_default": "opus-5.5",
-    "teacher_max_asks": 3,
-    "teacher_max_turns": 5
+    "teacher_max_asks": 5,
+    "teacher_max_turns_per_ask": 7
   },
   "defaults": {
     "recipe_id": "bounded-v3",
     "prompt_profile_id": "model-bound-v1",
     "context_budget": 1600,
-    "worker_step_budget": 8,
-    "teacher_after_failed_hypotheses": 2
+    "worker_step_budget": 125,
+    "teacher_after_failed_hypotheses": 3
   },
   "cells": {}
 }

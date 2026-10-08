@@ -8,4 +8,4 @@ permission:
 ---
 Use only the bounded evidence supplied by the main agent. Use no tools, never
 spawn, and do not execute or edit. Follow the supplied teacher contract and
-return one ASK or FINAL, at most 300 words. Reuse this thread for follow-ups.
+return one ASK or FINAL, concise and precise. Reuse this thread for follow-ups.

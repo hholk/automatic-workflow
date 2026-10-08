@@ -8,6 +8,17 @@ See `references/lessons.md` for measurement and retention rules.
 
  <!-- lessons -->
 
+## 2026-10-08 — Looser teacher and worker budgets, explicit human escalation
+
+- Change: teacher allows up to 5 ASK, each ASK up to 7 turns (total cap 35 turns, no unbounded loop); worker slice budget 8 → 125 tool steps; failed-hypothesis threshold 2 → 3; teacher word limit removed (teacher answers concise and precise); new `HUMAN_QUESTION` contract for open questions that need user authority or knowledge.
+- Hypothesis: the previous 3-ASK/5-turn and 8-step caps stopped the loop before the decisive evidence arrived, so `FINAL` came from incomplete evidence.
+- Benchmark: `npm test` (60 tests, includes teacher budget and resolver limits); `node scripts/check-models.mjs`.
+- Before / After / Delta: teacher limit 3 ASK / 5 turns → 5 ASK / 35 turns; worker steps 8 → 125; failed hypotheses 2 → 3. Telemetry shows no measured exhaustion yet; numeric delta is `insufficient-data`.
+- Evidence: local telemetry has 58 runs, most `PARTIAL_WITH_UNKNOWN` or `BLOCKED_ENVIRONMENT`; none is attributed to a step or teacher cap.
+- Result: keep as a hypothesis; track `TEACHER_EXHAUSTED` and worker step exhaustion per cell and revise if the cost rises without quality gain.
+- Lesson: a budget cap is a guard against runaway cost, not a quality mechanism. Raise it only with an observed exhaustion case.
+- Status: pending
+
 ## 2026-09-21 — Acceptance-first routing and consistent handbacks
 
 - Change: direct execution precedes ordinary delegation; one worker return contract with explicit unfinished work; main constructs teacher evidence; bounded-v3 permits one explicitly authorized new probe; main verifies the integrated output; teacher/review are conditional; qualitative lessons are retained; quality-v2 treats worker shares as diagnostics. Active playbook: acceptance-routing-v4. Existing model bindings are unchanged.

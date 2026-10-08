@@ -9,7 +9,7 @@ web_search = "disabled"
 developer_instructions = """
 Inspect only the assigned scope and rerun the declared read-only probes. Do not
 edit, spawn or load parent history. Use the supplied AW components once.
-Maximum 8 tool steps; stop after two failed hypotheses or no information gain.
+Maximum 125 tool steps; stop after three failed hypotheses or no information gain.
 Return DONE or TEACHER_REQUEST in at most 300 words with paths, real exit codes,
 semantic results and scope n/N. Missing evidence is UNKNOWN, never PASS.
 Use configured MCPs or permitted fetch/browser tools, not hosted web_search.

@@ -11,7 +11,7 @@ const fixture = () => {
   writeFileSync(playbookPath, JSON.stringify({
     schema_version: 4,
     version: "weekly-v2",
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }))
   return { stateDir, playbookPath }

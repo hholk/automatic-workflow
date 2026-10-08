@@ -59,7 +59,7 @@ export const resolveSelection = (input, overrides = {}) => {
       components,
       teacher: {
         max_asks: playbook.frozen.teacher_max_asks,
-        max_turns: playbook.frozen.teacher_max_turns,
+        max_turns_per_ask: playbook.frozen.teacher_max_turns_per_ask,
       },
     }
   }
