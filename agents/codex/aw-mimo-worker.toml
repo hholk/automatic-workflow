@@ -1,8 +1,8 @@
 # Managed by the AW skill; edit agents/codex/aw-mimo-worker.toml and reinstall.
 name = "aw-mimo-worker"
-description = "AW bounded MiMo V2.6 Flash worker for implementation and fixes."
+description = "AW bounded Claude Haiku 5.5 worker for implementation and fixes."
 model_provider = "codex-router"
-model = "venice/mimo-2.6-flash"
+model = "venice/claude-haiku-5-5"
 model_reasoning_effort = "high"
 web_search = "disabled"
 developer_instructions = """

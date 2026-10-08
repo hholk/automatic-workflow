@@ -4,8 +4,8 @@ Use explicit native model selection and the resolved prompt profile.
 
 | Route | agent_type | model | model_provider |
 |---|---|---|---|
-| fix, implement | `aw-mimo-worker` | `venice/mimo-2.6-flash` | `codex-router` |
-| explore, diagnose, review, compare | `aw-mimo-review` | same MiMo | `codex-router` |
+| fix, implement | `aw-mimo-worker` | `venice/claude-haiku-5-5` | `codex-router` |
+| explore, diagnose, review, compare | `aw-mimo-review` | `venice/claude-haiku-5-5` | `codex-router` |
 | teacher | `aw-opus-teacher` | `venice/opus-5.5` | `codex-router` |
 
 Agent files bind model/provider/high effort, not inherited Ultra, and disable

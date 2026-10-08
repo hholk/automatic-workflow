@@ -1,8 +1,8 @@
 ---
-description: AW independent MiMo V2.6 Flash read-only reviewer
-model: venice/xiaomi-mimo-v2-6-flash
+description: AW independent Claude Haiku 5.5 read-only reviewer
+model: venice/claude-haiku-5-5
 mode: all
-steps: 8
+steps: 32
 permission:
   edit: deny
   write: deny

@@ -5,7 +5,7 @@ description: Use when supervising a multi-step task whose exploration, implement
 
 # AW v4
 
-Main alone orchestrates. MiMo V2.6 Flash is the non-teacher default in every
+Main alone orchestrates. Claude Haiku 5.5 through Venice is the non-teacher default in every
 supported host. Claude Opus 5.5 through Venice is the advisory teacher.
 No alternate-model fallback; unavailable profiles stop with BLOCKED_ENVIRONMENT.
 

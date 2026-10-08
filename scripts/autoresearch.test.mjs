@@ -13,7 +13,7 @@ const runUsageAt = (targetState, ...args) => spawnSync(process.execPath, [usageS
 })
 const runUsage = (...args) => runUsageAt(state, ...args)
 
-const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainTokens = 20, workerActions = 8, accepted, fallback = false, pass = true, profile = "codex-mimo-worker-v1" }) => ({
+const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainTokens = 20, workerActions = 8, accepted, fallback = false, pass = true, profile = "codex-haiku-worker-v1" }) => ({
   schema_version: 4,
   kind: "run",
   run_id: runID,
@@ -25,9 +25,9 @@ const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainToke
   harness_version: "test",
   prompt: {
     profile_id: profile,
-    component_ids: ["core/worker", "contracts/worker", "models/mimo", "workflows/implement", recipe],
+    component_ids: ["core/worker", "contracts/worker", "models/claude-haiku-5-5", "workflows/implement", recipe],
     component_tokens: 100,
-    loaded_files: ["prompts/core/worker.md", "contracts/worker.md", "prompts/models/mimo-v2.6-flash.md", "workflows/implement.md", `playbooks/recipes/${recipe}.md`],
+    loaded_files: ["prompts/core/worker.md", "contracts/worker.md", "prompts/models/claude-haiku-5-5.md", "workflows/implement.md", `playbooks/recipes/${recipe}.md`],
     duplicate_context_tokens: 0,
   },
   actors: {
@@ -98,7 +98,7 @@ test("records prompt-free actor and resolved-model evidence", () => {
   assert.equal(stored.tokens.operational_total, 100)
   assert.equal(stored.metrics.worker_token_share, 0.8)
   assert.equal(stored.metrics.worker_execution_share, null)
-  assert.equal(stored.prompt.profile_id, "codex-mimo-worker-v1")
+  assert.equal(stored.prompt.profile_id, "codex-haiku-worker-v1")
   assert.equal("prompt_text" in stored, false)
   const latest = runUsage("latest", "--host", "codex")
   assert.equal(latest.status, 0)
@@ -231,7 +231,7 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
     schema_version: 4,
     version: "base-v1",
     frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
   for (let index = 0; index < 5; index += 1) {
@@ -276,7 +276,7 @@ test("promotes only a registered immutable prompt profile", () => {
     schema_version: 1,
     prompt_profiles: {
       "model-bound-v1": { overlays: {} },
-      "mimo-tight-v1": { overlays: { "codex-mimo-worker-v1": "prompts/experiments/mimo-tight-v1.md" } },
+      "mimo-tight-v1": { overlays: { "codex-haiku-worker-v1": "prompts/experiments/mimo-tight-v1.md" } },
     },
   }))
   writeFileSync(playbookPath, JSON.stringify(current))
@@ -317,10 +317,10 @@ test("can promote one field into a new harness-specific playbook cell", () => {
     schema_version: 4,
     version: "base-v1",
     frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
-  const cellID = "codex|main:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|worker:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|teacher:no-teacher|implement|known-change|small|profile:codex-mimo-worker-v1"
+  const cellID = "codex|main:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|worker:venice/claude-haiku-5-5>venice/claude-haiku-5-5@direct|teacher:no-teacher|implement|known-change|small|profile:codex-haiku-worker-v1"
   for (let index = 0; index < 5; index += 1) {
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-base-${index}`, recipe: "base-v1", variant: "base-v1", taskID: `cell-task-${index}`, tokens: 100 })).status, 0)
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-candidate-${index}`, recipe: "base-v1", variant: "cell-v1", taskID: `cell-task-${index}`, tokens: 80, mainTokens: 10, workerActions: 9 })).status, 0)
@@ -341,7 +341,7 @@ test("does not trust a supplied promotion verdict without local paired evidence"
     schema_version: 4,
     version: "base-v1",
     frozen: { evaluator: "quality-v1", telemetry: "run-v4", safety: "aw-v2", worker_contract: "worker-v1", teacher_contract: "teacher-v1", teacher_default: "opus-5.5", teacher_max_asks: 3, teacher_max_turns: 5 },
-    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-mimo-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-haiku-worker-v1", context_budget: 1600, worker_step_budget: 8, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }
   writeFileSync(playbookPath, JSON.stringify(current))

@@ -6,12 +6,12 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 test("native agents exist and enforce provider, effort and recursion boundaries", () => {
   for (const name of ["aw-mimo-worker", "aw-mimo-review"]) {
     const oc = read(`agents/opencode/${name}.md`)
-    assert.match(oc, /steps: 8/)
+    assert.match(oc, /steps: 32/)
     assert.match(oc, /task: deny/)
     const codex = read(`agents/codex/${name}.toml`)
     assert.match(codex, new RegExp(`name = "${name}"`))
     assert.match(codex, /model_provider = "codex-router"/)
-    assert.match(codex, /model = "venice\/mimo-2.6-flash"/)
+    assert.match(codex, /model = "venice\/claude-haiku-5-5"/)
     assert.match(codex, /model_reasoning_effort = "high"/)
     assert.match(codex, /\[agents\]\nenabled = false/)
     assert.match(codex, /\[skills\]\ninclude_instructions = false/)

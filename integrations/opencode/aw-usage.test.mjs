@@ -117,7 +117,7 @@ test("uses the active playbook version and never reuses child evidence across ac
   writeFileSync(playbookPath, JSON.stringify({
     schema_version: 4,
     version: "weekly-v7",
-    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-mimo-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-haiku-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }))
   process.env.AW_STATE_DIR = stateDir

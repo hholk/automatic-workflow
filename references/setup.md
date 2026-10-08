@@ -11,7 +11,7 @@ links. Native Codex agents in `~/.codex/agents/` must be regular 0600 files.
 Codex's sensitive role reader uses O_NOFOLLOW: a symlink may be discovered but
 spawn fails with "agent type is currently not available".
 
-For Codex Router, curate `venice/mimo-2.6-flash` for non-teacher roles and
+For Codex Router, curate `venice/claude-haiku-5-5` for non-teacher roles and
 `venice/opus-5.5` for the teacher, then publish with `node src/catalog.mjs` in
 the installed router. Never edit generated `router-model-*.toml` files.
 Preserve the main model and native Ultra configuration.

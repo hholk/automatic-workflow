@@ -88,7 +88,7 @@ export const resolveSelection = (input, overrides = {}) => {
     task_class: input.taskClass || null,
     complexity: input.complexity || null,
     model,
-    model_provider: input.host === "codex" ? "codex-router" : "venice",
+    model_provider: input.host === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice"),
     native_agent: input.host === "opencode" && input.model === "venice/z-ai-glm-5-3-flash"
       ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
       : input.host === "github-copilot"

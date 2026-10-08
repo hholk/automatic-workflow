@@ -24,15 +24,15 @@ const run = (overrides = {}) => ({
   recipe_id: "base-v1",
   playbook_version: "base-v2",
   prompt: {
-    profile_id: "codex-mimo-worker-v1",
-    component_ids: ["core/worker", "contracts/worker", "models/mimo"],
+    profile_id: "codex-haiku-worker-v1",
+    component_ids: ["core/worker", "contracts/worker", "models/claude-haiku-5-5"],
     component_tokens: 80,
     loaded_files: ["prompts/core/worker.md"],
     duplicate_context_tokens: 0,
   },
   actors: {
     main: actor("venice/mimo-2.6-flash"),
-    worker: actor("venice/mimo-2.6-flash"),
+    worker: actor("venice/claude-haiku-5-5"),
     teacher: actor(null),
   },
   work: { main_actions: 1, worker_actions: 2 },

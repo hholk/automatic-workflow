@@ -1,8 +1,8 @@
 # Managed by the AW skill; edit agents/codex/aw-mimo-review.toml and reinstall.
 name = "aw-mimo-review"
-description = "AW MiMo V2.6 Flash read-only exploration, diagnosis, comparison and review."
+description = "AW Claude Haiku 5.5 read-only exploration, diagnosis, comparison and review."
 model_provider = "codex-router"
-model = "venice/mimo-2.6-flash"
+model = "venice/claude-haiku-5-5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 web_search = "disabled"

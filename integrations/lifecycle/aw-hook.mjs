@@ -73,7 +73,7 @@ export const handleHook = (host, event, options = {}) => {
   const primaryWorkerModel = options.primaryWorkerModel !== undefined
     ? options.primaryWorkerModel
     : process.env.AW_PRIMARY_WORKER_MODEL || (host === "codex" || host === "github-copilot"
-      ? "venice/mimo-2.6-flash"
+      ? "venice/claude-haiku-5-5"
       : null)
   const path = hookPath(stateDir, host, id)
   const name = eventName(event)

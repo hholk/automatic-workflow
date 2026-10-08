@@ -2,28 +2,28 @@
   "schema_version": 1,
   "main_default": "venice/mimo-2.6-flash",
   "worker_defaults": {
-    "codex": "venice/mimo-2.6-flash",
-    "opencode": "venice/xiaomi-mimo-v2-6-flash",
-    "github-copilot": "venice/mimo-2.6-flash"
+    "codex": "venice/claude-haiku-5-5",
+    "opencode": "venice/claude-haiku-5-5",
+    "github-copilot": "venice/claude-haiku-5-5"
   },
   "worker_profiles": {
-    "codex|venice/mimo-2.6-flash": {
-      "id": "codex-mimo-worker-v1",
+    "codex|venice/claude-haiku-5-5": {
+      "id": "codex-haiku-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/mimo-v2.6-flash.md"
+      "model_delta": "prompts/models/claude-haiku-5-5.md"
     },
-    "opencode|venice/xiaomi-mimo-v2-6-flash": {
-      "id": "opencode-mimo-worker-v1",
+    "opencode|venice/claude-haiku-5-5": {
+      "id": "opencode-haiku-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/mimo-v2.6-flash.md"
+      "model_delta": "prompts/models/claude-haiku-5-5.md"
     },
-    "github-copilot|venice/mimo-2.6-flash": {
-      "id": "copilot-mimo-worker-v1",
+    "github-copilot|venice/claude-haiku-5-5": {
+      "id": "copilot-haiku-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/mimo-v2.6-flash.md"
+      "model_delta": "prompts/models/claude-haiku-5-5.md"
     },
     "opencode|venice/z-ai-glm-5-3-flash": {
       "id": "opencode-glm53-worker-v1",

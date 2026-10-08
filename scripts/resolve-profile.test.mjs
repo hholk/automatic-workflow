@@ -2,7 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { resolveSelection } from "./resolve-profile.mjs"
 
-test("selects the OpenCode MiMo default worker components", () => {
+test("selects the OpenCode Haiku default worker components", () => {
   const value = resolveSelection({
     host: "opencode",
     role: "worker",
@@ -11,13 +11,13 @@ test("selects the OpenCode MiMo default worker components", () => {
     complexity: "small",
   })
 
-  assert.equal(value.model, "venice/xiaomi-mimo-v2-6-flash")
-  assert.equal(value.profile_id, "opencode-mimo-worker-v1")
+  assert.equal(value.model, "venice/claude-haiku-5-5")
+  assert.equal(value.profile_id, "opencode-haiku-worker-v1")
   assert.equal(value.prompt_profile_id, "model-bound-v1")
   assert.deepEqual(value.components, [
     "prompts/core/worker.md",
     "contracts/worker.md",
-    "prompts/models/mimo-v2.6-flash.md",
+    "prompts/models/claude-haiku-5-5.md",
     "workflows/fix.md",
     "playbooks/recipes/bounded-v3.md",
   ])
@@ -56,15 +56,15 @@ test("binds Opus 5.5 to the correct native provider on each host", () => {
 
 test("uses the MiMo default for every worker host with actionable bounded budgets", () => {
   const defaults = {
-    codex: "venice/mimo-2.6-flash",
-    opencode: "venice/xiaomi-mimo-v2-6-flash",
-    "github-copilot": "venice/mimo-2.6-flash",
+    codex: "venice/claude-haiku-5-5",
+    opencode: "venice/claude-haiku-5-5",
+    "github-copilot": "venice/claude-haiku-5-5",
   }
   for (const [host, model] of Object.entries(defaults)) {
     for (const route of ["explore", "diagnose", "fix", "implement", "review"]) {
       const value = resolveSelection({ host, role: "worker", route })
       assert.equal(value.model, model)
-      assert.equal(value.model_provider, host === "codex" ? "codex-router" : "venice")
+      assert.equal(value.model_provider, host === "codex" ? "codex-router" : model.split("/")[0])
       assert.equal(
         value.native_agent,
         host === "github-copilot"
