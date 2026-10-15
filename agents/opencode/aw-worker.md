@@ -1,6 +1,6 @@
 ---
-description: AW bounded Claude Haiku 5.5 implementation worker
-model: venice/claude-haiku-5-5
+description: AW bounded GPT-6 Luna implementation worker
+model: {{model}}
 mode: all
 steps: 32
 permission:

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Single source of truth: prompts/profiles.json. Agent files must match it.
+// Single source of truth: prompts/profiles.json. Templates keep placeholders;
+// rendered agent files must match the current registry.
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -11,13 +12,13 @@ const worker = profiles.worker_defaults
 const teacher = profiles.teacher_bindings
 
 const expected = [
-  ["agents/codex/aw-worker.toml", new RegExp(`model = "${worker.codex}"`)],
-  ["agents/codex/aw-mimo-review.toml", new RegExp(`model = "${worker.codex}"`)],
-  ["agents/codex/aw-opus-teacher.toml", new RegExp(`model = "${teacher.codex.model}"`)],
-  ["agents/opencode/aw-worker.md", new RegExp(`model: ${worker.opencode}`)],
-  ["agents/opencode/aw-mimo-review.md", new RegExp(`model: ${worker.opencode}`)],
-  ["agents/opencode/aw-opus-teacher.md", new RegExp(`model: ${teacher.opencode.model}`)],
-  ["agents/copilot/aw-worker.agent.md", new RegExp(`model: ${worker["github-copilot"]}`)],
+  ["agents/generated/codex/aw-worker.toml", new RegExp(`model = "${worker.codex}"`)],
+  ["agents/generated/codex/aw-reviewer.toml", new RegExp(`model = "${worker.codex}"`)],
+  ["agents/generated/codex/aw-teacher.toml", new RegExp(`model = "${teacher.codex.model}"`)],
+  ["agents/generated/opencode/aw-worker.md", new RegExp(`model: ${worker.opencode}`)],
+  ["agents/generated/opencode/aw-reviewer.md", new RegExp(`model: ${worker.opencode}`)],
+  ["agents/generated/opencode/aw-teacher.md", new RegExp(`model: ${teacher.opencode.model}`)],
+  ["agents/generated/copilot/aw-worker.agent.md", new RegExp(`model: ${worker["github-copilot"]}`)],
 ]
 
 const failures = expected.filter(([path, pattern]) => !pattern.test(read(path))).map(([path]) => path)

@@ -90,10 +90,10 @@ test("prefers useful MCP evidence without forcing redundant calls", () => {
 })
 
 test("binds dedicated native harness profiles without recursive agents", () => {
-  for (const name of ["aw-worker", "aw-mimo-review"]) {
+  for (const name of ["aw-worker", "aw-reviewer"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
-    assert.match(profile, /model: venice\/claude-haiku-5-5/)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /model: venice\/openai-gpt-6-luna/)
     assert.match(profile, /mode: all/)
     assert.match(config, /task: deny/)
     assert.match(config, /"codebase-memory-mcp_\*": allow/)
@@ -115,13 +115,13 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   assert.match(lunaConfig, /"context7_\*": allow/)
   assert.match(lunaConfig, /edit: allow/)
   assert.match(lunaConfig, /write: allow/)
-  assert.match(frontmatter("agents/opencode/aw-mimo-review.md"), /edit: deny/)
-  assert.match(frontmatter("agents/opencode/aw-mimo-review.md"), /write: deny/)
+  assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /edit: deny/)
+  assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /write: deny/)
 
   const opencode = read("references/runtimes-opencode.md")
   assert.match(opencode, /aw-worker/)
-  assert.match(opencode, /aw-mimo-review/)
-  assert.match(opencode, /aw-opus-teacher/)
+  assert.match(opencode, /aw-reviewer/)
+  assert.match(opencode, /aw-teacher/)
   assert.match(opencode, /dedicated AW profiles are the default/i)
   assert.doesNotMatch(opencode, /subagent_type:\s*(?:general|explore)/)
   assert.match(opencode, /providerID.*modelID/is)
@@ -130,13 +130,13 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   const codex = read("references/runtimes-codex.md")
   assert.match(codex, /explicit native model selection/i)
   assert.match(codex, /prompt profile/i)
-  assert.match(codex, /venice\/claude-haiku-5-5/)
+  assert.match(codex, /venice\/openai-gpt-6-luna/)
   assert.match(codex, /venice\/opus-5\.5/)
   const copilot = read("references/runtimes-copilot.md")
   assert.match(copilot, /unresolved.*unknown/is)
   assert.match(copilot, /exclude.*model-specific/is)
-  const copilotAgent = read("agents/copilot/aw-worker.agent.md")
-  assert.match(copilotAgent, /model: venice\/claude-haiku-5-5/)
+  const copilotAgent = read("agents/generated/copilot/aw-worker.agent.md")
+  assert.match(copilotAgent, /model: venice\/openai-gpt-6-luna/)
   assert.match(copilotAgent, /- codebase-memory-mcp\/\*/)
   assert.match(copilotAgent, /- context7\/\*/)
   assert.doesNotMatch(`${codex}\n${copilot}`, /\bv3\b/)
@@ -149,7 +149,7 @@ test("benchmarks resolved v4 component sets including explicit Opus", () => {
     assert.ok("expected_profile_id" in item, item.id)
   }
   const opus = cases.find((item) => item.id === "architecture_opus")
-  assert.equal(opus.teacher_model, "venice/opus-5.5")
+  assert.equal(opus.teacher_model, "venice/claude-opus-5-5")
   assert.equal(opus.explicit_model_request, true)
   assert.equal(opus.expected_profile_id, "opus-teacher-v1")
 

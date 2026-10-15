@@ -1,6 +1,6 @@
 ---
-description: AW independent Claude Haiku 5.5 read-only reviewer
-model: venice/claude-haiku-5-5
+description: AW independent GPT-6 Luna read-only reviewer
+model: {{model}}
 mode: all
 steps: 32
 permission:

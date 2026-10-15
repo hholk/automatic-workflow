@@ -101,7 +101,7 @@ const result = {
     codex_mimo: runtime.includes("venice/mimo-2.6-flash"),
     opencode_mimo: runtime.includes("venice/xiaomi-mimo-v2-6-flash"),
     copilot_mimo: runtime.includes("venice/mimo-2.6-flash"),
-    codex_opus_teacher: teacher.includes("venice/opus-5.5"),
+    codex_opus_teacher: teacher.includes("venice/claude-opus-5-5"),
     opencode_opus_teacher: teacher.includes("venice/claude-opus-5-5"),
     no_venice_sol: !`${runtime}\n${teacher}`.includes("venice/openai-gpt-56-sol"),
     teacher_five_turn_cap: /Maximum five teacher responses/.test(teacher),

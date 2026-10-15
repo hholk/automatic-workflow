@@ -52,7 +52,7 @@ or `FINAL` stop the loop. Terminal outcomes are `VERIFIED`,
 
 ## Native hosts
 
-Use the selected runtime's native `aw-opus-teacher`, not a nested CLI or
+Use the selected runtime's native `aw-teacher`, not a nested CLI or
 another harness. Start without forked history; send only the contract and
 bounded decision evidence once, then delta-only follow-ups on the same thread.
 Be concise and precise; ask focused questions. OpenCode denies tools; Codex uses read-only,

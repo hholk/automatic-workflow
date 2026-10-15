@@ -8,7 +8,7 @@ const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
 const defaultRegistry = readJson(join(root, "prompts/profiles.json"))
 const defaultPlaybook = readJson(join(root, "playbooks/current.json"))
 const hosts = new Set(["codex", "opencode", "github-copilot"])
-const workerRoutes = new Set(["explore", "diagnose", "fix", "implement", "review"])
+const workerRoutes = new Set(["explore", "diagnose", "fix", "implement", "review", "computer-use"])
 
 const assertComponents = (components) => {
   for (const component of components) {
@@ -65,7 +65,11 @@ export const resolveSelection = (input, overrides = {}) => {
   }
 
   if (!workerRoutes.has(input.route)) throw new Error(`unknown route: ${input.route}`)
-  const model = input.model || registry.worker_defaults?.[input.host]
+  const routeModel = registry.worker_route_models?.[input.route]?.[input.host]
+  if (routeModel && input.model && input.model !== routeModel) {
+    throw new Error(`route ${input.route} requires worker model: ${routeModel}`)
+  }
+  const model = routeModel || input.model || registry.worker_defaults?.[input.host]
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
   const profile = registry.worker_profiles[`${input.host}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
@@ -93,7 +97,7 @@ export const resolveSelection = (input, overrides = {}) => {
       ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
       : input.host === "github-copilot"
         ? "aw-worker"
-        : (["fix", "implement"].includes(input.route) ? "aw-worker" : "aw-mimo-review"),
+        : (["fix", "implement", "computer-use"].includes(input.route) ? "aw-worker" : "aw-reviewer"),
     budget: {
       context_tokens: playbook.defaults.context_budget,
       worker_steps: playbook.defaults.worker_step_budget,

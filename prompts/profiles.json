@@ -2,28 +2,35 @@
   "schema_version": 1,
   "main_default": "venice/mimo-2.6-flash",
   "worker_defaults": {
-    "codex": "venice/claude-haiku-5-5",
-    "opencode": "venice/claude-haiku-5-5",
-    "github-copilot": "venice/claude-haiku-5-5"
+    "codex": "venice/openai-gpt-6-luna",
+    "opencode": "venice/openai-gpt-6-luna",
+    "github-copilot": "venice/openai-gpt-6-luna"
+  },
+  "worker_route_models": {
+    "computer-use": {
+      "codex": "venice/openai-gpt-6-luna",
+      "opencode": "venice/openai-gpt-6-luna",
+      "github-copilot": "venice/openai-gpt-6-luna"
+    }
   },
   "worker_profiles": {
-    "codex|venice/claude-haiku-5-5": {
-      "id": "codex-haiku-worker-v1",
+    "codex|venice/openai-gpt-6-luna": {
+      "id": "codex-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/claude-haiku-5-5.md"
+      "model_delta": "prompts/models/gpt-6-luna.md"
     },
-    "opencode|venice/claude-haiku-5-5": {
-      "id": "opencode-haiku-worker-v1",
+    "opencode|venice/openai-gpt-6-luna": {
+      "id": "opencode-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/claude-haiku-5-5.md"
+      "model_delta": "prompts/models/gpt-6-luna.md"
     },
-    "github-copilot|venice/claude-haiku-5-5": {
-      "id": "copilot-haiku-worker-v1",
+    "github-copilot|venice/openai-gpt-6-luna": {
+      "id": "copilot-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/claude-haiku-5-5.md"
+      "model_delta": "prompts/models/gpt-6-luna.md"
     },
     "opencode|venice/z-ai-glm-5-3-flash": {
       "id": "opencode-glm53-worker-v1",
@@ -62,7 +69,7 @@
   "teacher_default": "opus-5.5",
   "teacher_explicit_overrides": [],
   "teacher_bindings": {
-    "codex": { "model": "venice/opus-5.5", "model_provider": "codex-router", "native_agent": "aw-opus-teacher" },
-    "opencode": { "model": "venice/claude-opus-5-5", "model_provider": "venice", "native_agent": "aw-opus-teacher" }
+    "codex": { "model": "venice/claude-opus-5-5", "model_provider": "codex-router", "native_agent": "aw-teacher" },
+    "opencode": { "model": "venice/claude-opus-5-5", "model_provider": "venice", "native_agent": "aw-teacher" }
   }
 }

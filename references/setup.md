@@ -11,7 +11,12 @@ links. Native Codex agents in `~/.codex/agents/` must be regular 0600 files.
 Codex's sensitive role reader uses O_NOFOLLOW: a symlink may be discovered but
 spawn fails with "agent type is currently not available".
 
-For Codex Router, curate `venice/claude-haiku-5-5` for non-teacher roles and
+The Copilot CLI discovers user custom agents in `~/.copilot/agents/`. The
+installer places the rendered `aw-worker.agent.md` there as a regular file;
+Copilot's primary model is marked required. If Copilot CLI is absent, this
+installs its profile for later use but cannot prove a live dispatch.
+
+For Codex Router, curate `venice/openai-gpt-6-luna` for non-teacher roles and
 `venice/opus-5.5` for the teacher, then publish with `node src/catalog.mjs` in
 the installed router. Never edit generated `router-model-*.toml` files.
 Preserve the main model and native Ultra configuration.

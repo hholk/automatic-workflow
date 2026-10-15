@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto"
-import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -73,7 +73,7 @@ export const handleHook = (host, event, options = {}) => {
   const primaryWorkerModel = options.primaryWorkerModel !== undefined
     ? options.primaryWorkerModel
     : process.env.AW_PRIMARY_WORKER_MODEL || (host === "codex" || host === "github-copilot"
-      ? "venice/claude-haiku-5-5"
+      ? "venice/openai-gpt-6-luna"
       : null)
   const path = hookPath(stateDir, host, id)
   const name = eventName(event)
@@ -226,7 +226,7 @@ const runCli = async () => {
   process.stdout.write("{}\n")
 }
 
-if (process.argv[1] === modulePath) {
+if (process.argv[1] && realpathSync(process.argv[1]) === modulePath) {
   runCli().catch((error) => {
     process.stderr.write(`aw-hook: ${error.message}\n`)
     process.exitCode = 1

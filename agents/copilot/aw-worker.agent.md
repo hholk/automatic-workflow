@@ -1,8 +1,9 @@
 ---
 name: AW Worker
-description: Executes one bounded AW worker brief with observed evidence and no recursive delegation.
+description: Executes one bounded AW worker brief with observed evidence and no recursive delegation using GPT-6 Luna.
 target: github-copilot
-model: venice/claude-haiku-5-5
+model: {{model}}
+model-policy: required
 tools:
   - read
   - search

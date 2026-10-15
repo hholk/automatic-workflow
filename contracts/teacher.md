@@ -55,3 +55,12 @@ EVIDENCE from their validated DONE fields: observed result, source and exit code
 map unmet checks to UNKNOWN and attach the matching ASK_ID. A TEACHER_REQUEST
 is unresolved information, never successful evidence. Only main sends EVIDENCE
 to the teacher.
+
+## Dispatch failure
+
+A provider/host error while starting or resuming the teacher (for example, an
+unsupported message-prefill format) is an environment failure, not a teacher
+answer or a worker's TEACHER_REQUEST. Confirm the failure from runtime evidence;
+then stop with `BLOCKED_ENVIRONMENT`. Do not switch to another model or route
+the decision to a reviewer as an implicit fallback. Retry only after a concrete
+transport/configuration change, using the configured teacher profile.

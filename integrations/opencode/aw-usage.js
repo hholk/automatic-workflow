@@ -86,7 +86,7 @@ const messageTokens = ({ tokens = {} }) => Number.isFinite(tokens.total)
   : (tokens.input || 0) + (tokens.output || 0) + (tokens.reasoning || 0)
     + (tokens.cache?.read || 0) + (tokens.cache?.write || 0)
 const sessionActor = (sessionID, rootID) => sessionID === rootID
-  ? "main" : get(sessionID).agent === "aw-opus-teacher" ? "teacher" : "worker"
+  ? "main" : get(sessionID).agent === "aw-teacher" ? "teacher" : "worker"
 const sessionTokens = (sessionID) => [...get(sessionID).messages.values()].reduce((sum, message) => sum + message.tokens, 0)
 const resolvedModels = (sessionIDs) => [...new Set(sessionIDs.flatMap((sessionID) => [...get(sessionID).messages.values()].map((message) => message.model).filter(Boolean)))]
 const actor = (tokens, resolvedModel, requestedModel = resolvedModel, used = Boolean(resolvedModel || Number.isFinite(tokens)), fallbackReason = null) => ({
@@ -139,7 +139,7 @@ export const AwUsagePlugin = async () => ({
     const component = input.tool === "read" ? componentFromPath(args.filePath) : null
     if (component) active.loadedFiles.add(component)
     const dispatch = input.tool === "task" || input.tool === "subagent"
-    const teacherCall = dispatch && args.subagent_type === "aw-opus-teacher"
+    const teacherCall = dispatch && args.subagent_type === "aw-teacher"
     if (dispatch && !teacherCall) active.workerCalls += 1
     if (sessionActor(sessionID, rootID) === "teacher") {
       active.errors += 1

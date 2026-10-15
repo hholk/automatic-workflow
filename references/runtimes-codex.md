@@ -4,9 +4,10 @@ Use explicit native model selection and the resolved prompt profile.
 
 | Route | agent_type | model | model_provider |
 |---|---|---|---|
-| fix, implement | `aw-worker` | `venice/claude-haiku-5-5` | `codex-router` |
-| explore, diagnose, review, compare | `aw-mimo-review` | `venice/claude-haiku-5-5` | `codex-router` |
-| teacher | `aw-opus-teacher` | `venice/opus-5.5` | `codex-router` |
+| GUI/computer-use | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
+| fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
+| explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` | `codex-router` |
+| teacher | `aw-teacher` | `venice/opus-5.5` | `codex-router` |
 
 Agent files bind model/provider/high effort, not inherited Ultra, and disable
 child skill-catalog instructions. Use native spawn/resume tools; set
@@ -17,6 +18,7 @@ inherits a large context is a measured cost, not a reason to fork more.
 
 From the absolute skill directory:
 `node scripts/resolve-profile.mjs --host codex --role worker --route fix`.
+GUI/computer-use: `node scripts/resolve-profile.mjs --host codex --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
 using native metadata and router request evidence, never model self-reports.
 Stop on unknown/mismatched routing. For installation or unavailable agents,

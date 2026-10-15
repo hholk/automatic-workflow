@@ -5,7 +5,7 @@ description: Use when supervising a multi-step task whose exploration, implement
 
 # AW v4
 
-Main alone orchestrates. Claude Haiku 5.5 through Venice is the non-teacher default in every
+Main alone orchestrates. GPT-6 Luna through Venice is the non-teacher default in every
 supported host. Claude Opus 5.5 through Venice is the advisory teacher.
 No alternate-model fallback; unavailable profiles stop with BLOCKED_ENVIRONMENT.
 
@@ -19,6 +19,7 @@ First matching row wins. Details and load paths: [routing](references/routing.md
 | Signal | Route |
 |---|---|
 | Required authority or material user choice missing | human |
+| Live GUI/computer-use interaction is required | computer-use |
 | Main can finish and verify safely for less than a handoff | direct |
 | Decisive technical gap after a useful probe, or architecture/hard-fix unresolved | teacher |
 | Completed change needs independent evidence | review |

@@ -1,8 +1,8 @@
-# Managed by the AW skill; edit agents/codex/aw-opus-teacher.toml and reinstall.
-name = "aw-opus-teacher"
+# Managed by the AW skill; edit agents/codex/aw-teacher.toml and reinstall.
+name = "aw-teacher"
 description = "AW Opus 5.5 advisory teacher through Codex Router and Venice."
 model_provider = "codex-router"
-model = "venice/opus-5.5"
+model = "venice/claude-opus-5-5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 web_search = "disabled"

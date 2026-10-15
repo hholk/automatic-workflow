@@ -6,6 +6,7 @@ First match wins.
 | Case | Signal | Route | Load |
 |---|---|---|---|
 | `irreversible` | required authorization or material user choice is missing | `human` | none |
+| `computer_use` | task requires interacting with a live GUI, app, or device | `computer-use` | `workflows/computer-use.md` |
 | `tiny_local` | main can complete and verify safely for less than a handoff | `direct` | none |
 | `evidence_gap` | material decision still unresolved by main; `MISSING_DECISIVE`, `CONFLICTING`, or `EXHAUSTED` after a useful probe | `teacher` | `teacher.md` |
 | `architecture` | durable boundary decision still unresolved after a useful probe | `teacher` | `teacher.md` |

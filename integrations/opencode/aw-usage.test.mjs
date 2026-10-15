@@ -13,7 +13,7 @@ test("separates native Opus teacher usage and includes cached tokens without dou
   for (const [id, agent, model, tokens] of [
     ["root", "build", "mimo-2.6-flash", { total: 110, input: 5, output: 5, cache: { read: 100 } }],
     ["worker", "aw-worker", "xiaomi-mimo-v2-6-flash", { input: 5, output: 5, cache: { read: 15, write: 5 } }],
-    ["teacher", "aw-opus-teacher", "claude-opus-5-5", { total: 50, input: 5, output: 5, cache: { read: 40 } }],
+    ["teacher", "aw-teacher", "claude-opus-5-5", { total: 50, input: 5, output: 5, cache: { read: 40 } }],
   ]) {
     if (id !== "root") {
       await hooks["tool.execute.before"]({ tool: "task", sessionID: "root" }, { args: { subagent_type: agent } })
@@ -117,7 +117,7 @@ test("uses the active playbook version and never reuses child evidence across ac
   writeFileSync(playbookPath, JSON.stringify({
     schema_version: 4,
     version: "weekly-v7",
-    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-haiku-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-gpt6-luna-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }))
   process.env.AW_STATE_DIR = stateDir

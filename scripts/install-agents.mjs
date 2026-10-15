@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
-const names = ["aw-worker", "aw-mimo-review", "aw-opus-teacher"]
+const names = ["aw-worker", "aw-reviewer", "aw-teacher"]
 const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex")
 // The marker line is added by this installer; strip it so a file installed
 // before the marker existed is still recognized as owned.
@@ -25,13 +25,17 @@ export function installAgents({ home = homedir(), apply = false } = {}) {
   const manifestPath = join(home, ".local/state/aw/installed-agents.json")
   const manifest = readManifest(manifestPath)
   const entries = [
-    ["opencode", join(home, ".config/opencode/agents"), "md", [...names, "aw-glm53-worker", "aw-glm53-review"]],
-    ["codex", join(home, ".codex/agents"), "toml", names],
-  ].flatMap(([host, directory, extension, hostNames]) => {
-    if (!stat(directory)?.isDirectory()) throw new Error(`Missing agent directory: ${directory}`)
+    ["opencode", "opencode", join(home, ".config/opencode/agents"), ".md", [...names, "aw-glm53-worker", "aw-glm53-review"]],
+    ["codex", "codex", join(home, ".codex/agents"), ".toml", names],
+    ["copilot", "copilot", join(home, ".copilot/agents"), ".agent.md", ["aw-worker"]],
+  ].flatMap(([host, sourceHost, directory, suffix, hostNames]) => {
+    const directoryStat = stat(directory)
+    if (directoryStat && !directoryStat.isDirectory()) throw new Error(`Agent path is not a directory: ${directory}`)
+    if (!directoryStat && host !== "copilot") throw new Error(`Missing agent directory: ${directory}`)
     return hostNames.map((name) => {
-      const source = join(root, "agents", host, `${name}.${extension}`)
-      const target = join(directory, `${name}.${extension}`)
+      const filename = `${name}${suffix}`
+      const source = join(root, "agents/generated", sourceHost, filename)
+      const target = join(directory, filename)
       const existing = stat(target)
       let current = false
       if (existing) {
@@ -42,7 +46,7 @@ export function installAgents({ home = homedir(), apply = false } = {}) {
           try { owned = realpathSync(target).startsWith(join(root, "agents")) } catch { owned = true }
           if (!owned) throw new Error(`Refusing unrelated destination: ${target}`)
           current = host === "opencode" && realpathSync(target) === realpathSync(source)
-        } else if (host === "codex" && existing.isFile()) {
+        } else if (["codex", "copilot"].includes(host) && existing.isFile()) {
           const digest = hash(target)
           const owned = digest === hash(source)
             || manifest[target] === digest
@@ -58,24 +62,27 @@ export function installAgents({ home = homedir(), apply = false } = {}) {
   })
   // Validate every destination before installing anything.
   if (apply) {
+    if (entries.some((entry) => entry.host === "copilot")) {
+      mkdirSync(join(home, ".copilot/agents"), { recursive: true, mode: 0o700 })
+    }
     for (const entry of entries) {
       if (entry.current) continue
       if (entry.exists) {
         const temporary = `${entry.target}.tmp.${process.pid}`
-        if (entry.host === "codex") {
+        if (["codex", "copilot"].includes(entry.host)) {
           // Codex's sensitive config reader uses O_NOFOLLOW when spawning roles.
-          // Discovery may show a symlinked role that then fails at dispatch.
+          // Copilot and Codex user agents are installed as regular files.
           copyFileSync(entry.source, temporary, constants.COPYFILE_EXCL)
-          chmodSync(temporary, 0o600)
+          if (entry.host === "codex") chmodSync(temporary, 0o600)
           renameSync(temporary, entry.target)
         } else {
           symlinkSync(entry.source, temporary)
           renameSync(temporary, entry.target)
         }
-      } else if (entry.host === "codex") {
+      } else if (["codex", "copilot"].includes(entry.host)) {
         const temporary = `${entry.target}.tmp.${process.pid}`
         copyFileSync(entry.source, temporary, constants.COPYFILE_EXCL)
-        chmodSync(temporary, 0o600)
+        if (entry.host === "codex") chmodSync(temporary, 0o600)
         renameSync(temporary, entry.target)
       } else {
         symlinkSync(entry.source, entry.target)

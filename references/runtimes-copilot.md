@@ -4,7 +4,10 @@ Use Copilot CLI or cloud custom agents, not an unobservable general-purpose
 subagent. `agents/copilot/aw-worker.agent.md` is the least-privilege profile;
 install it at the supported user or repository location only with approval.
 It omits the `agent` tool and therefore cannot invoke further agents.
-The profile requests `venice/claude-haiku-5-5` as the worker model.
+The profile requests `venice/openai-gpt-6-luna` as the worker model.
+GUI/computer-use work uses the dedicated `computer-use` route, pinned by the
+profile resolver to `venice/openai-gpt-6-luna`:
+`node scripts/resolve-profile.mjs --host github-copilot --role worker --route computer-use`.
 
 Use `integrations/copilot/hooks.json.example` for local CLI lifecycle evidence,
 after replacing `<AW_SKILL_DIR>` and receiving approval. Prefix the initiating
@@ -30,7 +33,7 @@ allow rule without the user's authorization.
 Workers use configured MCP servers; unavailable tools remain UNKNOWN.
 
 On unavailable primary models, stop with `BLOCKED_ENVIRONMENT`. Do not assume
-Venice Haiku is available merely because another harness supports it.
+Venice GPT-6 Luna is available merely because another harness supports it.
 
 The host reviews the result, runs final verification, and creates the quality
 attestation. Workers never commit, push, deploy, release, or perform destructive

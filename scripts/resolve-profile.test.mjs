@@ -2,7 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { resolveSelection } from "./resolve-profile.mjs"
 
-test("selects the OpenCode Haiku default worker components", () => {
+test("selects the OpenCode GPT-6 Luna default worker components", () => {
   const value = resolveSelection({
     host: "opencode",
     role: "worker",
@@ -11,13 +11,13 @@ test("selects the OpenCode Haiku default worker components", () => {
     complexity: "small",
   })
 
-  assert.equal(value.model, "venice/claude-haiku-5-5")
-  assert.equal(value.profile_id, "opencode-haiku-worker-v1")
+  assert.equal(value.model, "venice/openai-gpt-6-luna")
+  assert.equal(value.profile_id, "opencode-gpt6-luna-worker-v1")
   assert.equal(value.prompt_profile_id, "model-bound-v1")
   assert.deepEqual(value.components, [
     "prompts/core/worker.md",
     "contracts/worker.md",
-    "prompts/models/claude-haiku-5-5.md",
+    "prompts/models/gpt-6-luna.md",
     "workflows/fix.md",
     "playbooks/recipes/bounded-v3.md",
   ])
@@ -37,13 +37,13 @@ test("explicit GLM model binds a separate OpenCode AW worker without changing Mi
 
 test("binds Opus 5.5 to the correct native provider on each host", () => {
   for (const [host, model, provider] of [
-    ["codex", "venice/opus-5.5", "codex-router"],
+    ["codex", "venice/claude-opus-5-5", "codex-router"],
     ["opencode", "venice/claude-opus-5-5", "venice"],
   ]) {
     const value = resolveSelection({ host, role: "teacher", route: "teacher" })
     assert.equal(value.model, model)
     assert.equal(value.model_provider, provider)
-    assert.equal(value.native_agent, "aw-opus-teacher")
+    assert.equal(value.native_agent, "aw-teacher")
     assert.equal(value.profile_id, "opus-teacher-v1")
     assert.equal(value.prompt_profile_id, "model-bound-v1")
     assert.equal(value.components.length, 3)
@@ -54,11 +54,11 @@ test("binds Opus 5.5 to the correct native provider on each host", () => {
   }), /unsupported teacher model/)
 })
 
-test("uses the MiMo default for every worker host with actionable bounded budgets", () => {
+test("uses the GPT-6 Luna default for every worker host with actionable bounded budgets", () => {
   const defaults = {
-    codex: "venice/claude-haiku-5-5",
-    opencode: "venice/claude-haiku-5-5",
-    "github-copilot": "venice/claude-haiku-5-5",
+    codex: "venice/openai-gpt-6-luna",
+    opencode: "venice/openai-gpt-6-luna",
+    "github-copilot": "venice/openai-gpt-6-luna",
   }
   for (const [host, model] of Object.entries(defaults)) {
     for (const route of ["explore", "diagnose", "fix", "implement", "review"]) {
@@ -69,7 +69,7 @@ test("uses the MiMo default for every worker host with actionable bounded budget
         value.native_agent,
         host === "github-copilot"
           ? "aw-worker"
-          : ["fix", "implement"].includes(route) ? "aw-worker" : "aw-mimo-review",
+          : ["fix", "implement"].includes(route) ? "aw-worker" : "aw-reviewer",
       )
       assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 125, failed_hypotheses: 3 })
       assert.equal(new Set(value.components).size, value.components.length)
@@ -78,6 +78,21 @@ test("uses the MiMo default for every worker host with actionable bounded budget
     assert.throws(() => resolveSelection({
       host, role: "worker", route: "fix", model: host === "codex" ? "gpt-5.6-luna" : "openai-codex/gpt-5.6-luna",
     }), /retired worker profile/)
+  }
+})
+
+test("pins computer-use work to Venice GPT-6 Luna on every worker host", () => {
+  for (const host of ["codex", "opencode", "github-copilot"]) {
+    const value = resolveSelection({ host, role: "worker", route: "computer-use" })
+    assert.equal(value.model, "venice/openai-gpt-6-luna")
+    assert.equal(value.native_agent, "aw-worker")
+    assert.ok(value.components.includes("workflows/computer-use.md"))
+    assert.throws(() => resolveSelection({
+      host,
+      role: "worker",
+      route: "computer-use",
+      model: "venice/z-ai-glm-5-3-flash",
+    }), /requires worker model: venice\/openai-gpt-6-luna/)
   }
 })
 

@@ -62,7 +62,7 @@
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "venice/opus-5.5",
+    "teacher_model": "venice/claude-opus-5-5",
     "task_class": "architecture",
     "complexity": "large",
     "expected_profile_id": "opus-teacher-v1"
@@ -74,7 +74,7 @@
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "venice/opus-5.5",
+    "teacher_model": "venice/claude-opus-5-5",
     "explicit_model_request": true,
     "task_class": "architecture",
     "complexity": "large",
@@ -87,7 +87,7 @@
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "venice/opus-5.5",
+    "teacher_model": "venice/claude-opus-5-5",
     "task_class": "hard-fix",
     "complexity": "large",
     "expected_profile_id": "opus-teacher-v1"
