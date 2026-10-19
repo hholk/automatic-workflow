@@ -46,6 +46,7 @@ const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainToke
     teacher: { used: false, requested_model: null, resolved_model: null, model_source: "unknown", token_source: "unknown", tokens: null },
   },
   quality: {
+    policy_provenance_complete: true,
     verify_id: "unit-test",
     verify_exit_code: pass ? 0 : 1,
     semantic_success: pass,
@@ -191,6 +192,7 @@ test("merges a host quality attestation even when it arrives before the trace", 
   assert.equal(result.status, 0)
   const pending = event({ runID, recipe: "base-v1", taskID: "attested-task" })
   pending.quality = {
+    policy_provenance_complete: true,
     verify_id: null, verify_exit_code: null, semantic_success: null,
     scope_covered: null, scope_total: null, review_pass: null, forbidden_changes: null,
   }

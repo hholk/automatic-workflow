@@ -10,6 +10,7 @@ const usageScript = new URL("./usage.mjs", import.meta.url).pathname
 
 const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change", tokens = 100, mainTokens = 20, requestedWorker = "worker", resolvedWorker = "worker", fallbackReason = null, profile = "worker-profile-v1", teacher = [], wasteEvents = [], mainActions = 2, workerActions = 8 }) => {
   const quality = {
+    policy_provenance_complete: true,
     verify_id: "test",
     verify_exit_code: 0,
     semantic_success: true,

@@ -97,6 +97,30 @@ test("unknown policy provenance survives host attestation and prevents compariso
   assert.equal(normalizeRun(explicitlyIncomplete, quality).quality.eligible, false)
 })
 
+test("missing or null policy provenance cannot become learning evidence through an attestation", () => {
+  for (const provenance of [undefined, null, false]) {
+    const runs = []
+    for (let index = 0; index < 5; index++) {
+      for (const version of ["base", "candidate"]) {
+        const input = { ...unknownRun(version, index),
+          task: { id: `fixture-${index}`, snapshot_id: "revision-a", check_version: "check-v1", class: "known-change", complexity: "small" },
+          recipe_id: "base-v1", prompt: { profile_id: "model-bound-v1" }, quality: {} }
+        if (provenance !== undefined) input.quality.policy_provenance_complete = provenance
+        const run = normalizeRun(input, { ...quality, policy_provenance_complete: true })
+        assert.equal(run.quality.task_provenance_complete, true)
+        assert.equal(run.quality.policy_provenance_complete, false)
+        assert.equal(run.quality.eligible, false)
+        assert.equal(normalizeRun(run, quality).quality.policy_provenance_complete, false)
+        runs.push(run)
+        const verified = normalizeRun({ ...input, quality: { policy_provenance_complete: true } }, quality)
+        assert.equal(verified.quality.policy_provenance_complete, true)
+        assert.equal(verified.quality.eligible, true)
+      }
+    }
+    assert.equal(compareRecipes(runs, "base", "candidate").verdict, "insufficient-data")
+  }
+})
+
 
 test("receipt I/O rejects symlinked state roots, directories and final files without touching targets", () => {
   const f = fixture()

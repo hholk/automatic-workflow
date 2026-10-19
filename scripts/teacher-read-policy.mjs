@@ -156,12 +156,17 @@ export const openTeacherReadSession = ({ request, scope, snapshot, grant, host, 
     let lineOffset = 0
     for (const [index, line] of buffer.toString("utf8").split("\n").entries()) {
       const start = lineOffset
-      lineOffset += Buffer.byteLength(line) + 1
-      if (!line.includes(input.query)) continue
+      const lineBuffer = Buffer.from(line, "utf8")
+      lineOffset += lineBuffer.length + 1
+      const matchOffset = lineBuffer.indexOf(input.query)
+      if (matchOffset < 0) continue
       if (matches.length >= Math.min(input.max_hits ?? 5, boundGrant.max_hits - hits) || count >= limit) { truncated = true; break }
-      const value = utf8Slice(Buffer.from(line, "utf8"), 0, limit - count)
+      const remaining = limit - count
+      if (Buffer.byteLength(input.query) > remaining) { truncated = true; break }
+      const offset = lineBuffer.length > remaining ? matchOffset : 0
+      const value = utf8Slice(lineBuffer, offset, remaining)
       if (!value) { truncated = true; break }
-      matches.push({ line: index + 1, text: value, start_byte: start, end_byte: start + Buffer.byteLength(value) })
+      matches.push({ line: index + 1, text: value, start_byte: start + offset, end_byte: start + offset + Buffer.byteLength(value) })
       count += Buffer.byteLength(value)
       if (value.length < line.length) truncated = true
     }
