@@ -6,7 +6,8 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 test("native agents exist and enforce provider, effort and recursion boundaries", () => {
   for (const name of ["aw-worker", "aw-reviewer"]) {
     const oc = read(`agents/opencode/${name}.md`)
-    assert.match(oc, /steps: 32/)
+    assert.match(oc, /steps: \{\{worker_steps\}\}/)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /steps: 125/)
     assert.match(oc, /task: deny/)
     const codex = read(`agents/codex/${name}.toml`)
     assert.match(codex, new RegExp(`name = "${name}"`))

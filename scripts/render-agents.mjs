@@ -3,6 +3,7 @@
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { effectivePolicy } from "./effective-policy.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const profiles = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
@@ -19,9 +20,15 @@ const valuesFor = (host, role) => {
   return { model: workerModel(host), provider: host === "codex" ? "codex-router" : "venice" }
 }
 
-const hostOf = (name) => name.startsWith("opencode/") ? "opencode"
-  : name.startsWith("codex/") ? "codex" : "github-copilot"
 const roleOf = (file) => /teacher/.test(file) ? "teacher" : "worker"
+
+export function renderTemplate(template, { host, role }) {
+  const { model, provider } = valuesFor(host, role)
+  const policy = effectivePolicy({ host })
+  return template.replaceAll("{{model}}", model).replaceAll("{{provider}}", provider)
+    .replaceAll("{{worker_steps}}", String(policy.worker_step_budget))
+    .replaceAll("{{failed_hypotheses}}", String(policy.teacher_after_failed_hypotheses))
+}
 
 export function renderAll() {
   const sources = ["codex", "opencode", "copilot"].flatMap((dir) => {
@@ -34,9 +41,8 @@ export function renderAll() {
     }))
   })
   for (const { dir, file, host, role } of sources) {
-    const { model, provider } = valuesFor(host, role)
     const template = readFileSync(join(root, "agents", dir, file), "utf8")
-    const rendered = template.replaceAll("{{model}}", model).replaceAll("{{provider}}", provider)
+    const rendered = renderTemplate(template, { host, role })
     const outDir = join(root, "agents/generated", dir)
     mkdirSync(outDir, { recursive: true })
     writeFileSync(join(outDir, file), rendered)

@@ -18,7 +18,7 @@ tokens remain null and never enter median-token comparisons.
 Use this manual mode for a user-requested AW change that is outside the bounded
 playbook fields handled by `$aw research`.
 
-1. Read relevant lessons, including qualitative failures, and aggregate v4 evidence. Never change
+1. Read relevant reviewed lessons, including qualitative failures, and aggregate v4 evidence. Never change
    AW files during normal runs.
 2. Propose exactly one bounded change with a falsifiable hypothesis, expected
    metric movement, and verify command. Proceed when the user has authorized
@@ -34,7 +34,28 @@ playbook fields handled by `$aw research`.
    are unavailable, label tokens as a proxy; never infer dollar savings.
    `insufficient-data` keeps the change pending, not a reason to fabricate runs.
 5. Record numeric before/after/delta values and `keep | revise | revert` in
-   `LESSONS.md`.
+   `LESSONS.md`. Promotion additionally requires disjoint holdout evidence and
+   separate independent review of the exact candidate and baseline. Follow
+   [Learning and review](learning-v5.md); a successful experiment is not approval.
+
+## Applicable lessons
+
+Historical Markdown entries are evidence, not instructions loaded into a task.
+Only explicitly authored and independently reviewed structured lessons may be
+selected through `research.mjs select --lessons <file> --project <id>
+--project-version <revision> --prerequisites <facts.json>`. Selection requires
+an exact project ID, listed project revision, listed policy version, every stated
+prerequisite and an unexpired review. Missing facts fail applicability. Cross-project,
+changed-version and expired lessons are excluded until revalidation and review.
+The selected lessons are advisory and cannot change permissions, safety rules,
+the teacher threshold, or evaluator requirements.
+
+Never create lessons by ingesting sessions, prompts, transcripts, environment
+values or secret-bearing files. Author only a short sanitized conclusion with
+explicit applicability. The structured loader rejects unknown fields and common
+secret markers; it cannot establish that arbitrary text contains no secrets.
+The author and reviewer must check the source before supplying it. See
+[Learning and review](learning-v5.md) for the structured format.
 
 ## Entry format
 
@@ -46,6 +67,9 @@ playbook fields handled by `$aw research`.
 - Result: keep | revise | revert
 - Lesson: reusable conclusion about AW
 - Status: pending | validated
+- Applicability: exact project, project revision, policy version and prerequisites
+- Review: independent reviewer and date, or pending
+- Expiry / Revalidation: date and the version changes that require new review
 ```
 
 ## Decay
@@ -56,6 +80,9 @@ playbook fields handled by `$aw research`.
 - Compress validated entries already folded into the skill to one line.
 - Keep raw evidence locally. Retain aggregate evidence referenced by pending
   experiments; remove raw records only after a safe, explicit retention review.
+- Expired or version-mismatched structured lessons do not apply. Reproduce their
+  stated prerequisites and relevant verification before a reviewer approves a new
+  expiry or additional exact version. Never extend validity automatically.
 
 ## Main-only comparison
 

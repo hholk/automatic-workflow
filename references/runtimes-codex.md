@@ -7,7 +7,7 @@ Use explicit native model selection and the resolved prompt profile.
 | GUI/computer-use | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
 | fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
 | explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` | `codex-router` |
-| teacher | `aw-teacher` | `venice/opus-5.5` | `codex-router` |
+| teacher | `aw-teacher` | `venice/claude-opus-5-5` | `codex-router` |
 
 Agent files bind model/provider/high effort, not inherited Ultra, and disable
 child skill-catalog instructions. Use native spawn/resume tools; set
@@ -25,6 +25,9 @@ Stop on unknown/mismatched routing. For installation or unavailable agents,
 read [setup](setup.md); Codex role files must not be symlinks.
 
 Use configured native MCPs or fetch/browser, not hosted web_search on Venice.
-Eight tool steps is a workflow budget, not a claimed native hard cap. Main
+The selected effective policy supplies the workflow budget. Generated profiles
+use the playbook default of 125 tool steps; Codex has no claimed native hard cap. Main
 stops no-gain loops and verifies results. Missing exact usage tokens stay null;
 load telemetry details only when attesting, never read transcripts.
+
+Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).

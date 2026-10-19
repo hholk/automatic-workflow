@@ -2,7 +2,7 @@
 description: AW GLM 5.3 Flash bounded implementation worker
 model: venice/z-ai-glm-5-3-flash
 mode: all
-steps: 8
+steps: 125
 permission:
   edit: allow
   write: allow

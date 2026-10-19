@@ -4,6 +4,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
+import { readRuns } from "./evidence.mjs"
+import { evaluateLearningCandidate } from "./learning-policy.mjs"
 
 const usageScript = new URL("./usage.mjs", import.meta.url).pathname
 const researchScript = new URL("./research.mjs", import.meta.url).pathname
@@ -85,6 +87,33 @@ const recordVerifiedAt = (targetState, item) => {
   return attestAt(targetState, item)
 }
 const recordVerified = (item) => recordVerifiedAt(state, item)
+
+// Each promotion fixture creates a separate synthetic holdout and reviewer.
+const reviewedPromotionArgs = (targetState, playbookPath, candidatePath) => {
+  const baseline = JSON.parse(readFileSync(playbookPath, "utf8"))
+  const candidate = JSON.parse(readFileSync(candidatePath, "utf8"))
+  const discovery = readRuns(targetState)
+  const holdout = []
+  for (const run of discovery) {
+    const raw = JSON.parse(readFileSync(join(targetState, `${run.run_id}.json`), "utf8"))
+    raw.run_id = `holdout-${run.run_id}`
+    raw.task.id = `holdout-${raw.task.id}`
+    assert.equal(recordVerifiedAt(targetState, raw).status, 0)
+    holdout.push(raw)
+  }
+  const split = (runs) => ({
+    baseline_run_ids: runs.filter((run) => run.playbook_version === baseline.version).map((run) => run.run_id),
+    candidate_run_ids: runs.filter((run) => run.playbook_version === candidate.version).map((run) => run.run_id),
+  })
+  const manifest = { schema_version: 1, id: "synthetic-split-v1", discovery: split(discovery), holdout: split(holdout) }
+  const packet = evaluateLearningCandidate({ baseline, candidate, runs: readRuns(targetState), manifest, proposer: "synthetic-author" })
+  const manifestPath = join(targetState, "manifest.json")
+  const reviewPath = join(targetState, "review.json")
+  writeFileSync(manifestPath, JSON.stringify(manifest))
+  writeFileSync(reviewPath, JSON.stringify({ schema_version: 1, decision: "approve", review_id: packet.review_id,
+    identities: packet.identities, approved_by: "synthetic-independent-reviewer", approved_at: "2026-10-19T00:00:00Z" }))
+  return ["--manifest", manifestPath, "--proposer", "synthetic-author", "--review", reviewPath]
+}
 
 test("records prompt-free actor and resolved-model evidence", () => {
   const item = event({ runID: "fallback", recipe: "base-v1", taskID: "task-fallback", fallback: true })
@@ -241,7 +270,17 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "candidate-v1", defaults: { ...current.defaults, context_budget: 1200 } }))
 
-  let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
+  const approvalArgs = reviewedPromotionArgs(promotionState, playbookPath, candidatePath)
+  const evaluateArgs = [researchScript, "evaluate", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs.slice(0, 4)]
+  const evaluated = spawnSync(process.execPath, evaluateArgs, { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
+  assert.equal(evaluated.status, 0, evaluated.stderr)
+  assert.ok(JSON.parse(evaluated.stdout).review_id)
+  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).version, current.version)
+  const noReview = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs.slice(0, 4)], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
+  assert.notEqual(noReview.status, 0)
+  assert.match(noReview.stderr, /--review is required/)
+  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).version, current.version)
+  let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
   assert.equal(result.status, 0)
   assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.context_budget, 1200)
 
@@ -249,6 +288,12 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   writeFileSync(candidatePath, JSON.stringify({ ...promoted, version: "evil-v1", evil: { context_budget: 1 } }))
   result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
   assert.notEqual(result.status, 0)
+
+  writeFileSync(playbookPath, JSON.stringify(current))
+  writeFileSync(candidatePath, JSON.stringify({ ...current, version: "threshold-v1", defaults: { ...current.defaults, teacher_after_failed_hypotheses: 2 } }))
+  result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /field is not mutable/)
 
   const unsafe = { ...promoted, version: "unsafe-v1", frozen: { ...promoted.frozen, evaluator: "quality-v2" } }
   writeFileSync(candidatePath, JSON.stringify(unsafe))
@@ -282,7 +327,8 @@ test("promotes only a registered immutable prompt profile", () => {
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "profile-v1", defaults: { ...current.defaults, prompt_profile_id: "mimo-tight-v1" } }))
 
-  let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, "--profiles", profilesPath], { env: { ...process.env, AW_STATE_DIR: profileState }, encoding: "utf8" })
+  const approvalArgs = reviewedPromotionArgs(profileState, playbookPath, candidatePath)
+  let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, "--profiles", profilesPath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: profileState }, encoding: "utf8" })
   assert.equal(result.status, 0, result.stderr)
   assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.prompt_profile_id, "mimo-tight-v1")
 
@@ -320,15 +366,34 @@ test("can promote one field into a new harness-specific playbook cell", () => {
     defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-gpt6-luna-worker-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 3 },
     cells: {},
   }
-  const cellID = "codex|main:venice/mimo-2.6-flash>venice/mimo-2.6-flash@direct|worker:venice/openai-gpt-6-luna>venice/openai-gpt-6-luna@direct|teacher:no-teacher|implement|known-change|small|profile:codex-gpt6-luna-worker-v1"
   for (let index = 0; index < 5; index += 1) {
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-base-${index}`, recipe: "base-v1", variant: "base-v1", taskID: `cell-task-${index}`, tokens: 100 })).status, 0)
     assert.equal(recordVerifiedAt(cellState, event({ runID: `cell-candidate-${index}`, recipe: "base-v1", variant: "cell-v1", taskID: `cell-task-${index}`, tokens: 80, mainTokens: 10, workerActions: 9 })).status, 0)
   }
+  const cellID = readRuns(cellState)[0].cell_id
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "cell-v1", cells: { [cellID]: { context_budget: 1200 } } }))
-  const result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath], { env: { ...process.env, AW_STATE_DIR: cellState }, encoding: "utf8" })
-  assert.equal(result.status, 0)
+  const approvalArgs = reviewedPromotionArgs(cellState, playbookPath, candidatePath)
+  const candidate = JSON.parse(readFileSync(candidatePath, "utf8"))
+  const manifest = JSON.parse(readFileSync(approvalArgs[1], "utf8"))
+  for (const wrongCell of [cellID.replace("worker:venice/mimo-2.6-flash>venice/mimo-2.6-flash", "worker:other-model>other-model"),
+    cellID.replace("|known-change|", "|other-task|"), cellID.replace(/^codex\|/, "opencode|")]) {
+    const wrongCandidate = { ...candidate, cells: { [wrongCell]: { context_budget: 1200 } } }
+    writeFileSync(candidatePath, JSON.stringify(wrongCandidate))
+    const packet = evaluateLearningCandidate({ baseline: current, candidate: wrongCandidate, runs: readRuns(cellState), manifest, proposer: "synthetic-author" })
+    writeFileSync(approvalArgs.at(-1), JSON.stringify({ schema_version: 1, decision: "approve", review_id: packet.review_id,
+      identities: packet.identities, approved_by: "synthetic-independent-reviewer", approved_at: "2026-10-19T00:00:00Z" }))
+    const denied = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: cellState }, encoding: "utf8" })
+    assert.notEqual(denied.status, 0)
+    assert.match(denied.stderr, /does not select mutated policy cell/)
+    assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).version, current.version)
+  }
+  writeFileSync(candidatePath, JSON.stringify(candidate))
+  const packet = evaluateLearningCandidate({ baseline: current, candidate, runs: readRuns(cellState), manifest, proposer: "synthetic-author" })
+  writeFileSync(approvalArgs.at(-1), JSON.stringify({ schema_version: 1, decision: "approve", review_id: packet.review_id,
+    identities: packet.identities, approved_by: "synthetic-independent-reviewer", approved_at: "2026-10-19T00:00:00Z" }))
+  const result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: cellState }, encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
   assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).cells[cellID].context_budget, 1200)
 })
 
@@ -351,4 +416,29 @@ test("does not trust a supplied promotion verdict without local paired evidence"
     env: { ...process.env, AW_STATE_DIR: emptyState }, encoding: "utf8",
   })
   assert.notEqual(result.status, 0)
+})
+
+test("select uses the shared cell policy and only applicable reviewed lessons", () => {
+  const targetState = mkdtempSync(join(tmpdir(), "aw-lesson-select-"))
+  const playbookPath = join(targetState, "playbook.json")
+  const lessonsPath = join(targetState, "lessons.json")
+  const factsPath = join(targetState, "facts.json")
+  writeFileSync(playbookPath, JSON.stringify({ schema_version: 4, version: "acceptance-routing-v5",
+    defaults: { recipe_id: "baseline", prompt_profile_id: "model-bound-v1", context_budget: 1600, worker_step_budget: 125, teacher_after_failed_hypotheses: 2 },
+    cells: { "codex|known-change|small": { recipe_id: "selected-cell", prompt_profile_id: "cell-profile", context_budget: 900 } } }))
+  const lesson = { id: "fixture-check", project_id: "project-a", project_versions: ["revision-a"], policy_versions: ["acceptance-routing-v5"],
+    prerequisites: { fixture: true }, instruction: "Run the fixture check.", author: "author",
+    review: { decision: "approve", reviewed_by: "reviewer", reviewed_at: "2026-01-01T00:00:00Z" }, expires_at: "2099-01-01T00:00:00Z" }
+  writeFileSync(lessonsPath, JSON.stringify([lesson, { ...lesson, id: "other-project", project_id: "project-b" }]))
+  writeFileSync(factsPath, JSON.stringify({ fixture: true }))
+  const result = spawnSync(process.execPath, [researchScript, "select", "--playbook", playbookPath, "--host", "codex",
+    "--main-model", "mimo-v2.6-flash", "--worker-model", "gpt-6-luna", "--route", "implement", "--task-class", "known-change", "--complexity", "small",
+    "--lessons", lessonsPath, "--project", "project-a", "--project-version", "revision-a", "--prerequisites", factsPath], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const selected = JSON.parse(result.stdout)
+  assert.equal(selected.recipe_id, "selected-cell")
+  assert.equal(selected.prompt_profile_id, "cell-profile")
+  assert.equal(selected.context_budget, 900)
+  assert.equal(selected.teacher_after_failed_hypotheses, 2)
+  assert.deepEqual(selected.lessons.map((entry) => entry.id), [lesson.id])
 })

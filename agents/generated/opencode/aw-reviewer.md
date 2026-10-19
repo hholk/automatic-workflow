@@ -2,7 +2,7 @@
 description: AW independent GPT-6 Luna read-only reviewer
 model: venice/openai-gpt-6-luna
 mode: all
-steps: 32
+steps: 125
 permission:
   edit: deny
   write: deny

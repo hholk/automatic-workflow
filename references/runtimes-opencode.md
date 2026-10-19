@@ -12,7 +12,8 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
-Teacher denies all tools. Workers have `steps: 8`; the cap is not completion.
+Teacher denies all tools. Generated workers use the playbook default `steps: 125`, including explicit
+GLM profiles. The selected cell may require an earlier handback; the cap is not completion.
 The `computer-use` route is pinned by `prompts/profiles.json`; an explicit
 different model is rejected by the resolver.
 Resume through `task_id` with new evidence only. Main validates n/N checks.
@@ -28,3 +29,5 @@ Preflight once per unchanged session/profile: a cheap native child must prove
 On mismatch, missing metadata or missing agent, stop. Never use stale cached
 profiles or substitute general/explore. For installation/reload failures only,
 read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.
+
+Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).

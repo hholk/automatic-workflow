@@ -28,7 +28,7 @@ test("ships frozen worker and teacher contracts", () => {
 
 test("loads one resolved prompt profile under main-agent authority", () => {
   const skill = read("SKILL.md")
-  assert.match(skill, /AW v4/)
+  assert.match(skill, /AW v5/)
   assert.match(skill, /resolve-profile\.mjs/)
   assert.match(skill, /load only the returned component paths/i)
   assert.match(skill, /Only the main agent may start or resume agents/i)
@@ -50,8 +50,8 @@ test("routes evidence gaps, human authority, and lean TDD explicitly", () => {
   for (const workflow of ["fix", "implement"]) {
     assert.match(read(`workflows/${workflow}.md`), /SEAM -> RED -> MINIMAL CHANGE -> GREEN/)
   }
-  assert.match(teacher, /three.*ASK|3.*ASK/i)
-  assert.match(teacher, /five.*response|5.*response/i)
+  assert.match(teacher, /five.*ASK|5.*ASK/i)
+  assert.match(teacher, /seven turns per ASK/i)
   assert.match(teacher, /same teacher thread/i)
   assert.match(teacher, /one ASK repair/i)
   assert.match(teacher, /one evidence repair/i)
@@ -131,7 +131,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   assert.match(codex, /explicit native model selection/i)
   assert.match(codex, /prompt profile/i)
   assert.match(codex, /venice\/openai-gpt-6-luna/)
-  assert.match(codex, /venice\/opus-5\.5/)
+  assert.match(codex, /venice\/claude-opus-5-5/)
   const copilot = read("references/runtimes-copilot.md")
   assert.match(copilot, /unresolved.*unknown/is)
   assert.match(copilot, /exclude.*model-specific/is)

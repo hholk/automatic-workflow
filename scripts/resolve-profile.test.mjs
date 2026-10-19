@@ -1,5 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { buildCellID } from "./evidence.mjs"
 import { resolveSelection } from "./resolve-profile.mjs"
 
 test("selects the OpenCode GPT-6 Luna default worker components", () => {
@@ -71,7 +73,7 @@ test("uses the GPT-6 Luna default for every worker host with actionable bounded 
           ? "aw-worker"
           : ["fix", "implement"].includes(route) ? "aw-worker" : "aw-reviewer",
       )
-      assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 125, failed_hypotheses: 3 })
+      assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 125, failed_hypotheses: 2 })
       assert.equal(new Set(value.components).size, value.components.length)
     }
     if (host === "github-copilot") continue
@@ -154,5 +156,75 @@ test("rejects unknown models, routes, and old playbooks", () => {
     host: "codex",
     role: "worker",
     route: "fix",
-  }, { playbook: { schema_version: 3 } }), /playbook schema_version 4/)
+  }, { playbook: { schema_version: 3 } }), /playbook schema_version 4 or 5/)
+})
+
+test("resolves cell budgets and recipe through the effective policy", () => {
+  const playbook = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))
+  playbook.cells["opencode|bug|small"] = { context_budget: 900, worker_step_budget: 17, recipe_id: "base-v1" }
+  const value = resolveSelection({ host: "opencode", role: "worker", route: "fix", taskClass: "bug", complexity: "small" }, { playbook })
+  assert.deepEqual(value.budget, { context_tokens: 900, worker_steps: 17, failed_hypotheses: playbook.defaults.teacher_after_failed_hypotheses })
+  assert.equal(value.recipe_id, "base-v1")
+  assert.ok(value.components.includes("playbooks/recipes/base-v1.md"))
+  assert.equal(value.effective_policy.policy_cell_id, "opencode|bug|small")
+})
+
+test("T3 selects an explicit Codex or OpenCode provider delegate without claiming discovery", () => {
+  for (const providerHost of ["codex", "opencode"]) {
+    const value = resolveSelection({ host: "t3", providerHost, role: "worker", route: "fix" })
+    assert.equal(value.host, "t3")
+    assert.equal(value.native_agent, "aw-worker")
+    assert.equal(value.effective_policy.capabilities.profile_host, providerHost)
+    assert.equal(value.effective_policy.capabilities.dispatch, "provider-delegate")
+    assert.equal(value.effective_policy.capabilities.teacher_text_snapshot, false)
+  }
+  assert.throws(() => resolveSelection({ host: "t3", role: "worker", route: "fix" }), /requires providerHost/)
+})
+
+test("teacher inspection is additive and never selects a tool-enabled agent", () => {
+  const ordinary = resolveSelection({ host: "codex", role: "teacher", route: "teacher" })
+  const requested = resolveSelection({ host: "codex", role: "teacher", route: "teacher", inspectionRequest: {} })
+  assert.equal(requested.native_agent, ordinary.native_agent)
+  assert.equal(requested.model, ordinary.model)
+  assert.equal(requested.model_provider, ordinary.model_provider)
+  assert.deepEqual(requested.teacher.inspection, { status: "INELIGIBLE", reason: "INVALID_INSPECTION_CONTEXT", fallback: "WORKER_EVIDENCE", capability: "teacher-text-snapshot-v1" })
+  assert.equal(Object.hasOwn(ordinary.teacher, "inspection"), false)
+  assert.ok(requested.components.includes("references/teacher-inspection.md"))
+})
+
+test("rejects a teacher binding to a different registered profile", () => {
+  const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
+  registry.teacher_bindings.codex.profile_id = "missing-teacher"
+  assert.throws(() => resolveSelection({ host: "codex", role: "teacher", route: "teacher" }, { registry }), /inconsistent teacher binding/)
+})
+
+test("configured models never activate a provenance cell without supplied actor evidence", () => {
+  const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
+  const playbook = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))
+  const actor = (model) => ({ used: true, requested_model: model, resolved_model: model, fallback_reason: null })
+  const actors = { main: actor(registry.main_default), worker: actor(registry.worker_defaults.opencode), teacher: { used: false } }
+  const input = { host: "opencode", role: "worker", route: "fix", taskClass: "bug", complexity: "small" }
+  const cellID = buildCellID({ ...input, actors, task: { class: "bug", complexity: "small" }, promptProfileID: playbook.defaults.prompt_profile_id })
+  playbook.cells[cellID] = { context_budget: 500 }
+  assert.equal(resolveSelection(input, { playbook }).budget.context_tokens, playbook.defaults.context_budget)
+  assert.equal(resolveSelection({ ...input, actors }, { playbook }).budget.context_tokens, 500)
+})
+
+test("eligible inspection stays unsupported on both native teacher hosts and T3 delegates", () => {
+  const scope = { task_id: "task", objective_revision: "rev1", blocker_id: "blocker", state_id: "state" }
+  const request = { ...scope, unresolved: true, last_progress_sequence: 0,
+    attempts: [1, 2].map((sequence) => ({ ...scope, attempt_id: `attempt${sequence}`, sequence,
+      status: "completed", outcome: "no_progress", failure_kind: "technical", main_verified: true,
+      hypothesis: `hypothesis${sequence}`, action_ref: `action${sequence}`, result_ref: `result${sequence}`,
+      before_state: "state", after_state: "state" })),
+    main_confirmation: { ...scope, evidence_ref: "main-check", attempt_ids: ["attempt1", "attempt2"] },
+  }
+  for (const input of [{ host: "codex" }, { host: "opencode" }, { host: "t3", providerHost: "codex" }, { host: "t3", providerHost: "opencode" }]) {
+    const value = resolveSelection({ ...input, role: "teacher", route: "teacher", inspectionRequest: request })
+    assert.equal(value.teacher.inspection.status, "UNSUPPORTED_HOST")
+    assert.equal(value.teacher.inspection.reason, "UNSUPPORTED_HOST")
+    assert.equal(value.teacher.inspection.fallback, "WORKER_EVIDENCE")
+    assert.equal(value.native_agent, "aw-teacher")
+    assert.equal(value.effective_policy.capabilities.teacher_text_snapshot, false)
+  }
 })

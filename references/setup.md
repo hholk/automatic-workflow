@@ -17,7 +17,7 @@ Copilot's primary model is marked required. If Copilot CLI is absent, this
 installs its profile for later use but cannot prove a live dispatch.
 
 For Codex Router, curate `venice/openai-gpt-6-luna` for non-teacher roles and
-`venice/opus-5.5` for the teacher, then publish with `node src/catalog.mjs` in
+`venice/claude-opus-5-5` for the teacher, then publish with `node src/catalog.mjs` in
 the installed router. Never edit generated `router-model-*.toml` files.
 Preserve the main model and native Ultra configuration.
 Disable automatic alternate-model helpers such as the Luna vision bridge only

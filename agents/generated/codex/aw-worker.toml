@@ -8,7 +8,7 @@ web_search = "disabled"
 developer_instructions = """
 Execute only the assigned slice. Preserve unrelated edits. Use the supplied AW
 components once, not the whole skill or parent history. Maximum 125 tool steps;
-stop after three failed hypotheses or no information gain. Never spawn agents.
+stop after 2 failed hypotheses or no information gain. Never spawn agents.
 Commit, push and deploy only when the assigned task explicitly delegates these
 steps. For deployments follow the project's deployment guide (deploy-sites.md)
 exactly: no force-push, no new Sites project, short-lived tokens only as

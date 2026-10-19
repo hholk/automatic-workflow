@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import { parseModelJson } from "./benchmark-output.mjs"
 import { resolveSelection } from "./resolve-profile.mjs"
+import { effectivePolicy } from "./effective-policy.mjs"
+import { acceptTeacherReply } from "./teacher-state.mjs"
 
 const ownRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const valueAfter = (name) => {
@@ -28,6 +30,8 @@ const metric = (paths) => {
 
 const cases = JSON.parse(read("benchmarks/use-cases.json"))
 const playbook = JSON.parse(read("playbooks/current.json"))
+const registry = JSON.parse(read("prompts/profiles.json"))
+const selectionOverrides = { registry, playbook }
 const routing = read("references/routing.md")
 const runtimeFor = {
   codex: "references/runtimes-codex.md",
@@ -44,7 +48,7 @@ const selectionFor = (item) => {
     taskClass: item.task_class,
     complexity: item.complexity,
     explicitModelRequest: item.explicit_model_request === true,
-  })
+  }, selectionOverrides)
 }
 const routeCoverage = cases.map(({ id, routing_case, expected_route }) => {
   const row = routing.split("\n").find((line) => line.includes(`\`${routing_case || id}\``)) || ""
@@ -77,8 +81,39 @@ const runtime = [
 ].join("\n")
 const teacher = read("references/teacher.md")
 
+// Exercise the current resolver and teacher state machine. A stale generated
+// profile or changed frozen limit must fail the offline benchmark.
+const defaultWorkers = Object.keys(runtimeFor).map((host) => resolveSelection({ host, role: "worker", route: "fix" }, selectionOverrides))
+const teacherSelections = ["codex", "opencode"].map((host) => resolveSelection({ host, role: "teacher", route: "teacher" }, selectionOverrides))
+const workerProfileMatches = (selection) => {
+  const profile = registry.worker_profiles[`${selection.host}|${registry.worker_defaults[selection.host]}`]
+  const generated = read(selection.host === "github-copilot" ? "agents/generated/copilot/aw-worker.agent.md"
+    : `agents/generated/${selection.host}/aw-worker.${selection.host === "codex" ? "toml" : "md"}`)
+  return !profile?.retired && selection.model === registry.worker_defaults[selection.host]
+    && selection.profile_id === profile?.id && generated.includes(selection.model)
+}
+const workerBudgetMatches = (selection) => {
+  const policy = effectivePolicy({ host: selection.host }, { playbook })
+  const generated = read(selection.host === "github-copilot" ? "agents/generated/copilot/aw-worker.agent.md"
+    : `agents/generated/${selection.host}/aw-worker.${selection.host === "codex" ? "toml" : "md"}`)
+  const limit = selection.host === "opencode" ? `steps: ${policy.worker_step_budget}`
+    : selection.host === "codex" ? `Maximum ${policy.worker_step_budget} tool steps`
+      : `at most ${policy.worker_step_budget} tool steps`
+  return selection.budget.worker_steps === policy.worker_step_budget && generated.includes(limit)
+}
+const teacherBindingMatches = (selection) => {
+  const binding = registry.teacher_bindings[selection.host]
+  const generated = read(`agents/generated/${selection.host}/aw-teacher.${selection.host === "codex" ? "toml" : "md"}`)
+  return selection.model === binding.model && selection.profile_id === binding.profile_id
+    && generated.includes(binding.model) && read(runtimeFor[selection.host]).includes(binding.model)
+}
+const limits = { maxAsks: playbook.frozen.teacher_max_asks, maxTurnsPerAsk: playbook.frozen.teacher_max_turns_per_ask }
+const atAskLimit = acceptTeacherReply({ asks: limits.maxAsks, turns: limits.maxAsks }, { type: "ASK", valid: true }, limits)
+const atTurnLimit = acceptTeacherReply({ asks: 1, turns: limits.maxTurnsPerAsk }, { type: "ASK", valid: true }, limits)
+const belowLimit = acceptTeacherReply({ asks: 0, turns: 0 }, { type: "ASK", valid: true }, limits)
 const result = {
-  version: "v4",
+  version: "v5",
+  playbook_version: playbook.version,
   entrypoint,
   average_route_estimated_tokens: averageRouteTokens,
   route_contexts: routeContexts,
@@ -98,13 +133,19 @@ const result = {
     cases: routeContexts.map(({ id, prompt_profile_id, prompt_profile_pass }) => ({ id, prompt_profile_id, pass: prompt_profile_pass })),
   },
   invariants: {
-    codex_mimo: runtime.includes("venice/mimo-2.6-flash"),
-    opencode_mimo: runtime.includes("venice/xiaomi-mimo-v2-6-flash"),
-    copilot_mimo: runtime.includes("venice/mimo-2.6-flash"),
-    codex_opus_teacher: teacher.includes("venice/claude-opus-5-5"),
-    opencode_opus_teacher: teacher.includes("venice/claude-opus-5-5"),
+    codex_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "codex")),
+    opencode_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "opencode")),
+    copilot_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "github-copilot")),
+    native_worker_budgets: defaultWorkers.every(workerBudgetMatches),
+    codex_opus_teacher: teacherBindingMatches(teacherSelections.find((item) => item.host === "codex")),
+    opencode_opus_teacher: teacherBindingMatches(teacherSelections.find((item) => item.host === "opencode")),
     no_venice_sol: !`${runtime}\n${teacher}`.includes("venice/openai-gpt-56-sol"),
-    teacher_five_turn_cap: /Maximum five teacher responses/.test(teacher),
+    teacher_frozen_limits: limits.maxAsks === 5 && limits.maxTurnsPerAsk === 7
+      && teacherSelections.every((item) => item.teacher.max_asks === 5 && item.teacher.max_turns_per_ask === 7),
+    teacher_ask_cap: belowLimit.action === "COLLECT_EVIDENCE" && atAskLimit.terminal === "TEACHER_EXHAUSTED",
+    teacher_turns_per_ask_cap: atTurnLimit.terminal === "TEACHER_EXHAUSTED",
+    teacher_handback_threshold: playbook.defaults.teacher_after_failed_hypotheses === 2
+      && defaultWorkers.every((item) => item.budget.failed_hypotheses === 2),
     custom_runtime_removed: obsolete.length === 0,
   },
   obsolete,
