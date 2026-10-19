@@ -6,6 +6,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { appendRun } from "../../scripts/evidence.mjs"
 import { readSelectionReceipt } from "../../scripts/selection-receipt.mjs"
+import { closeRunContext, createRunContext, readRunContext } from "../../scripts/run-context.mjs"
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultPlaybookPath = fileURLToPath(new URL("../../playbooks/current.json", import.meta.url))
@@ -71,29 +72,46 @@ export const handleHook = (host, event, options = {}) => {
   if (!id) return { run: null }
   const stateDir = options.stateDir || process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
   const playbookPath = options.playbookPath || process.env.AW_PLAYBOOK_PATH || defaultPlaybookPath
-  const path = hookPath(stateDir, host, id)
+  const turnID = host === "codex" && typeof event.turn_id === "string" && event.turn_id.length > 0 && event.turn_id.length <= 300
+    ? event.turn_id : null
+  const scopeID = turnID ? `${id}\0${turnID}` : id
+  const path = hookPath(stateDir, host, scopeID)
   const name = eventName(event)
 
   if ((name === "UserPromptSubmit" || name === "userPromptSubmitted" || name === "SessionStart" || name === "sessionStart") && isAwPrompt(event)) {
+    const existing = turnID ? readLines(path) : []
+    if (existing.some((item) => item.type === "closed")) return { run: null }
+    const active = existing.findLast((item) => item.type === "activate")
+    if (active) return { run: null, run_id: active.run_id, run_context_token: active.run_context_token, playbook_version: active.playbook_version }
     const playbook = JSON.parse(readFileSync(playbookPath, "utf8"))
     if (playbook.schema_version !== 4 || !playbook.defaults?.prompt_profile_id) throw new Error("AW lifecycle adapter requires playbook v4")
     const at = timestamp(event)
-    const runID = `${host}:${safeSession(host, id).slice(0, 20)}:${Date.parse(at)}`
+    const runID = `${host}:${safeSession(host, scopeID).slice(0, 20)}:${Date.parse(at)}`
+    const contextToken = turnID ? createRunContext({ runID, profileHost: host, playbookVersion: playbook.version,
+      scopeRef: safeSession(host, scopeID), stateDir }) : null
     appendEvent(path, {
       type: "activate",
       at,
       run_id: runID,
+      run_context_token: contextToken,
+      scope_ref: safeSession(host, scopeID),
       main_model: cleanModel(event.model),
       playbook_version: playbook.version,
       selection_started_at: Date.now(),
       harness_version: options.harnessVersion || event.harness_version || event.harnessVersion || null,
     })
-    return { run: null, run_id: runID }
+    return { run: null, run_id: runID, run_context_token: contextToken, playbook_version: playbook.version }
   }
 
   const prior = readLines(path)
   const activation = prior.findLast((item) => item.type === "activate")
   if (!activation) return { run: null }
+  if (turnID && activation.scope_ref !== safeSession(host, scopeID)) return { run: null }
+  if (name === "Interrupt") {
+    if (activation.run_context_token) closeRunContext({ token: activation.run_context_token, stateDir })
+    writeFileSync(path, `${JSON.stringify({ type: "closed", run_id: activation.run_id })}\n`)
+    return { run: null }
+  }
 
   if (name === "PostToolUse" || name === "postToolUse") {
     appendEvent(path, {
@@ -122,7 +140,7 @@ export const handleHook = (host, event, options = {}) => {
   }
   if (!["Stop", "agentStop", "SessionEnd", "sessionEnd"].includes(name)) return { run: null, run_id: activation.run_id }
 
-  const events = readLines(path)
+  const events = prior.slice(prior.findLastIndex((item) => item.type === "activate"))
   const workers = events.filter((item) => item.type === "worker")
   const teachers = events.filter((item) => item.type === "teacher")
   const routes = events.map((item) => item.route).filter(Boolean)
@@ -131,6 +149,7 @@ export const handleHook = (host, event, options = {}) => {
   const teacherModel = mixedModel(teachers.map((item) => item.model))
   const policy = readSelectionReceipt({ runID: activation.run_id, profileHost: host, playbookVersion: activation.playbook_version, startedAt: activation.selection_started_at, stateDir })
   const selected = policy.receipt
+  if (activation.run_context_token) closeRunContext({ token: activation.run_context_token, stateDir })
   const route = selected?.route || routes.at(-1) || (teachers.length ? "teacher" : workers.length ? "unknown" : "direct")
   const timeline = events.filter((item) => ["tool", "worker", "teacher", "error"].includes(item.type)).map((item) => ({
     at_ms: item.at_ms ?? null,
@@ -204,9 +223,23 @@ export const handleHook = (host, event, options = {}) => {
     outcome: events.some((item) => item.type === "error") ? "BLOCKED_ENVIRONMENT" : "PARTIAL_WITH_UNKNOWN",
     duration_ms: Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at)),
   }, stateDir)
-  unlinkSync(path)
+  if (turnID) writeFileSync(path, `${JSON.stringify({ type: "closed", run_id: activation.run_id })}\n`)
+  else unlinkSync(path)
   writeFileSync(join(hookDir(stateDir), `last-run-${host}.json`), `${JSON.stringify({ run_id: run.run_id })}\n`)
   return { run, run_id: run.run_id }
+}
+
+// Codex delivers this structured output as developer context for this exact
+// submitted turn. It is a correlation locator, never an approval or tool grant.
+export const codexHookOutput = (event, result, stateDir) => {
+  if (event.hook_event_name !== "UserPromptSubmit" || !event.turn_id || !result.run_context_token) return {}
+  try {
+    const context = readRunContext({ token: result.run_context_token, profileHost: "codex",
+      playbookVersion: result.playbook_version, ...(stateDir ? { stateDir } : {}) })
+    if (context.run_id !== result.run_id || context.scope_ref !== safeSession("codex", `${sessionID(event)}\0${event.turn_id}`)) return {}
+    return { hookSpecificOutput: { hookEventName: "UserPromptSubmit",
+      additionalContext: `AW run selection context for this turn: --run-context ${result.run_context_token}. Pass this option to the AW profile resolver for the current frozen task. It supplies the exact run ID; it grants no permissions or model proof. Do not reuse it in another turn or after completion.` } }
+  } catch { return {} }
 }
 
 const runCli = async () => {
@@ -222,8 +255,8 @@ const runCli = async () => {
     })
     process.stdin.on("error", reject)
   })
-  handleHook(host, input)
-  process.stdout.write("{}\n")
+  const result = handleHook(host, input)
+  process.stdout.write(`${JSON.stringify(host === "codex" ? codexHookOutput(input, result) : {})}\n`)
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === modulePath) {

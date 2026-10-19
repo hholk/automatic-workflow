@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import { buildCellID } from "./evidence.mjs"
 import { readSelectionReceipt } from "./selection-receipt.mjs"
+import { closeRunContext, createRunContext } from "./run-context.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const registry = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
@@ -15,7 +16,7 @@ const actor = (model) => ({ used: true, requested_model: model, resolved_model: 
 const actors = { main: actor(registry.main_default), worker: actor(registry.worker_defaults.opencode), teacher: { used: false } }
 const base = ["--host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "bug", "--complexity", "small"]
 const run = (args) => spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"), ...base, ...args], {
-  encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "" },
+  encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "", AW_RUN_CONTEXT: "" },
 })
 const json = (path, value) => { writeFileSync(path, JSON.stringify(value)); return path }
 const fixture = () => mkdtempSync(join(tmpdir(), "aw-resolver-cli-"))
@@ -25,7 +26,7 @@ test("installed skill symlink runs the real resolver CLI", () => {
   try {
     symlinkSync(root, join(dir, "aw"), "dir")
     const result = spawnSync(process.execPath, [join(dir, "aw/scripts/resolve-profile.mjs"), ...base], {
-      encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "" },
+      encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "", AW_RUN_CONTEXT: "" },
     })
     assert.equal(result.status, 0, result.stderr)
     const selected = JSON.parse(result.stdout)
@@ -37,7 +38,7 @@ test("installed skill symlink runs the real resolver CLI", () => {
 test("CLI modules remain importable from stdin without running their entrypoints", () => {
   const result = spawnSync(process.execPath, ["--input-type=module", "-"], {
     input: `await import(${JSON.stringify(new URL("./resolve-profile.mjs", import.meta.url).href)}); await import(${JSON.stringify(new URL("./install-agents.mjs", import.meta.url).href)}); process.stdout.write("imported")`,
-    encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "" },
+    encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "", AW_RUN_CONTEXT: "" },
   })
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, "imported")
@@ -104,7 +105,7 @@ test("normal worker CLI returns only current reviewed lessons for exact project,
     assert.equal(mismatch.status, 0, mismatch.stderr)
     assert.deepEqual(JSON.parse(mismatch.stdout).lessons, [])
     assert.match(run(["--lessons", lessons]).stderr, /requires --project/)
-    const teacher = spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"), "--host", "codex", "--role", "teacher", "--route", "teacher", ...args], { encoding: "utf8", env: { ...process.env, AW_RUN_ID: "" } })
+    const teacher = spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"), "--host", "codex", "--role", "teacher", "--route", "teacher", ...args], { encoding: "utf8", env: { ...process.env, AW_RUN_ID: "", AW_RUN_CONTEXT: "" } })
     assert.equal(teacher.status, 0, teacher.stderr)
     assert.equal(Object.hasOwn(JSON.parse(teacher.stdout), "lessons"), false)
     assert.equal(JSON.parse(teacher.stdout).native_agent, "aw-teacher")
@@ -115,7 +116,7 @@ test("resolver records explicit run selection using actual T3 provider host with
   const dir = fixture()
   try {
     const invocation = (args, runID = "") => spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"), ...args], {
-      encoding: "utf8", env: { ...process.env, AW_RUN_ID: runID, AW_STATE_DIR: dir },
+      encoding: "utf8", env: { ...process.env, AW_RUN_ID: runID, AW_RUN_CONTEXT: "", AW_STATE_DIR: dir },
     })
     const selected = invocation(["--host", "t3", "--provider-host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "bug", "--complexity", "small", "--run-id", "resolver-explicit-run",
       "--task-id", "fixture-a", "--snapshot-id", "sha256:fixture-rev-a", "--check-version", "acceptance-v1"])
@@ -154,4 +155,32 @@ test("resolver records explicit run selection using actual T3 provider host with
         startedAt: 0, endedAt: Date.now(), stateDir: dir }).complete, false)
     }
   } finally { rmSync(dir, { recursive: true }) }
+})
+
+test("resolver transports exact contexts without run-ID arguments and rejects stale, foreign or conflicting context", () => {
+  const dir = fixture()
+  const token = createRunContext({ stateDir: dir, runID: "opencode:context-fixture", profileHost: "opencode",
+    playbookVersion: current.version, scopeRef: "a".repeat(64) })
+  const invoke = (contextToken, host = "opencode", runID = "") => spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"),
+    "--host", host, ...base.slice(2)], {
+    encoding: "utf8", timeout: 5000, env: { ...process.env, AW_STATE_DIR: dir, AW_RUN_CONTEXT: contextToken, AW_RUN_ID: runID },
+  })
+  try {
+    const selected = invoke(token)
+    assert.equal(selected.status, 0, selected.stderr)
+    assert.equal(JSON.parse(selected.stdout).selection_receipt.source, "run-context")
+    assert.equal(JSON.parse(selected.stdout).model_capability.status, "unverified")
+    const receipt = readSelectionReceipt({ stateDir: dir, runID: "opencode:context-fixture", profileHost: "opencode",
+      playbookVersion: current.version, startedAt: 0, endedAt: Date.now() })
+    assert.equal(receipt.complete, true)
+    for (const result of [invoke(token, "codex"), invoke(token, "opencode", "foreign-run"), invoke("../private")]) {
+      assert.equal(result.status, 1)
+      assert.equal(result.stdout, "")
+    }
+    const expired = createRunContext({ stateDir: dir, runID: "opencode:expired-fixture", profileHost: "opencode",
+      playbookVersion: current.version, scopeRef: "b".repeat(64), now: 0 })
+    assert.match(invoke(expired, "opencode", "fallback-not-allowed").stderr, /STALE_OR_FOREIGN_RUN_CONTEXT/)
+    closeRunContext({ stateDir: dir, token })
+    assert.equal(invoke(token).status, 1)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })

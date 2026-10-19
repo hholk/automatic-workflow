@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 import { appendRun } from "../../scripts/evidence.mjs"
 import { detectWaste } from "../../scripts/diagnostics.mjs"
 import { readSelectionReceipt } from "../../scripts/selection-receipt.mjs"
+import { closeRunContext, createRunContext } from "../../scripts/run-context.mjs"
 
 const stateDir = process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
 const sessions = new Map()
@@ -54,6 +55,7 @@ const loadPlaybook = () => {
 }
 const start = (sessionID) => {
   const state = get(sessionID)
+  if (state.active?.contextToken) closeRunContext({ token: state.active.contextToken, stateDir })
   clearDescendants(sessionID)
   state.messages.clear()
   const activation = (state.activation || 0) + 1
@@ -79,6 +81,8 @@ const start = (sessionID) => {
     loadedFiles: new Set(),
     signatures: new Map(),
   }
+  state.active.contextToken = createRunContext({ runID: state.active.runID, profileHost: "opencode",
+    playbookVersion: playbook.version, scopeRef: createHash("sha256").update(`${sessionID}\0${activation}`).digest("hex"), stateDir })
 }
 const routeFromPath = (path = "") => path.match(/workflows\/(explore|diagnose|fix|implement|review)\.md$/)?.[1]
 const messageTokens = ({ tokens = {} }) => Number.isFinite(tokens.total)
@@ -172,10 +176,15 @@ export const AwUsagePlugin = async () => ({
     }
   },
   "shell.env": async (input, output) => {
+    // An unbound terminal or ended session must not inherit another run's ID.
+    output.env.AW_RUN_CONTEXT = ""
+    output.env.AW_RUN_ID = ""
+    output.env.AW_PLAYBOOK_VERSION = ""
     const rootID = input.sessionID ? rootFor(input.sessionID) : null
     if (rootID) {
       const active = get(rootID).active
       output.env.AW_RUN_ID = active.runID
+      output.env.AW_RUN_CONTEXT = active.contextToken
       output.env.AW_PLAYBOOK_VERSION = active.playbookVersion
       // Policy identity is supplied by a resolver receipt after selection.
       output.env.AW_STATE_DIR = stateDir
@@ -247,6 +256,7 @@ export const AwUsagePlugin = async () => ({
     const teacherTokens = teacherModels.length ? teacherIDs.reduce((sum, id) => sum + sessionTokens(id), 0) : null
     const policy = readSelectionReceipt({ runID: active.runID, profileHost: "opencode", playbookVersion: active.playbookVersion, startedAt: active.startedAt, stateDir })
     const selected = policy.receipt
+    closeRunContext({ token: active.contextToken, stateDir })
     const route = selected?.route || active.routes.at(-1) || (active.teacherTurns ? "teacher" : active.workerCalls ? "unknown" : "direct")
     appendRun({
       schema_version: 4,

@@ -7,6 +7,7 @@ import { assessTeacherInspection } from "./teacher-state.mjs"
 import { selectReviewedLessons } from "./learning-policy.mjs"
 import { writeSelectionReceipt } from "./selection-receipt.mjs"
 import { resolveTaskIdentity } from "./run-identity.mjs"
+import { readRunContext } from "./run-context.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
@@ -207,13 +208,20 @@ if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[
       promptProfileID: arg("--prompt-profile-id"),
       explicitModelRequest: process.argv.includes("--explicit-model-request"),
     }, playbookPath ? { playbook: readBoundedJson(playbookPath, 1048576) } : {})
-    const runID = arg("--run-id") || process.env.AW_RUN_ID
+    const explicitRunID = arg("--run-id")
+    const contextToken = arg("--run-context") || process.env.AW_RUN_CONTEXT
+    const context = contextToken ? readRunContext({ token: contextToken,
+      profileHost: value.provider_host, playbookVersion: value.effective_policy.playbook_version }) : null
+    if (context && [explicitRunID, process.env.AW_RUN_ID].some((id) => id && id !== context.run_id)) {
+      throw new Error("CONFLICTING_RUN_CONTEXT")
+    }
+    const runID = context?.run_id || explicitRunID || process.env.AW_RUN_ID
     if (value.role === "worker" && runID) {
       if (!value.task_class || !value.complexity) {
         value.selection_receipt = { status: "UNRECORDED", reason: "MISSING_TASK_IDENTITY" }
       } else {
         writeSelectionReceipt({ runID, selection: value })
-        value.selection_receipt = { status: "RECORDED" }
+        value.selection_receipt = { status: "RECORDED", source: context ? "run-context" : "supplied-run-id" }
       }
     }
     process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)

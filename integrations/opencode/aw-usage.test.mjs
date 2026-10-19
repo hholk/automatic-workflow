@@ -6,6 +6,7 @@ import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { appendAttestation, compareRecipes, readRuns } from "../../scripts/evidence.mjs"
 import { writeSelectionReceipt } from "../../scripts/selection-receipt.mjs"
+import { readRunContext } from "../../scripts/run-context.mjs"
 
 test("separates native Opus teacher usage and includes cached tokens without double counting", async () => {
   const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-opus-"))
@@ -185,6 +186,7 @@ test("shell.env and the normal resolver subprocess preserve a selected task cell
     const output = { env: {} }
     await hooks["shell.env"]({ sessionID: rootID }, output)
     assert.equal(output.env.AW_STATE_DIR, stateDir)
+    assert.match(output.env.AW_RUN_CONTEXT, /^[a-f0-9]{64}$/)
     const result = spawnSync(process.execPath, [new URL("../../scripts/resolve-profile.mjs", import.meta.url).pathname,
       "--host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "known-change", "--complexity", "small", "--playbook", playbookPath,
       "--task-id", "fixture-a", "--snapshot-id", "fixture-rev-1", "--check-version", "fixture-check-v1"], {
@@ -192,6 +194,7 @@ test("shell.env and the normal resolver subprocess preserve a selected task cell
     })
     assert.equal(result.status, 0, result.stderr)
     const selected = JSON.parse(result.stdout)
+    assert.equal(selected.selection_receipt.source, "run-context")
     await observeRun(hooks, rootID)
     const [run] = readRuns(stateDir)
     assert.equal(run.recipe_id, "bounded-v2")
@@ -312,6 +315,49 @@ test("automatic fixture traces pair across runs while snapshot, check and T3 fro
     else process.env.AW_STATE_DIR = priorState
     if (priorPlaybook === undefined) delete process.env.AW_PLAYBOOK_PATH
     else process.env.AW_PLAYBOOK_PATH = priorPlaybook
+    rmSync(stateDir, { recursive: true, force: true })
+  }
+})
+
+test("OpenCode shell contexts follow exact roots and clear inherited IDs for unbound or ended sessions", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-context-scope-"))
+  const priorState = process.env.AW_STATE_DIR
+  try {
+    process.env.AW_STATE_DIR = stateDir
+    const { AwUsagePlugin } = await import(`./aw-usage.js?test=context-scope-${Date.now()}`)
+    const hooks = await AwUsagePlugin()
+    const environment = async (sessionID) => {
+      const output = { env: { AW_RUN_ID: "foreign-inherited-id", AW_RUN_CONTEXT: "foreign-inherited-context", AW_PLAYBOOK_VERSION: "foreign" } }
+      await hooks["shell.env"]({ sessionID }, output)
+      return output.env
+    }
+    for (const sessionID of ["root-a", "root-b"]) {
+      await hooks["tool.execute.before"]({ tool: "skill", sessionID }, { args: { name: "aw" } })
+    }
+    const first = await environment("root-a")
+    const second = await environment("root-b")
+    assert.notEqual(first.AW_RUN_CONTEXT, second.AW_RUN_CONTEXT)
+    assert.notEqual(first.AW_RUN_ID, second.AW_RUN_ID)
+    const read = (env) => readRunContext({ stateDir, token: env.AW_RUN_CONTEXT, profileHost: "opencode", playbookVersion: env.AW_PLAYBOOK_VERSION })
+    assert.equal(read(first).run_id, first.AW_RUN_ID)
+    assert.equal(read(second).run_id, second.AW_RUN_ID)
+    await hooks.event({ event: { type: "session.created", properties: { info: { id: "child-a", parentID: "root-a" } } } })
+    assert.equal((await environment("child-a")).AW_RUN_CONTEXT, first.AW_RUN_CONTEXT)
+    for (const sessionID of [undefined, "unbound"]) {
+      const env = await environment(sessionID)
+      assert.equal(env.AW_RUN_ID, "")
+      assert.equal(env.AW_RUN_CONTEXT, "")
+      assert.equal(env.AW_PLAYBOOK_VERSION, "")
+    }
+    await hooks.event({ event: { type: "session.idle", properties: { sessionID: "root-a" } } })
+    assert.throws(() => read(first), /ENOENT/)
+    assert.equal(read(second).run_id, second.AW_RUN_ID)
+    assert.equal((await environment("root-a")).AW_RUN_CONTEXT, "")
+    await hooks["tool.execute.before"]({ tool: "skill", sessionID: "root-b" }, { args: { name: "aw" } })
+    assert.throws(() => read(second), /ENOENT/)
+  } finally {
+    if (priorState === undefined) delete process.env.AW_STATE_DIR
+    else process.env.AW_STATE_DIR = priorState
     rmSync(stateDir, { recursive: true, force: true })
   }
 })
