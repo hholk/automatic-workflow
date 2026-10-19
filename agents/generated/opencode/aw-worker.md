@@ -2,7 +2,7 @@
 description: AW bounded GPT-6 Luna implementation worker
 model: venice/openai-gpt-6-luna
 mode: all
-steps: 32
+steps: 125
 permission:
   edit: allow
   write: allow

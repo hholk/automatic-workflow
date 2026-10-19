@@ -20,7 +20,7 @@ const run = (overrides = {}) => ({
   host: "codex",
   harness_version: "1.0.0",
   route: "implement",
-  task: { id: "task", class: "known-change", complexity: "small" },
+  task: { id: "task", snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1", class: "known-change", complexity: "small" },
   recipe_id: "base-v1",
   playbook_version: "base-v2",
   prompt: {

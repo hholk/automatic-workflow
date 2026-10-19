@@ -1,8 +1,12 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { spawnSync } from "node:child_process"
+import { appendAttestation, compareRecipes, readRuns } from "../../scripts/evidence.mjs"
+import { writeSelectionReceipt } from "../../scripts/selection-receipt.mjs"
+import { readRunContext } from "../../scripts/run-context.mjs"
 
 test("separates native Opus teacher usage and includes cached tokens without double counting", async () => {
   const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-opus-"))
@@ -60,7 +64,8 @@ test("records one prompt-free v4 trace with components and repeated-read waste",
   const item = JSON.parse(readFileSync(join(stateDir, "runs.jsonl"), "utf8").trim())
   assert.deepEqual({ route: item.route, tokens: item.tokens.operational_total }, { route: "fix", tokens: null })
   assert.equal(item.schema_version, 4)
-  assert.equal(item.prompt.profile_id, "model-bound-v1")
+  assert.equal(item.prompt.profile_id, "unknown")
+  assert.equal(item.quality.policy_provenance_complete, false)
   assert.deepEqual(item.prompt.loaded_files, ["workflows/fix.md"])
   assert.deepEqual(item.waste_events.map((event) => event.kind), ["repeated_read"])
   assert.equal("prompt_text" in item, false)
@@ -141,7 +146,218 @@ test("uses the active playbook version and never reuses child evidence across ac
 
   const items = readFileSync(join(stateDir, "runs.jsonl"), "utf8").trim().split("\n").map(JSON.parse)
   assert.equal(items[1].playbook_version, "weekly-v7")
-  assert.equal(items[1].recipe_id, "lean-worker-v2")
+  assert.equal(items[1].recipe_id, "unknown")
+  assert.equal(items[1].quality.policy_provenance_complete, false)
   assert.equal(items[1].actors.worker.resolved_model, null)
   delete process.env.AW_PLAYBOOK_PATH
+})
+
+const observeRun = async (hooks, rootID) => {
+  await hooks["tool.execute.before"]({ tool: "task", sessionID: rootID }, { args: { subagent_type: "aw-worker" } })
+  const childID = `${rootID}-worker`
+  await hooks.event({ event: { type: "session.created", properties: { info: { id: childID, parentID: rootID } } } })
+  for (const [id, agent] of [[rootID, "build"], [childID, "aw-worker"]]) {
+    await hooks.event({ event: { type: "message.updated", properties: { info: {
+      id: `message-${id}`, role: "assistant", sessionID: id, agent,
+      providerID: "venice", modelID: "openai-gpt-6-luna", tokens: { input: 10, output: 5 },
+    } } } })
+  }
+  await hooks.event({ event: { type: "session.idle", properties: { sessionID: rootID } } })
+}
+const attest = (stateDir, runID) => appendAttestation({ run_id: runID, verify_id: "synthetic-check", verify_exit_code: 0, semantic_success: true, scope_covered: 1, scope_total: 1, review_pass: true, forbidden_changes: 0, accepted_worker_actions: 1, parent_rework: 0 }, stateDir)
+
+test("shell.env and the normal resolver subprocess preserve a selected task cell through idle telemetry", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-receipt-"))
+  const playbookPath = join(stateDir, "playbook.json")
+  const priorState = process.env.AW_STATE_DIR
+  const priorPlaybook = process.env.AW_PLAYBOOK_PATH
+  writeFileSync(playbookPath, JSON.stringify({
+    schema_version: 4, version: "cell-policy-v1",
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "unused-default-v1", context_budget: 1200, worker_step_budget: 125, teacher_after_failed_hypotheses: 2 },
+    cells: { "opencode|known-change|small": { recipe_id: "bounded-v2", prompt_profile_id: "model-bound-v1" } },
+  }))
+  try {
+    process.env.AW_STATE_DIR = stateDir
+    process.env.AW_PLAYBOOK_PATH = playbookPath
+    const { AwUsagePlugin } = await import(`./aw-usage.js?test=receipt-${Date.now()}`)
+    const hooks = await AwUsagePlugin()
+    const rootID = "cell-selection"
+    await hooks["tool.execute.before"]({ tool: "skill", sessionID: rootID }, { args: { name: "aw" } })
+    const output = { env: {} }
+    await hooks["shell.env"]({ sessionID: rootID }, output)
+    assert.equal(output.env.AW_STATE_DIR, stateDir)
+    assert.match(output.env.AW_RUN_CONTEXT, /^[a-f0-9]{64}$/)
+    const result = spawnSync(process.execPath, [new URL("../../scripts/resolve-profile.mjs", import.meta.url).pathname,
+      "--host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "known-change", "--complexity", "small", "--playbook", playbookPath,
+      "--task-id", "fixture-a", "--snapshot-id", "fixture-rev-1", "--check-version", "fixture-check-v1"], {
+      env: { ...process.env, ...output.env }, encoding: "utf8",
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const selected = JSON.parse(result.stdout)
+    assert.equal(selected.selection_receipt.source, "run-context")
+    await observeRun(hooks, rootID)
+    const [run] = readRuns(stateDir)
+    assert.equal(run.recipe_id, "bounded-v2")
+    assert.equal(run.prompt.profile_id, selected.prompt_profile_id)
+    assert.equal(run.route, "fix")
+    assert.deepEqual(run.task, { id: "fixture-a", snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1", class: "known-change", complexity: "small" })
+    assert.notEqual(run.task.id, run.run_id)
+    assert.equal(run.playbook_version, "cell-policy-v1")
+    assert.equal(run.actors.worker.requested_model, "venice/openai-gpt-6-luna")
+    assert.equal(run.actors.worker.resolved_model, "venice/openai-gpt-6-luna")
+    assert.equal(run.actors.worker.fallback_reason, null)
+    assert.equal(run.quality.policy_provenance_complete, true)
+    attest(stateDir, run.run_id)
+    assert.equal(readRuns(stateDir)[0].quality.eligible, true)
+  } finally {
+    if (priorState === undefined) delete process.env.AW_STATE_DIR
+    else process.env.AW_STATE_DIR = priorState
+    if (priorPlaybook === undefined) delete process.env.AW_PLAYBOOK_PATH
+    else process.env.AW_PLAYBOOK_PATH = priorPlaybook
+    rmSync(stateDir, { recursive: true, force: true })
+  }
+})
+
+test("missing, stale and mixed policy receipts remain unknown and ineligible after attestation", async () => {
+  const priorState = process.env.AW_STATE_DIR
+  const priorPlaybook = process.env.AW_PLAYBOOK_PATH
+  try {
+    for (const mode of ["missing", "stale", "mixed"]) {
+      const stateDir = mkdtempSync(join(tmpdir(), `aw-plugin-${mode}-`))
+      try {
+        process.env.AW_STATE_DIR = stateDir
+        delete process.env.AW_PLAYBOOK_PATH
+        const { AwUsagePlugin } = await import(`./aw-usage.js?test=${mode}-receipt-${Date.now()}`)
+        const hooks = await AwUsagePlugin()
+        const rootID = `${mode}-root`
+        await hooks["tool.execute.before"]({ tool: "skill", sessionID: rootID }, { args: { name: "aw" } })
+        const output = { env: {} }
+        await hooks["shell.env"]({ sessionID: rootID }, output)
+        const selection = { role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/openai-gpt-6-luna", profile_id: "opencode-gpt6-luna-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "base-v1", effective_policy: { playbook_version: output.env.AW_PLAYBOOK_VERSION, capabilities: { profile_host: "opencode" } } }
+        if (mode !== "missing") writeSelectionReceipt({ runID: output.env.AW_RUN_ID, selection, stateDir, atMs: mode === "stale" ? Date.now() - 100000 : Date.now() })
+        if (mode === "mixed") writeSelectionReceipt({ runID: output.env.AW_RUN_ID, selection: { ...selection, recipe_id: "lean-worker-v2" }, stateDir })
+        await observeRun(hooks, rootID)
+        const [run] = readRuns(stateDir)
+        attest(stateDir, run.run_id)
+        const [attested] = readRuns(stateDir)
+        assert.equal(attested.recipe_id, "unknown", mode)
+        assert.equal(attested.prompt.profile_id, "unknown", mode)
+        assert.equal(attested.actors.worker.requested_model, null, mode)
+        assert.equal(attested.quality.attested, true, mode)
+        assert.equal(attested.quality.policy_provenance_complete, false, mode)
+        assert.equal(attested.quality.eligible, false, mode)
+      } finally { rmSync(stateDir, { recursive: true, force: true }) }
+    }
+  } finally {
+    if (priorState === undefined) delete process.env.AW_STATE_DIR
+    else process.env.AW_STATE_DIR = priorState
+    if (priorPlaybook === undefined) delete process.env.AW_PLAYBOOK_PATH
+    else process.env.AW_PLAYBOOK_PATH = priorPlaybook
+  }
+})
+
+test("automatic fixture traces pair across runs while snapshot, check and T3 frontend changes stay separate", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-paired-fixtures-"))
+  const playbookPath = join(stateDir, "playbook.json")
+  const priorState = process.env.AW_STATE_DIR
+  const priorPlaybook = process.env.AW_PLAYBOOK_PATH
+  try {
+    process.env.AW_STATE_DIR = stateDir
+    process.env.AW_PLAYBOOK_PATH = playbookPath
+    const { AwUsagePlugin } = await import(`./aw-usage.js?test=paired-fixtures-${Date.now()}`)
+    const hooks = await AwUsagePlugin()
+    const runFixture = async (version, index, { snapshot = "fixture-rev-a", check = "fixture-check-v1", frontend = "t3" } = {}) => {
+      writeFileSync(playbookPath, JSON.stringify({ schema_version: 4, version,
+        defaults: { recipe_id: "base-v1", prompt_profile_id: "model-bound-v1", context_budget: 1200,
+          worker_step_budget: 125, teacher_after_failed_hypotheses: 2 }, cells: {} }))
+      const rootID = `synthetic-${version}-${index}`
+      await hooks["tool.execute.before"]({ tool: "skill", sessionID: rootID }, { args: { name: "aw" } })
+      const output = { env: {} }
+      await hooks["shell.env"]({ sessionID: rootID }, output)
+      const selected = spawnSync(process.execPath, [new URL("../../scripts/resolve-profile.mjs", import.meta.url).pathname,
+        "--host", frontend, ...(frontend === "t3" ? ["--provider-host", "opencode"] : []), "--role", "worker", "--route", "fix",
+        "--task-class", "known-change", "--complexity", "small", "--task-id", `fixture-${index}`, "--snapshot-id", snapshot,
+        "--check-version", check, "--playbook", playbookPath], {
+        encoding: "utf8", timeout: 5000, env: { ...process.env, ...output.env },
+      })
+      assert.equal(selected.status, 0, selected.stderr)
+      assert.equal(JSON.parse(selected.stdout).model_capability.status, "unverified")
+      await observeRun(hooks, rootID)
+      attest(stateDir, output.env.AW_RUN_ID)
+      return readRuns(stateDir).find((run) => run.run_id === output.env.AW_RUN_ID)
+    }
+    for (const version of ["baseline", "candidate"]) {
+      for (let index = 0; index < 5; index++) {
+        const run = await runFixture(version, index)
+        assert.equal(run.frontend_host, "t3")
+        assert.equal(run.provider_host, "opencode")
+        assert.equal(run.host, "opencode")
+        assert.match(run.cell_id, /^t3>opencode\|/)
+        assert.equal(run.quality.eligible, true)
+      }
+    }
+    const runs = readRuns(stateDir)
+    const pair = runs.filter((run) => run.task.id === "fixture-0")
+    assert.notEqual(pair[0].run_id, pair[1].run_id)
+    assert.equal(compareRecipes(pair, "baseline", "candidate").cells[0].matched_pairs, 1)
+    const comparison = compareRecipes(runs, "baseline", "candidate")
+    assert.equal(comparison.cells[0].matched_pairs, 5)
+    assert.equal(comparison.verdict, "no-change")
+    for (const [version, change] of [["snapshot-changed", { snapshot: "fixture-rev-b" }],
+      ["check-changed", { check: "fixture-check-v2" }], ["native-host", { frontend: "opencode" }]]) {
+      const changed = await runFixture(version, 0, change)
+      const result = compareRecipes([pair[0], changed], "baseline", version)
+      assert.equal(result.cells.reduce((sum, cell) => sum + cell.matched_pairs, 0), 0)
+      assert.equal(result.verdict, "insufficient-data")
+    }
+  } finally {
+    if (priorState === undefined) delete process.env.AW_STATE_DIR
+    else process.env.AW_STATE_DIR = priorState
+    if (priorPlaybook === undefined) delete process.env.AW_PLAYBOOK_PATH
+    else process.env.AW_PLAYBOOK_PATH = priorPlaybook
+    rmSync(stateDir, { recursive: true, force: true })
+  }
+})
+
+test("OpenCode shell contexts follow exact roots and clear inherited IDs for unbound or ended sessions", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-plugin-context-scope-"))
+  const priorState = process.env.AW_STATE_DIR
+  try {
+    process.env.AW_STATE_DIR = stateDir
+    const { AwUsagePlugin } = await import(`./aw-usage.js?test=context-scope-${Date.now()}`)
+    const hooks = await AwUsagePlugin()
+    const environment = async (sessionID) => {
+      const output = { env: { AW_RUN_ID: "foreign-inherited-id", AW_RUN_CONTEXT: "foreign-inherited-context", AW_PLAYBOOK_VERSION: "foreign" } }
+      await hooks["shell.env"]({ sessionID }, output)
+      return output.env
+    }
+    for (const sessionID of ["root-a", "root-b"]) {
+      await hooks["tool.execute.before"]({ tool: "skill", sessionID }, { args: { name: "aw" } })
+    }
+    const first = await environment("root-a")
+    const second = await environment("root-b")
+    assert.notEqual(first.AW_RUN_CONTEXT, second.AW_RUN_CONTEXT)
+    assert.notEqual(first.AW_RUN_ID, second.AW_RUN_ID)
+    const read = (env) => readRunContext({ stateDir, token: env.AW_RUN_CONTEXT, profileHost: "opencode", playbookVersion: env.AW_PLAYBOOK_VERSION })
+    assert.equal(read(first).run_id, first.AW_RUN_ID)
+    assert.equal(read(second).run_id, second.AW_RUN_ID)
+    await hooks.event({ event: { type: "session.created", properties: { info: { id: "child-a", parentID: "root-a" } } } })
+    assert.equal((await environment("child-a")).AW_RUN_CONTEXT, first.AW_RUN_CONTEXT)
+    for (const sessionID of [undefined, "unbound"]) {
+      const env = await environment(sessionID)
+      assert.equal(env.AW_RUN_ID, "")
+      assert.equal(env.AW_RUN_CONTEXT, "")
+      assert.equal(env.AW_PLAYBOOK_VERSION, "")
+    }
+    await hooks.event({ event: { type: "session.idle", properties: { sessionID: "root-a" } } })
+    assert.throws(() => read(first), /ENOENT/)
+    assert.equal(read(second).run_id, second.AW_RUN_ID)
+    assert.equal((await environment("root-a")).AW_RUN_CONTEXT, "")
+    await hooks["tool.execute.before"]({ tool: "skill", sessionID: "root-b" }, { args: { name: "aw" } })
+    assert.throws(() => read(second), /ENOENT/)
+  } finally {
+    if (priorState === undefined) delete process.env.AW_STATE_DIR
+    else process.env.AW_STATE_DIR = priorState
+    rmSync(stateDir, { recursive: true, force: true })
+  }
 })

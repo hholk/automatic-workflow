@@ -9,6 +9,11 @@ Every run stores:
 
 - identity: hashed `run_id`, ISO week, harness/version, route, task class,
   complexity, recipe, playbook version, terminal outcome;
+- comparison identity: explicit stable `task.id`, `task.snapshot_id` and
+  `task.check_version`, independently of the run ID; missing values exclude
+  comparison rather than inheriting a session or run identifier;
+- execution context: native `host` and separate `frontend_host`/`provider_host`;
+  T3 with each provider and direct native runs remain separate cells;
 - prompt structure: immutable `prompt_profile_id`, component IDs, relative
   loaded files, measured component tokens, and duplicate-context size;
 - actors: main/worker/teacher participation, requested and resolved native
@@ -68,3 +73,11 @@ is not an improvement, and decreasing either is not a regression. All actors'
 tokens count, including main repair. Token totals are not monetary cost; report
 provider cost separately when available. See `lessons.md` for the separate
 main-only versus delegation experiment; automatic cells retain actor provenance.
+
+Pair keys contain all of `task.id`, `task.snapshot_id` and `task.check_version`.
+Changed snapshots or acceptance checks cannot pair, even when the task ID is
+unchanged. Missing identity yields `quality.task_provenance_complete: false`
+and cannot be repaired by a quality attestation. Adapters obtain this metadata
+from an exact run-bound schema-2 resolver receipt; they never substitute their
+new run ID for the stable task ID. The receipt remains supplied selection
+metadata, so main must verify the frozen fixture and check before supplying it.

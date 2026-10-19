@@ -26,7 +26,7 @@ const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change"
   run_id: runID,
   host,
   route: "implement",
-  task: { id: taskID, class: taskClass, complexity: "small" },
+  task: { id: taskID, snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1", class: taskClass, complexity: "small" },
   recipe_id: recipe,
   playbook_version: recipe,
   harness_version: "test",
@@ -66,6 +66,18 @@ test("does not pair different tasks or harness cells", () => {
   assert.equal(result.verdict, "insufficient-data")
   assert.equal(result.cells.length, 1)
   assert.equal(result.cells[0].matched_pairs, 0)
+})
+
+test("pairs separate run IDs only for the same task, snapshot and check version", () => {
+  const base = run({ runID: "separate-base", recipe: "base", taskID: "fixture" })
+  const candidate = run({ runID: "separate-next", recipe: "candidate", taskID: "fixture" })
+  assert.equal(compareRecipes([base, candidate], "base", "candidate").cells[0].matched_pairs, 1)
+  for (const changed of [{ snapshot_id: "fixture-rev-2" }, { check_version: "fixture-check-v2" }, { snapshot_id: null }, { check_version: null }]) {
+    const next = { ...candidate, task: { ...candidate.task, ...changed } }
+    assert.equal(compareRecipes([base, next], "base", "candidate").cells[0].matched_pairs, 0)
+    const normalized = normalizeRun(next, { ...candidate.quality, task_provenance_complete: true })
+    if (Object.values(changed).includes(null)) assert.equal(normalized.quality.eligible, false)
+  }
 })
 
 test("keeps task classes in separate evidence cells", () => {

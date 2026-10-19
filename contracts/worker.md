@@ -51,3 +51,41 @@ ATTEMPTED: <at most two distinct probes>
 Use observed states, never a numeric confidence score. Do not start another
 agent. The main agent decides whether to activate the teacher. Use this request only
 for a material technical decision that remains unresolved after a useful probe.
+
+## Execution evidence extension v1
+
+The DONE and TEACHER_REQUEST shapes above remain required. Add these lines when
+main supplies a v1 task brief. Do not replace the mandatory VERIFY line.
+
+```text
+TASK_ID: <task_id>
+OBJECTIVE_REVISION: <objective_revision>
+SNAPSHOT_ID: <verified source or UI state snapshot_id>
+EVIDENCE_VERSION: 1
+EVIDENCE_REFS: <versioned records, one or more per numbered SUCCESS criterion>
+```
+
+Main supplies a concise objective, numbered observable SUCCESS criteria, the
+versioned check and expected result for each criterion, and the exact VERIFY
+command. A worker reports the actual command, exit code and semantic result.
+Unknown results and incomplete checks remain unfinished. Evidence records carry
+`criterion_id`, `check_id`, `check_version`, `evidence_ref`, `status`, and
+`verify: {command, exit_code, result, result_ref}`, in addition to the scope above.
+Use `status: passed` and `verify.result: passed` only for an observed pass.
+
+A report does not grant acceptance. Main checks every criterion, integrates the
+result, runs verification on the integrated snapshot and records its own proof.
+Changed tasks, objectives, snapshots, commands or check versions invalidate reuse.
+See [execution v5](../references/execution-v5.md) for the exact machine shapes.
+
+Workers receive unique write ownership. Parallel writers require prepared,
+isolated writable worktrees. Workers never dispatch other workers. At most two
+workers may be active, including work already dispatched. Report any ownership,
+isolation, integration or host permission block to main before writing.
+
+For no-progress evidence, preserve the task, objective revision, blocker and
+state IDs. Report each distinct hypothesis, action and result reference, the
+before and after states, completion and failure kind. Provider, network and
+permission failures do not count as fresh technical probes. Main verifies the
+state and maintains the attempt ledger. Human authority or a conflicting goal
+requires one scoped human decision; a teacher cannot grant permission.

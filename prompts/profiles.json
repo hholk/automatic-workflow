@@ -69,7 +69,17 @@
   "teacher_default": "opus-5.5",
   "teacher_explicit_overrides": [],
   "teacher_bindings": {
-    "codex": { "model": "venice/claude-opus-5-5", "model_provider": "codex-router", "native_agent": "aw-teacher" },
-    "opencode": { "model": "venice/claude-opus-5-5", "model_provider": "venice", "native_agent": "aw-teacher" }
+    "codex": {
+      "model": "venice/claude-opus-5-5",
+      "model_provider": "codex-router",
+      "native_agent": "aw-teacher",
+      "profile_id": "opus-teacher-v1"
+    },
+    "opencode": {
+      "model": "venice/claude-opus-5-5",
+      "model_provider": "venice",
+      "native_agent": "aw-teacher",
+      "profile_id": "opus-teacher-v1"
+    }
   }
 }

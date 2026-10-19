@@ -14,10 +14,10 @@
     "expected_route": "explore",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
+    "worker_model": "venice/openai-gpt-6-luna",
     "task_class": "read-only-map",
     "complexity": "small",
-    "expected_profile_id": "opencode-mimo-worker-v1"
+    "expected_profile_id": "opencode-gpt6-luna-worker-v1"
   },
   {
     "id": "unknown_bug",
@@ -26,10 +26,10 @@
     "expected_route": "diagnose",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
+    "worker_model": "venice/openai-gpt-6-luna",
     "task_class": "unknown-bug",
     "complexity": "medium",
-    "expected_profile_id": "opencode-mimo-worker-v1"
+    "expected_profile_id": "opencode-gpt6-luna-worker-v1"
   },
   {
     "id": "diagnosed_bug",
@@ -38,10 +38,10 @@
     "expected_route": "fix",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
+    "worker_model": "venice/openai-gpt-6-luna",
     "task_class": "diagnosed-bug",
     "complexity": "small",
-    "expected_profile_id": "opencode-mimo-worker-v1"
+    "expected_profile_id": "opencode-gpt6-luna-worker-v1"
   },
   {
     "id": "known_change",
@@ -50,10 +50,10 @@
     "expected_route": "implement",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
+    "worker_model": "venice/openai-gpt-6-luna",
     "task_class": "known-change",
     "complexity": "medium",
-    "expected_profile_id": "opencode-mimo-worker-v1"
+    "expected_profile_id": "opencode-gpt6-luna-worker-v1"
   },
   {
     "id": "architecture",
@@ -99,10 +99,10 @@
     "expected_route": "review",
     "host": "opencode",
     "role": "worker",
-    "worker_model": "venice/xiaomi-mimo-v2-6-flash",
+    "worker_model": "venice/openai-gpt-6-luna",
     "task_class": "completed-change",
     "complexity": "medium",
-    "expected_profile_id": "opencode-mimo-worker-v1"
+    "expected_profile_id": "opencode-gpt6-luna-worker-v1"
   },
   {
     "id": "irreversible",

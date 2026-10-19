@@ -2,7 +2,7 @@
 description: AW bounded GPT-6 Luna implementation worker
 model: {{model}}
 mode: all
-steps: 32
+steps: {{worker_steps}}
 permission:
   edit: allow
   write: allow

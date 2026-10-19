@@ -1,6 +1,6 @@
 {
   "schema_version": 4,
-  "version": "acceptance-routing-v4",
+  "version": "acceptance-routing-v5",
   "generated_at": "2026-09-21T00:00:00.000Z",
   "frozen": {
     "evaluator": "quality-v2",
@@ -8,6 +8,7 @@
     "safety": "aw-v2",
     "worker_contract": "worker-v1",
     "teacher_contract": "teacher-v1",
+    "teacher_inspection_policy": "teacher-read-v1",
     "teacher_default": "opus-5.5",
     "teacher_max_asks": 5,
     "teacher_max_turns_per_ask": 7
@@ -17,7 +18,7 @@
     "prompt_profile_id": "model-bound-v1",
     "context_budget": 1600,
     "worker_step_budget": 125,
-    "teacher_after_failed_hypotheses": 3
+    "teacher_after_failed_hypotheses": 2
   },
   "cells": {}
 }

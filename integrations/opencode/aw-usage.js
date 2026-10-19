@@ -1,10 +1,12 @@
 import { homedir } from "node:os"
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { appendRun } from "../../scripts/evidence.mjs"
 import { detectWaste } from "../../scripts/diagnostics.mjs"
+import { readSelectionReceipt } from "../../scripts/selection-receipt.mjs"
+import { closeRunContext, createRunContext } from "../../scripts/run-context.mjs"
 
 const stateDir = process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
 const sessions = new Map()
@@ -53,17 +55,17 @@ const loadPlaybook = () => {
 }
 const start = (sessionID) => {
   const state = get(sessionID)
+  if (state.active?.contextToken) closeRunContext({ token: state.active.contextToken, stateDir })
   clearDescendants(sessionID)
   state.messages.clear()
   const activation = (state.activation || 0) + 1
   const playbook = loadPlaybook()
   state.activation = activation
   state.active = {
-    runID: `opencode:${createHash("sha256").update(sessionID).digest("hex").slice(0, 20)}:${activation}`,
+    runID: `opencode:${createHash("sha256").update(sessionID).digest("hex").slice(0, 20)}:${activation}:${randomUUID()}`,
     startedAt: Date.now(),
     playbookVersion: playbook.version,
-    recipeID: playbook.defaults.recipe_id,
-    promptProfileID: playbook.defaults.prompt_profile_id,
+
     harnessVersion: process.env.OPENCODE_VERSION || null,
     childIDs: new Set(),
     routes: [],
@@ -79,6 +81,8 @@ const start = (sessionID) => {
     loadedFiles: new Set(),
     signatures: new Map(),
   }
+  state.active.contextToken = createRunContext({ runID: state.active.runID, profileHost: "opencode",
+    playbookVersion: playbook.version, scopeRef: createHash("sha256").update(`${sessionID}\0${activation}`).digest("hex"), stateDir })
 }
 const routeFromPath = (path = "") => path.match(/workflows\/(explore|diagnose|fix|implement|review)\.md$/)?.[1]
 const messageTokens = ({ tokens = {} }) => Number.isFinite(tokens.total)
@@ -172,12 +176,18 @@ export const AwUsagePlugin = async () => ({
     }
   },
   "shell.env": async (input, output) => {
+    // An unbound terminal or ended session must not inherit another run's ID.
+    output.env.AW_RUN_CONTEXT = ""
+    output.env.AW_RUN_ID = ""
+    output.env.AW_PLAYBOOK_VERSION = ""
     const rootID = input.sessionID ? rootFor(input.sessionID) : null
     if (rootID) {
       const active = get(rootID).active
       output.env.AW_RUN_ID = active.runID
+      output.env.AW_RUN_CONTEXT = active.contextToken
       output.env.AW_PLAYBOOK_VERSION = active.playbookVersion
-      output.env.AW_RECIPE_ID = active.recipeID
+      // Policy identity is supplied by a resolver receipt after selection.
+      output.env.AW_STATE_DIR = stateDir
     }
   },
   event: async ({ event }) => {
@@ -244,19 +254,25 @@ export const AwUsagePlugin = async () => ({
     const workerTokens = workerModels.length ? workerIDs.reduce((sum, childID) => sum + sessionTokens(childID), 0) : null
     const teacherModel = teacherModels.length === 1 ? teacherModels[0] : teacherModels.length > 1 ? `mixed:${teacherModels.join(",")}` : null
     const teacherTokens = teacherModels.length ? teacherIDs.reduce((sum, id) => sum + sessionTokens(id), 0) : null
-    const route = active.routes.at(-1) || (active.teacherTurns ? "teacher" : active.workerCalls ? "unknown" : "direct")
+    const policy = readSelectionReceipt({ runID: active.runID, profileHost: "opencode", playbookVersion: active.playbookVersion, startedAt: active.startedAt, stateDir })
+    const selected = policy.receipt
+    closeRunContext({ token: active.contextToken, stateDir })
+    const route = selected?.route || active.routes.at(-1) || (active.teacherTurns ? "teacher" : active.workerCalls ? "unknown" : "direct")
     appendRun({
       schema_version: 4,
       kind: "run",
       run_id: active.runID,
       host: "opencode",
+      frontend_host: selected?.frontend_host || "opencode",
+      provider_host: "opencode",
       harness_version: active.harnessVersion,
       route,
-      task: { id: active.runID, class: route, complexity: "unknown" },
-      recipe_id: active.recipeID,
+      task: { id: selected?.task_id || "unknown", snapshot_id: selected?.snapshot_id || null,
+        check_version: selected?.check_version || null, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
+      recipe_id: selected?.recipe_id || "unknown",
       playbook_version: active.playbookVersion,
       prompt: {
-        profile_id: active.promptProfileID,
+        profile_id: selected?.prompt_profile_id || "unknown",
         component_ids: [...active.loadedFiles],
         component_tokens: null,
         loaded_files: [...active.loadedFiles],
@@ -264,10 +280,11 @@ export const AwUsagePlugin = async () => ({
       },
       actors: {
         main: actor(mainTokens, mainModel, mainModel, true),
-        worker: actor(workerTokens, workerModel, "venice/xiaomi-mimo-v2-6-flash", active.workerCalls > 0 || workerIDs.length > 0, active.primaryFailure),
+        worker: actor(workerTokens, workerModel, selected?.requested_worker_model || null, active.workerCalls > 0 || workerIDs.length > 0, active.primaryFailure),
         teacher: actor(teacherTokens, teacherModel, "venice/claude-opus-5-5", active.teacherTurns > 0 || teacherIDs.length > 0),
       },
       quality: {
+        policy_provenance_complete: policy.complete,
         verify_id: null,
         verify_exit_code: null,
         semantic_success: null,

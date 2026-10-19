@@ -2,7 +2,7 @@
 description: AW GLM 5.3 Flash read-only diagnostic and reviewer
 model: venice/z-ai-glm-5-3-flash
 mode: all
-steps: 8
+steps: {{worker_steps}}
 permission:
   edit: deny
   write: deny
