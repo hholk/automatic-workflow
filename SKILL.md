@@ -82,9 +82,9 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    including visual fidelity or source support when relevant. Run the narrowest
    acceptance probe and versioned acceptance gate; reuse fresh evidence elsewhere.
    Review independently when risk, uncertainty or the user requires it. Record
-   prompt-free v4 telemetry. OpenCode carries its active run ID through the
-   existing shell environment to the resolver's selection receipt. Other hosts
-   need an independently supplied exact active `--run-id`; no receipt means
+   prompt-free v4 telemetry. Use the exact [run context](references/run-context.md)
+   supplied by OpenCode's shell environment or Codex's turn hook. Copilot and
+   hosts without that metadata need an independently known `--run-id`; no receipt means
    unknown policy identity and exclusion from learning, never default labels.
    The v5 rollout preserves its wire schema.
 

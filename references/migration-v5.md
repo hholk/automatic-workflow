@@ -80,10 +80,11 @@ native dispatches and integration. It is not an executable worker scheduler or
 a worktree creator. No live parallel execution has been demonstrated here.
 
 Normal resolver calls must supply task class and complexity. OpenCode's existing
-shell.env hook supplies AW_RUN_ID, so the resolver can record selected recipe
-and prompt identities for its active run. Current Codex/Copilot hook CLI adapters
-do not transport that active ID into the caller. Their automatic receipt path
-is unsupported; use explicit --run-id only with independently known host metadata.
+shell.env hook supplies the exact run context. Codex's turn-aware UserPromptSubmit
+hook returns a context locator for main to pass to the resolver. These paths are
+offline-tested and require the host to deliver their documented metadata.
+Copilot and Codex hosts without turn metadata need independently known exact
+--run-id input. See [run context](run-context.md) for the transport and limits.
 Without a current exact receipt, policy identity is unknown and cannot enter
 learning comparisons. Never infer the active conversation from a global latest
 run, or manufacture a receipt to make historical data eligible.

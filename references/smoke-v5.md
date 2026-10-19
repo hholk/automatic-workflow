@@ -68,9 +68,11 @@ scope is proven. No teacher snapshot or promotion grant is included.
 It covers discovery, the selected native worker binding, a bounded read and main
 acceptance. It does not demonstrate live parallel worktrees, teacher transport,
 teacher snapshot access, dollar savings, learned-rule promotion or all hosts.
-Codex/Copilot automatic selection-receipt transport remains unsupported without
-an independently supplied exact active run ID. Do not claim learning eligibility
-for the probe merely from a passing final answer.
+Codex turn-context return and OpenCode shell-context transport are implemented
+and tested offline; live hook activation has not been demonstrated here. Copilot
+and hosts missing the required metadata still need an independently known exact
+run ID. See [run context](run-context.md). A passing answer alone does not prove
+learning eligibility.
 
 OpenCode has an offline-tested shell.env-to-resolver-to-telemetry receipt path.
 Testing that live would be a separate host-scoped installation and request,

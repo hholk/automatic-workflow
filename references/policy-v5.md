@@ -105,13 +105,13 @@ revision, policy version and every prerequisite match. Main appends the selected
 `lessons[].instruction` and IDs to the next bounded brief. Teachers receive no
 lessons, and lesson content never changes tools or permissions.
 
-For a worker invocation, `--run-id` or the existing `AW_RUN_ID` environment value
-records a prompt-free policy selection receipt. The receipt binds the actual
+For a worker invocation, the exact [run context](run-context.md), or independently
+known `--run-id` / `AW_RUN_ID`, records a prompt-free selection receipt. The receipt binds the selected
 provider host, including the explicit Codex or OpenCode provider behind T3.
 Supply `--task-class` and `--complexity` for a complete receipt. A legacy call
 without either still resolves and reports `UNRECORDED` with
 `MISSING_TASK_IDENTITY`; it does not invent task metadata. With no explicit or
-environment run ID, the resolver records no receipt. Teacher calls do not
+environment run ID or context, the resolver records no receipt. Teacher calls do not
 replace a worker selection receipt.
 
 For paired evaluation, supply all three of `--task-id FIXTURE_ID

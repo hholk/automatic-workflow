@@ -23,10 +23,12 @@ for observed native/provider model metadata, and scoped lesson inputs when enabl
 For paired fixtures, also supply `--task-id`, `--snapshot-id` and `--check-version`
 from the frozen host-verified fixture. Resolver `model_capability` stays
 `unverified`; it cannot replace the native preflight.
-The current hook CLI does not export its active AW run ID to the caller. Selection
-receipts require independently known exact host metadata via `--run-id`; without
-it, policy identity stays UNKNOWN and is excluded from learning. Do not guess the
-current conversation from a global latest-run record.
+With documented session and turn metadata, the hook CLI returns an exact
+`--run-context` locator through UserPromptSubmit additionalContext. Main passes
+that option to the resolver; this returns correlation metadata, not a persistent
+shell environment or permission grant. See [run context](run-context.md) for
+lifecycle and missing-metadata behavior. Without a context or independently
+known exact `--run-id`, policy identity stays UNKNOWN and is excluded from learning.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host codex --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
 using native metadata and router request evidence, never model self-reports.
