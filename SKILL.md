@@ -30,6 +30,11 @@ First matching row wins. Details and load paths: [routing](references/routing.md
 
 Direct executes and verifies; human asks for the missing decision. Other routes continue below.
 
+Substantial, high-risk, multi-session, or explicitly independently reviewed work uses
+`assurance: reviewed` and the [mission lifecycle](references/mission-lifecycle.md),
+including when main implements directly. Small tasks and bounded read-only probes
+use `assurance: direct`; they need no mission checkpoint or review fanout.
+
 Modes outside the task route: `$aw research` and `$aw learn` (see
 [autoresearch](references/autoresearch.md) and [lessons](references/lessons.md)).
 Run them only when explicitly requested.
@@ -41,7 +46,9 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
 
 1. Freeze `OBJECTIVE | SUCCESS | CONTEXT | PATHS | NON_GOALS | VERIFY` before dispatch.
    `SUCCESS` lists numbered, falsifiable criteria; `VERIFY` names one command.
-   A brief without both is not dispatched.
+   Use a v2 brief with an explicit assurance mode. For reviewed work, preserve the
+   original request, later decisions and applicable constraints, map them to criteria,
+   and pass a fresh [contract review](workflows/contract-review.md) before work dispatch.
 2. Read one runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
 3. At a routing milestone, apply the strategy/model route gate before resolving
@@ -65,6 +72,9 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    Validate the versioned brief before dispatch. Use proven capable profiles
    and total run costs at milestones. Main confirms
    evidence; missing provenance or cost stays unknown.
+   Reviewed and long-running work checkpoints its mission before dispatch and after
+   results. On resume, read the checkpoint and reconcile reserved/active task IDs
+   with the host before starting more work; follow the mission lifecycle.
 5. Dispatch one bounded worker. Only the main agent may start or resume agents.
    At most two independent workers may run; use the dispatch gate, unique write
    ownership, prepared isolated worktrees for parallel writes, and an integration
@@ -74,6 +84,9 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    Apply the recovery gate after observed progress or a failed probe. One bounded
    recovery is allowed; unresolved cycles then stop. Reuse evidence only when
    task, objective revision, snapshot and versioned check still match.
+   A discovered gap first uses the replan gate to identify the earliest invalid
+   artifact. Repair that artifact, revise changed criteria and revalidate affected
+   evidence; replanning never resets the recovery budget or shrinks user scope.
 7. Eligible teacher requests use [teacher loop](references/teacher.md). Advisory
    consultation can prevent failures. Direct [snapshot diagnosis](references/teacher-inspection.md)
    requires two proven no-progress attempts and a real scoped host grant.
@@ -81,7 +94,10 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
 8. Main integrates and verifies every SUCCESS criterion against the final artifact,
    including visual fidelity or source support when relevant. Run the narrowest
    acceptance probe and versioned acceptance gate; reuse fresh evidence elsewhere.
-   Review independently when risk, uncertainty or the user requires it. Record
+   Reviewed work also needs a fresh [completion review](workflows/completion-review.md)
+   against the original request and later decisions, without builder reports or the
+   mission's criteria. Open gaps and unknown checks block completion. Accept the
+   checkpoint only after main verification. Record
    prompt-free v4 telemetry. Use the exact [run context](references/run-context.md)
    supplied by OpenCode's shell environment or Codex's turn hook. Copilot and
    hosts without that metadata need an independently known `--run-id`; no receipt means

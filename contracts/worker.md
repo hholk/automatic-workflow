@@ -55,7 +55,7 @@ for a material technical decision that remains unresolved after a useful probe.
 ## Execution evidence extension v1
 
 The DONE and TEACHER_REQUEST shapes above remain required. Add these lines when
-main supplies a v1 task brief. Do not replace the mandatory VERIFY line.
+main supplies a v2 task brief. Evidence records remain v1. Do not replace the mandatory VERIFY line.
 
 ```text
 TASK_ID: <task_id>

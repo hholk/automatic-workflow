@@ -10,7 +10,7 @@ const invoke = (action, input, extra = []) => {
   assert.equal(result.stderr, "")
   return { status: result.status, value: JSON.parse(result.stdout) }
 }
-const brief = { version: 1, task_id: "synthetic", objective_revision: "1", snapshot_id: "1", objective: "Preserve a title", success: [{ id: 1, claim: "Saving preserves the entered title", verify: { check_id: "title", check_version: "1", command: "synthetic check", expected: "Saved title matches input" } }] }
+const brief = { version: 2, assurance: "direct", task_id: "synthetic", objective_revision: "1", snapshot_id: "1", objective: "Preserve a title", success: [{ id: 1, claim: "Saving preserves the entered title", verify: { check_id: "title", check_version: "1", command: "synthetic check", expected: "Saved title matches input" } }] }
 
 test("CLI accepts bounded synthetic stdin and returns a denied gate with nonzero status", () => {
   assert.deepEqual(invoke("brief", brief), { status: 0, value: { allowed: true, reason: null } })

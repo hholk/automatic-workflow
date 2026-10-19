@@ -1,6 +1,6 @@
 import {
   validateTaskBrief, assessAcceptance, assessEvidenceReuse, routeMilestone,
-  assessRecovery, resolveAuthority, assessDispatch,
+  assessRecovery, resolveAuthority, assessDispatch, assessContractReview, assessCompletionReview, assessReplan,
 } from "./execution-state.mjs"
 
 const actions = new Map([
@@ -8,6 +8,7 @@ const actions = new Map([
   ["reuse", assessEvidenceReuse], ["route", routeMilestone],
   ["recovery", assessRecovery], ["authority", resolveAuthority],
   ["dispatch", assessDispatch],
+  ["contract", assessContractReview], ["completion", assessCompletionReview], ["replan", assessReplan],
 ])
 const respond = (result) => {
   process.stdout.write(`${JSON.stringify(result)}\n`)
