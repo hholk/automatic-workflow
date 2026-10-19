@@ -2,6 +2,11 @@
 
 Use after a change exists and needs independent evidence.
 
+Mission review purposes use their dedicated inputs: [contract review](contract-review.md)
+before work and [completion review](completion-review.md) before acceptance. Main
+resolves with `--role worker --route review`, which selects the existing
+read-only `aw-reviewer` binding, and supplies only the selected review workflow.
+
 Dispatch a fresh resolved native worker read-only with the objective, acceptance criteria,
 base/diff scope, and verify command, but not the builder's conclusions. It checks
 correctness, regressions, permissions, and unexpected scope, and may run safe

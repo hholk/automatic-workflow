@@ -2,16 +2,18 @@
 
 `scripts/execution-state.mjs` exports pure decision functions. They do not call
 models, execute commands, persist state, create worktrees, dispatch workers or
-change host permissions. Main owns the ledger and invokes the relevant gate
-before an action. Host permissions still apply after a gate allows an action.
+change host permissions. Main invokes the relevant gate before an action.
+[Mission lifecycle](mission-lifecycle.md) defines review records, replanning and
+the main-owned durable ledger. Host permissions still apply after a gate allows an action.
 
 ## Objective and acceptance
 
-Before dispatch, call `validateTaskBrief(brief)`. Version 1 has this shape:
+Before dispatch, call `validateTaskBrief(brief)`. Version 2 replaces the old brief:
 
 ```js
 const brief = {
-  version: 1,
+  version: 2,
+  assurance: "direct",
   task_id: "task-a",
   objective_revision: "objective-2",
   snapshot_id: "tree-3",
@@ -42,7 +44,11 @@ Each evidence record has `version: 1`, `task_id`, `objective_revision`,
 `status: "passed"` and `verify: {command, exit_code: 0, result: "passed",
 result_ref}`. References must point to actual inspectable output or artifacts.
 
-Call `assessAcceptance({brief, evidence, main_confirmation})` after integration.
+Call `assessAcceptance({brief, evidence, main_confirmation, contract_review,
+completion_review, builder_ids})` after integration. Reviewed briefs require both
+fresh reviews; direct briefs require no review records. See the mission lifecycle
+for sources, requirement coverage and reviewer inputs. Evidence and main
+confirmation retain their version 1 schema.
 Every criterion needs a passing evidence record matching the current task,
 objective revision, snapshot, check ID, check version and command. The gate
 rejects stale, foreign, unknown and failed records, including extra records in an
@@ -146,13 +152,17 @@ it cannot override a host denial or manufacture execution privileges.
 
 ## Bounded dispatch and integration
 
-Call `assessDispatch` before dispatch with `task_id`, `objective_revision`,
+Call `assessDispatch` before dispatch with the v2 `brief`, `contract_review`,
+`builder_ids`, `purpose: "work" | "contract_review" | "completion_review"`,
 `parent_role: "main"`, proposed `workers`, full `active_workers`, all previously
 `dispatched_ids`, and `integration: {owner: "main", verify_command}`. Proposed
 plus active workers may total at most two. Each worker has `id`, the task and
 objective revision, `independent: true`, `can_delegate: false`, and `write_paths`.
 Use canonical repository-relative paths. An empty list means read-only work.
-Parent and child directories and case variants overlap for ownership purposes.
+Reviewed work needs a passing contract review before work or completion-review
+dispatch. Review purposes have empty write paths; completion review also requires
+no active workers. Builder IDs include observed native identities, excluding review
+actors. Parent and child directories and case variants overlap for ownership purposes.
 Drive paths, globs and control characters are rejected. Main must resolve
 symlinks and filesystem aliases before assigning ownership.
 
@@ -176,7 +186,7 @@ node scripts/execution-state-cli.mjs acceptance < acceptance-input.json
 ```
 
 The sole argument is one of `brief`, `acceptance`, `reuse`, `route`, `recovery`,
-`authority`, or `dispatch`. Standard input is the corresponding function argument
+`authority`, `dispatch`, `contract`, `completion`, or `replan`. Standard input is the corresponding function argument
 object described above. The CLI reads at most one MiB, emits one JSON decision,
 and exits 0 only for an allowed or accepted result. Denials, malformed input,
 unknown actions and extra arguments exit 1. It accepts no input file paths or

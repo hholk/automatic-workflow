@@ -4,7 +4,7 @@ import { validateTaskBrief, assessEvidenceReuse, assessAcceptance, routeMileston
 
 const scope = { task_id: "task-a", objective_revision: "objective-2", snapshot_id: "tree-3" }
 const verify = { check_id: "behavior", check_version: "1", command: "npm test", expected: "No failing behavior tests" }
-const brief = { version: 1, ...scope, objective: "Fix the failing save operation", success: [{ id: 1, claim: "Saving preserves the entered title", verify }] }
+const brief = { version: 2, assurance: "direct", ...scope, objective: "Fix the failing save operation", success: [{ id: 1, claim: "Saving preserves the entered title", verify }] }
 const evidence = { version: 1, ...scope, criterion_id: 1, check_id: "behavior", check_version: "1", evidence_ref: "log:worker-test", status: "passed", verify: { command: "npm test", exit_code: 0, result: "passed", result_ref: "log:save-test" } }
 const confirmation = { version: 1, ...scope, actor: "main", integrated: true, status: "passed", criterion_ids: [1], evidence_ref: "log:integration", evidence_refs: [evidence.evidence_ref], verify: { command: "npm test", exit_code: 0, result: "passed", result_ref: "log:main-test" } }
 const acceptance = (overrides = {}) => assessAcceptance({ brief, evidence: [evidence], main_confirmation: confirmation, ...overrides })
@@ -123,7 +123,7 @@ test("authority asks once, waits on the stable id, and reuses the exact answered
 })
 
 const worker = (id, path) => ({ id, task_id: "task-a", objective_revision: "objective-2", independent: true, can_delegate: false, write_paths: [path], worktree_id: `tree-${id}`, isolated: true, writable: true, worktree_ready: true })
-const dispatch = (changes = {}) => assessDispatch({ task_id: "task-a", objective_revision: "objective-2", workers: [worker("a", "src/a"), worker("b", "src/b")], integration: { owner: "main", verify_command: "npm test" }, ...changes })
+const dispatch = (changes = {}) => assessDispatch({ brief, purpose: "work", workers: [worker("a", "src/a"), worker("b", "src/b")], integration: { owner: "main", verify_command: "npm test" }, ...changes })
 test("parallel dispatch requires independent unique owners and prepared isolated writable worktrees", () => {
   assert.equal(dispatch().allowed, true)
   for (const changed of [{ write_paths: ["src"] }, { write_paths: ["SRC/A"] }, { write_paths: ["C:/src/a"] }, { write_paths: ["src/*"] },

@@ -37,6 +37,8 @@ shell environment or permission grant. See [run context](run-context.md) for
 lifecycle and missing-metadata behavior. Without a context or independently
 known exact `--run-id`, policy identity stays UNKNOWN and is excluded from learning.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host codex --role worker --route computer-use`.
+Review: pass `--role worker --route review`; the resolver selects the read-only
+`aw-reviewer` binding. `reviewer` is not a resolver role.
 Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
 using native metadata and router request evidence, never model self-reports.
 Stop on unknown/mismatched routing. For installation or unavailable agents,

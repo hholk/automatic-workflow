@@ -15,7 +15,7 @@ separately authorized rollout.
 | Policy and capabilities | Shared effective policy in resolver and research; provenance-specific cells need actual actor evidence | `effective-policy.test.mjs`, `resolve-profile.test.mjs` |
 | Host installation | Explicit host selection, ownership checks and unchanged files on repeated apply | `install-agents.test.mjs` with temporary homes |
 | Generated profiles | Worker limits derive from policy; current generated cap is 125, handback after two failed hypotheses | `render-agents.test.mjs`, `check-models.mjs` |
-| Task and acceptance | Version 1 scoped criteria and evidence; final main integration verification | `execution-state.test.mjs` |
+| Task and acceptance | Version 2 brief with explicit assurance; version 1 scoped evidence; main integration verification and mission reviews | `execution-state.test.mjs`, `mission-review.test.mjs` |
 | Strategy and cost | Rule routing only at milestones, first proven capable path or explicit valid selection, full actor cost ledger | `execution-state.test.mjs` |
 | Recovery | Distinct observed attempts, verified progress reset, cycle detection and one bounded recovery; repeats/environment blocks stop | `execution-state.test.mjs` |
 | Teacher | Preventive tool-free advice; separately assessed two-attempt snapshot request; real host grant required | `teacher-inspection.test.mjs`, `teacher-read-policy.test.mjs` |

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 // Pure decisions only. Callers own persistence, execution, and host permissions.
 const text = (value) => typeof value === "string" && value.trim().length > 0
 const unique = (values) => new Set(values).size === values.length
@@ -9,7 +11,8 @@ const passedVerify = (value) => value && text(value.command) && value.exit_code 
 const normalized = (value) => value.trim().toLowerCase().replace(/\s+/g, " ")
 
 export const validateTaskBrief = (brief = {}) => {
-  if (!brief || brief.version !== 1 || !validScope(brief)) return decision(false, "INVALID_TASK_SCOPE")
+  if (!brief || brief.version !== 2 || !validScope(brief)) return decision(false, "INVALID_TASK_SCOPE")
+  if (!["direct", "reviewed"].includes(brief.assurance)) return decision(false, "ASSURANCE_REQUIRED")
   if (!text(brief.objective) || brief.objective.length > 500) return decision(false, "INVALID_OBJECTIVE")
   if (!Array.isArray(brief.success) || brief.success.length === 0 || brief.success.length > 32) {
     return decision(false, "SUCCESS_REQUIRED")
@@ -19,7 +22,81 @@ export const validateTaskBrief = (brief = {}) => {
       ![criterion.verify.check_id, criterion.verify.check_version, criterion.verify.command, criterion.verify.expected].every(text))) {
     return decision(false, "NUMBERED_FALSIFIABLE_CRITERIA_REQUIRED")
   }
+  if (brief.assurance === "reviewed") {
+    const sources = brief.sources
+    const requirements = brief.requirements
+    if (!Array.isArray(sources) || sources.length === 0 || sources.length > 64 ||
+        sources[0]?.kind !== "request" || sources.filter((source) => source?.kind === "request").length !== 1 ||
+        !unique(sources.map((source) => source?.id)) || sources.some((source) => !source ||
+          ![source.id, source.text, source.source_ref].every(text) || !["request", "decision", "rule"].includes(source.kind))) {
+      return decision(false, "AUTHORITATIVE_SOURCES_REQUIRED")
+    }
+    if (!Array.isArray(requirements) || requirements.length === 0 || requirements.length > 64 ||
+        !unique(requirements.map((item) => item?.id)) || requirements.some((item) => !item ||
+          ![item.id, item.claim].every(text) || !Array.isArray(item.source_ids) || item.source_ids.length === 0 || !unique(item.source_ids) ||
+          item.source_ids.some((id) => !sources.some((source) => source.id === id)) ||
+          !Array.isArray(item.criterion_ids) || item.criterion_ids.length === 0 || !unique(item.criterion_ids) ||
+          item.criterion_ids.some((id) => !brief.success.some((criterion) => criterion.id === id))) ||
+        brief.success.some((criterion) => !requirements.some((item) => item.criterion_ids.includes(criterion.id))) ||
+        sources.some((source) => source.kind !== "rule" && !requirements.some((item) => item.source_ids.includes(source.id)))) {
+      return decision(false, "REQUIREMENT_COVERAGE_REQUIRED")
+    }
+  }
   return decision(true, null)
+}
+
+const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value && typeof value === "object"
+  ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value
+// A contract survives implementation changes, but not changes to intent or checks.
+export const contractDigest = (brief) => {
+  const { snapshot_id, ...contract } = brief
+  return createHash("sha256").update(JSON.stringify(canonical(contract))).digest("hex")
+}
+const exactIDs = (actual, expected) => Array.isArray(actual) && unique(actual) && actual.length === expected.length && expected.every((id) => actual.includes(id))
+const reviewIdentity = (review, brief, builder_ids) => review?.version === 1 &&
+  review.task_id === brief.task_id && review.objective_revision === brief.objective_revision &&
+  review.contract_digest === contractDigest(brief) && text(review.reviewer_id) &&
+  review.reviewer_id !== "main" && Array.isArray(builder_ids) && builder_ids.every(text) &&
+  !builder_ids.includes(review.reviewer_id) && review.fresh_context === true && text(review.report_ref)
+
+export const assessContractReview = ({ brief, review, builder_ids = [] } = {}) => {
+  const valid = validateTaskBrief(brief)
+  if (!valid.allowed || brief.assurance === "direct") return valid
+  if (!reviewIdentity(review, brief, builder_ids) || review.inputs !== "request-and-criteria" ||
+      !exactIDs(review.source_ids, brief.sources.map((source) => source.id))) return decision(false, "FRESH_CONTRACT_REVIEW_REQUIRED")
+  if (review.status !== "passed" || !Array.isArray(review.gaps) || review.gaps.length !== 0) return decision(false, "CONTRACT_GAPS_OR_UNKNOWN")
+  if (!exactIDs(review.requirement_ids, brief.requirements.map((item) => item.id)) ||
+      !Array.isArray(review.checks) || !exactIDs(review.checks.map((item) => item?.criterion_id), brief.success.map((item) => item.id)) ||
+      review.checks.some((item) => item.status !== "adequate" || !text(item.counterexample_ref))) return decision(false, "CONTRACT_REVIEW_COVERAGE_REQUIRED")
+  return decision(true, null, { report_ref: review.report_ref })
+}
+
+export const assessCompletionReview = ({ brief, review, builder_ids = [] } = {}) => {
+  const valid = validateTaskBrief(brief)
+  if (!valid.allowed || brief.assurance === "direct") return valid
+  if (!reviewIdentity(review, brief, builder_ids) || !sameScope(review, brief) || review.inputs !== "request-and-artifact" ||
+      !exactIDs(review.source_ids, brief.sources.map((source) => source.id))) return decision(false, "FRESH_COMPLETION_REVIEW_REQUIRED")
+  if (review.status !== "passed" || !Array.isArray(review.gaps) || review.gaps.length !== 0) return decision(false, "PRODUCT_GAPS_OR_UNKNOWN")
+  if (!text(review.coverage_ref) || !passedVerify(review.verify)) return decision(false, "PRODUCT_BEHAVIOR_EVIDENCE_REQUIRED")
+  return decision(true, null, { report_ref: review.report_ref })
+}
+
+export const assessReplan = ({ brief, diagnosis } = {}) => {
+  const valid = validateTaskBrief(brief)
+  if (!valid.allowed) return valid
+  const actions = {
+    scope: "REVISE_BRIEF", criteria: "REVISE_BRIEF", topology: "REPLAN_TASKS",
+    environment: "RESTORE_ENVIRONMENT", implementation: "FIX_IMPLEMENTATION",
+    validation: "REPAIR_VERIFICATION", evidence: "REPAIR_VERIFICATION",
+  }
+  if (!diagnosis || !Object.hasOwn(actions, diagnosis.earliest_invalid_artifact) ||
+      ![diagnosis.issue_id, diagnosis.reason, diagnosis.evidence_ref, diagnosis.next_action].every(text) ||
+      !Array.isArray(diagnosis.affected_criteria) || !unique(diagnosis.affected_criteria) ||
+      diagnosis.affected_criteria.some((id) => !brief.success.some((item) => item.id === id))) return decision(false, "ROOT_ARTIFACT_DIAGNOSIS_REQUIRED")
+  return decision(true, null, { action: actions[diagnosis.earliest_invalid_artifact],
+    revise_objective: ["scope", "criteria"].includes(diagnosis.earliest_invalid_artifact),
+    invalidate_completion: true, invalidate_criteria: diagnosis.affected_criteria,
+    next_action: diagnosis.next_action, recovery_budget_reset: false })
 }
 
 export const assessEvidenceReuse = ({ evidence, context } = {}) => {
@@ -38,10 +115,15 @@ export const assessEvidenceReuse = ({ evidence, context } = {}) => {
   return decision(true, null, { evidence_ref: evidence.evidence_ref })
 }
 
-export const assessAcceptance = ({ brief, evidence, main_confirmation } = {}) => {
+export const assessAcceptance = ({ brief, evidence, main_confirmation, contract_review, completion_review, builder_ids } = {}) => {
   const invalid = validateTaskBrief(brief)
   const reject = (reason, extra = {}) => ({ accepted: false, reason, ...extra })
   if (!invalid.allowed) return reject(invalid.reason)
+  if (brief.assurance === "reviewed" && (!Array.isArray(builder_ids) || !builder_ids.every(text))) return reject("BUILDER_IDENTITIES_REQUIRED")
+  for (const [check, review] of [[assessContractReview, contract_review], [assessCompletionReview, completion_review]]) {
+    const result = check({ brief, review, builder_ids })
+    if (!result.allowed) return reject(result.reason)
+  }
   if (!Array.isArray(evidence) || evidence.length === 0 || !unique(evidence.map((item) => item?.evidence_ref))) {
     return reject("UNIQUE_EVIDENCE_REQUIRED")
   }
@@ -156,15 +238,26 @@ export const resolveAuthority = ({ task_id, objective_revision, decision_id, sco
   return decision(false, "HUMAN_DECISION_REQUIRED", { action: answer ? "WAIT" : "ASK_ONCE", decision_id: answer?.decision_id ?? decision_id })
 }
 
-export const assessDispatch = ({ task_id, objective_revision, workers = [], active_workers = [], dispatched_ids = [], parent_role = "main", integration } = {}) => {
-  if (![task_id, objective_revision].every(text) || parent_role !== "main") return decision(false, "MAIN_DISPATCH_ONLY")
+export const assessDispatch = ({ brief, contract_review, builder_ids = [], purpose, workers = [], active_workers = [], dispatched_ids = [], parent_role = "main", integration } = {}) => {
+  if (parent_role !== "main") return decision(false, "MAIN_DISPATCH_ONLY")
+  const valid = validateTaskBrief(brief)
+  if (!valid.allowed) return valid
+  const { task_id, objective_revision } = brief
+  if (!["work", "contract_review", "completion_review"].includes(purpose)) return decision(false, "DISPATCH_PURPOSE_REQUIRED")
+  if (!Array.isArray(builder_ids) || !builder_ids.every(text)) return decision(false, "BUILDER_IDENTITIES_REQUIRED")
   if (!Array.isArray(workers) || workers.length === 0 || !Array.isArray(active_workers) ||
       workers.length + active_workers.length > 2 || !Array.isArray(dispatched_ids) ||
       !unique([...workers, ...active_workers].map((worker) => worker?.id))) return decision(false, "AT_MOST_TWO_UNIQUE_WORKERS")
+  if (purpose !== "contract_review") {
+    const result = assessContractReview({ brief, review: contract_review, builder_ids: [...builder_ids, ...(purpose === "work" ? workers.map((worker) => worker?.id) : [])] })
+    if (!result.allowed) return result
+  }
   if (!integration || !text(integration.owner) || integration.owner !== "main" || !text(integration.verify_command)) return decision(false, "INTEGRATION_PLAN_REQUIRED")
   const writes = []
   const worktrees = []
   const combined = [...active_workers, ...workers]
+  if (purpose !== "work" && workers.some((worker) => worker?.write_paths?.length !== 0)) return decision(false, "REVIEW_MUST_BE_READ_ONLY")
+  if (purpose === "completion_review" && active_workers.length !== 0) return decision(false, "INTEGRATION_MUST_BE_QUIESCENT")
   for (const worker of combined) {
     if (!worker || !text(worker.id) || (workers.includes(worker) && dispatched_ids.includes(worker.id))) return decision(false, "DUPLICATE_DISPATCH")
     if (worker.task_id !== task_id || worker.objective_revision !== objective_revision || worker.independent !== true ||

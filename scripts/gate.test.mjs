@@ -21,7 +21,7 @@ test("normal gate CLI requires scoped acceptance and rejects stale proof", () =>
   const verify = { check_id: "behavior", check_version: "1", command: "node --test", expected: "behavior passes" }
   const observed = { command: "node --test", exit_code: 0, result: "passed", result_ref: "output:1" }
   const evidence = { version: 1, ...scope, criterion_id: 1, check_id: "behavior", check_version: "1", evidence_ref: "worker:1", status: "passed", verify: observed }
-  const acceptance = { brief: { version: 1, ...scope, objective: "Preserve saving behavior", success: [{ id: 1, claim: "Saving persists the value", verify }] },
+  const acceptance = { brief: { version: 2, assurance: "direct", ...scope, objective: "Preserve saving behavior", success: [{ id: 1, claim: "Saving persists the value", verify }] },
     evidence: [evidence], main_confirmation: { version: 1, ...scope, actor: "main", integrated: true, status: "passed", evidence_ref: "main:1", criterion_ids: [1], evidence_refs: ["worker:1"], verify: observed } }
   const run = () => spawnSync(process.execPath, [new URL("./gate.mjs", import.meta.url).pathname], {
     input: JSON.stringify({ message: done("node --test | exit 0 | behavior passes", "coverage 1/1"), acceptance }), encoding: "utf8" })
