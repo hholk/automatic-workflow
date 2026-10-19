@@ -44,12 +44,22 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    A brief without both is not dispatched.
 2. Read one runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
-3. Run `node scripts/resolve-profile.mjs`; load only the returned component paths
-   once. Use its native binding and budget.
+3. At a routing milestone, apply the strategy/model route gate before resolving
+   a changed profile. Keep the configured default when no proven alternative is
+   available; unknown cost never establishes a saving. Pass the selected model
+   to the resolver and stop if the host/profile cannot support it.
+   Run `node scripts/resolve-profile.mjs` with the host, role, route,
+   `--task-class` and `--complexity` from the frozen brief; load only the returned component paths
+   once. Use its native binding and budget. For a model-specific policy cell,
+   pass bounded native/provider metadata with `--actors <file>`; a configured
+   model name is insufficient. When lessons are enabled, pass the reviewed store
+   and explicit project/version/prerequisites per [policy inputs](references/policy-v5.md).
+   Include returned lesson IDs and instructions in the next worker's CONTEXT;
+   they remain subordinate to the task and safety rules.
 4. Apply [execution gates](references/execution-v5.md) with
    `node scripts/execution-state-cli.mjs <action>` and bounded JSON on stdin.
-   Validate the versioned brief before dispatch; route model and strategy at
-   milestones using proven capable profiles and total run costs. Main confirms
+   Validate the versioned brief before dispatch. Use proven capable profiles
+   and total run costs at milestones. Main confirms
    evidence; missing provenance or cost stays unknown.
 5. Dispatch one bounded worker. Only the main agent may start or resume agents.
    At most two independent workers may run; use the dispatch gate, unique write
@@ -68,7 +78,11 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    including visual fidelity or source support when relevant. Run the narrowest
    acceptance probe and versioned acceptance gate; reuse fresh evidence elsewhere.
    Review independently when risk, uncertainty or the user requires it. Record
-   prompt-free v4 telemetry. The v5 rollout preserves its wire schema.
+   prompt-free v4 telemetry. OpenCode carries its active run ID through the
+   existing shell environment to the resolver's selection receipt. Other hosts
+   need an independently supplied exact active `--run-id`; no receipt means
+   unknown policy identity and exclusion from learning, never default labels.
+   The v5 rollout preserves its wire schema.
 
 Resume with deltas, never histories. Preflight once per unchanged session/profile.
 Research and lessons are opt-in. No secrets, recursive workers or implicit release.

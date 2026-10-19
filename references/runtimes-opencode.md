@@ -19,7 +19,11 @@ different model is rejected by the resolver.
 Resume through `task_id` with new evidence only. Main validates n/N checks.
 
 From the absolute skill directory:
-`node scripts/resolve-profile.mjs --host opencode --role worker --route fix`.
+`node scripts/resolve-profile.mjs --host opencode --role worker --route fix --task-class diagnosed-bug --complexity small`.
+Use the actual brief's task class and complexity. The existing plugin's shell.env
+supplies AW_RUN_ID; the CLI records the selected policy for that exact run.
+Missing task metadata leaves the receipt UNRECORDED and telemetry ineligible.
+Pass `--actors <file>` for observed metadata and scoped lesson inputs when enabled.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host opencode --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Load returned components once.
 

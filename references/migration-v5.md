@@ -5,6 +5,8 @@ It preserves worker-v1 and teacher-v1 required message fields, run-v4 telemetry,
 schema version 4 playbooks, configured worker/teacher models, and default
 teacher tool restrictions. The playbook release is `acceptance-routing-v5`.
 There is no background process, production installation or automatic rollout.
+See the [smallest installation and native probe plan](smoke-v5.md) before a
+separately authorized rollout.
 
 ## What changes
 
@@ -46,9 +48,13 @@ native `venice/claude-opus-5-5` binding; this does not change the model selectio
    [execution v5](execution-v5.md). Main persists task, dispatch, progress,
    recovery and authority ledgers before acting. These pure gates do not spawn
    workers, create worktrees, test code or verify human identity themselves.
+   The legacy `gate.mjs` requires the same scoped main acceptance input for
+   VERIFIED; a plain DONE string is only preliminary worker evidence.
 6. Keep learning opt-in. Old promotion invocations without a split manifest and
    independent approval now fail. Re-evaluate and review the exact candidate;
-   do not fabricate approval or reuse a prior evidence packet.
+   do not fabricate approval or reuse a prior evidence packet. Matching local
+   review JSON validates metadata but does not authorize promotion. The current
+   CLI has no playbook write path; authenticated host review is still required.
 
 Historical run-v4 files and `benchmarks/latest.json` remain historical. No old
 run receives invented provenance, costs, versioned check results or review.
@@ -61,6 +67,18 @@ No live model call or host permission grant was used to validate this revision.
 The offline suite checks policy and contract behavior with synthetic fixtures.
 Native dispatch, executed-model provenance, integration checks, worktree safety,
 reviewer identity and human authority still need the actual host's enforcement.
+The parallel module validates and bounds a plan; main performs the existing
+native dispatches and integration. It is not an executable worker scheduler or
+a worktree creator. No live parallel execution has been demonstrated here.
+
+Normal resolver calls must supply task class and complexity. OpenCode's existing
+shell.env hook supplies AW_RUN_ID, so the resolver can record selected recipe
+and prompt identities for its active run. Current Codex/Copilot hook CLI adapters
+do not transport that active ID into the caller. Their automatic receipt path
+is unsupported; use explicit --run-id only with independently known host metadata.
+Without a current exact receipt, policy identity is unknown and cannot enter
+learning comparisons. Never infer the active conversation from a global latest
+run, or manufacture a receipt to make historical data eligible.
 
 Direct teacher snapshot diagnosis is deliberately unsupported on every current
 adapter. The immutable snapshot and lifecycle policy are implemented, but a

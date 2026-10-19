@@ -37,6 +37,10 @@ playbook fields handled by `$aw research`.
    `LESSONS.md`. Promotion additionally requires disjoint holdout evidence and
    separate independent review of the exact candidate and baseline. Follow
    [Learning and review](learning-v5.md); a successful experiment is not approval.
+   The current CLI cannot authenticate independent review or holdout provenance
+   and therefore cannot promote. Keep the change pending or obtain a separately
+   authorized manual patch review. Self-issued review metadata never authorizes
+   automatic adoption.
 
 ## Applicable lessons
 

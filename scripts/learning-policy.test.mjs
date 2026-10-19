@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { evaluateLearningCandidate, learningIdentity, requireLearningReview, selectReviewedLessons } from "./learning-policy.mjs"
+import { authorizeLearningPromotion, evaluateLearningCandidate, learningIdentity, requireLearningReview, selectReviewedLessons } from "./learning-policy.mjs"
 
 const fixture = () => {
   const baseline = { version: "baseline", defaults: { context_budget: 1600 } }
@@ -65,6 +65,32 @@ test("approval binds holdout evidence and cannot be replaced by a supplied verdi
   input.runs.find((run) => run.run_id === "holdout-candidate-0").tokens.operational_total = 79
   assert.throws(() => requireLearningReview(evaluateLearningCandidate(input), approval(packet)), /does not match/)
   assert.throws(() => evaluateLearningCandidate({ ...fixture(), manifest: { ...input.manifest, verdict: "eligible-to-promote" } }), /supported structured fields/)
+})
+
+test("only an explicit synchronous trusted-host mock can authorize the exact packet", () => {
+  const packet = evaluateLearningCandidate(fixture())
+  const review = approval(packet)
+  for (const host of [undefined, { capability: "aw-reviewed-promotion-v1", approved: true },
+    { capability: "aw-reviewed-promotion-v1", verifyPromotion: "true" },
+    { capability: "other", verifyPromotion: () => true },
+    { capability: "aw-reviewed-promotion-v1", verifyPromotion: () => false },
+    { capability: "aw-reviewed-promotion-v1", verifyPromotion: () => Promise.resolve(true) },
+    { capability: "aw-reviewed-promotion-v1", verifyPromotion: () => { throw new Error("untrusted") } }]) {
+    assert.throws(() => authorizeLearningPromotion(packet, review, host), /REVIEW_REQUIRED/)
+  }
+  // This mock represents the host's external review boundary only. It performs
+  // no production approval and writes no playbook or installed skill.
+  const trustedHostMock = { capability: "aw-reviewed-promotion-v1", verifyPromotion: (exactPacket, exactReview) => {
+    assert.ok(Object.isFrozen(exactPacket.identities))
+    assert.ok(Object.isFrozen(exactReview))
+    return learningIdentity(exactPacket) === learningIdentity(packet) && learningIdentity(exactReview) === learningIdentity(review)
+  } }
+  assert.deepEqual(authorizeLearningPromotion(packet, review, trustedHostMock), {
+    authorized: true, review_id: packet.review_id, capability: "aw-reviewed-promotion-v1",
+  })
+  assert.throws(() => authorizeLearningPromotion(packet, { ...review, approved_by: packet.proposer }, trustedHostMock), /independent reviewer/)
+  const changed = evaluateLearningCandidate({ ...fixture(), candidate: { version: "candidate", defaults: { context_budget: 900 } } })
+  assert.throws(() => authorizeLearningPromotion(changed, approval(changed), trustedHostMock), /REVIEW_REQUIRED/)
 })
 
 const lessonFixture = () => ({ id: "known-script-scope", project_id: "project-a", project_versions: ["rev-a"],

@@ -69,6 +69,13 @@ test("two fresh probes after verified progress can qualify in the new state", ()
   assert.equal(assessTeacherInspection(request).reason, "UNVERIFIED_PROGRESS_MARKER")
 })
 
+test("progress recorded under a previous state invalidates older current-state failures", () => {
+  const request = inspectionRequest()
+  request.attempts.push({ ...request.attempts[0], attempt_id: "state-transition", sequence: 3,
+    state_id: "earlier-state", before_state: "earlier-state", after_state: request.state_id, outcome: "progress" })
+  assert.equal(assessTeacherInspection(request).reason, "PROGRESS_MARKER_STALE")
+})
+
 test("environment failures, partial probes, unverified claims and missing observations do not count", () => {
   for (const patch of [
     { failure_kind: "provider" }, { failure_kind: "network" }, { failure_kind: "permission" },

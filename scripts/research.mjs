@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { readRuns } from "./evidence.mjs"
 import { effectivePolicy, validatePolicy } from "./effective-policy.mjs"
-import { evaluateLearningCandidate, requireLearningReview, selectReviewedLessons } from "./learning-policy.mjs"
+import { authorizeLearningPromotion, evaluateLearningCandidate, selectReviewedLessons } from "./learning-policy.mjs"
 
 const command = process.argv[2]
 const arg = (name) => {
@@ -102,12 +102,9 @@ try {
       const reviewPath = resolve(requiredArg("--review"))
       if ([playbookPath, resolve(requiredArg("--candidate")), resolve(requiredArg("--manifest"))].includes(reviewPath)) throw new Error("review must be a separate approval artifact")
       const review = readJson(reviewPath)
-      requireLearningReview(packet, review)
-      const promoted = { ...candidate, generated_at: new Date().toISOString() }
-      writeFileSync(playbookPath, `${JSON.stringify(promoted, null, 2)}\n`)
-      mkdirSync(stateDir, { recursive: true })
-      appendFileSync(join(stateDir, "research.jsonl"), `${JSON.stringify({ kind: "promotion", at: promoted.generated_at, baseline: current.version, candidate: candidate.version, mutation: changes[0], review_id: packet.review_id, identities: packet.identities, approved_by: review.approved_by })}\n`)
-      process.stdout.write(`${JSON.stringify({ result: "promoted", version: candidate.version, mutation: changes[0] }, null, 2)}\n`)
+      // No trusted host approval bridge is registered for this CLI. It cannot
+      // authenticate self-labelled review files and therefore cannot write.
+      authorizeLearningPromotion(packet, review)
     }
   } else if (command === "select") {
     const playbook = readJson(requiredArg("--playbook"))

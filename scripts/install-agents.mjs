@@ -37,6 +37,7 @@ const assertDirectories = (path, home) => {
 
 export function installAgents({ home = homedir(), apply = false, host, hosts } = {}) {
   if (host && hosts) throw new Error("select host or hosts, not both")
+  if (apply && host === undefined && hosts === undefined) throw new Error("apply requires an explicit host or hosts selection")
   const requested = hosts ?? (host ? [host] : ["codex", "opencode", "github-copilot"])
   if (!Array.isArray(requested) || !requested.length) throw new Error("at least one host is required")
   const selected = new Set(requested.map((name) => name === "github-copilot" ? "copilot" : name))
@@ -132,8 +133,12 @@ export function installAgents({ home = homedir(), apply = false, host, hosts } =
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const hostIndex = process.argv.indexOf("--host")
+    const hostsIndex = process.argv.indexOf("--hosts")
     if (hostIndex >= 0 && !process.argv[hostIndex + 1]) throw new Error("--host requires a host name")
-    const result = installAgents({ apply: process.argv.includes("--apply"), host: hostIndex >= 0 ? process.argv[hostIndex + 1] : undefined })
+    if (hostsIndex >= 0 && !process.argv[hostsIndex + 1]) throw new Error("--hosts requires a comma-separated host list")
+    const result = installAgents({ apply: process.argv.includes("--apply"),
+      host: hostIndex >= 0 ? process.argv[hostIndex + 1] : undefined,
+      hosts: hostsIndex >= 0 ? process.argv[hostsIndex + 1].split(",") : undefined })
     console.log(JSON.stringify(result, null, 2))
     if (!process.argv.includes("--apply") && result.some((entry) => entry.status !== "current")) process.exitCode = 1
   } catch (error) {

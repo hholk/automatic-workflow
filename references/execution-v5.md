@@ -57,6 +57,12 @@ result and verify the full integrated outcome. A worker DONE or a zero exit code
 alone is insufficient. Acceptance returns `accepted`, a stable `reason`, and full
 `coverage` on success.
 
+The existing `scripts/gate.mjs` entrypoint now enforces this same final gate.
+A plain-text DONE report is preliminary even when VERIFY and coverage pass.
+For final acceptance, pass JSON `{message, acceptance}` on stdin, where
+`acceptance` is the scoped input above. Empty coverage such as 0/0 cannot pass.
+Do not treat an old worker-only VERIFIED label as current task acceptance.
+
 `assessEvidenceReuse({evidence, context})` uses the same conservative checks.
 Context requires the scope fields plus `criterion_id`, `check_id`,
 `check_version`, and `command`. A missing or changed value invalidates reuse.

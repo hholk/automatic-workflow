@@ -32,6 +32,11 @@ through an approved destination; never add an outbound endpoint or firewall
 allow rule without the user's authorization.
 Workers use configured MCP servers; unavailable tools remain UNKNOWN.
 
+The current hook CLI does not transport its active AW run ID back into ordinary
+resolver calls. Automatic selection receipt collection is unsupported here.
+Use `--run-id` only when the exact active ID is independently available from the
+host; otherwise policy identity stays UNKNOWN and the run cannot enter learning.
+
 On unavailable primary models, stop with `BLOCKED_ENVIRONMENT`. Do not assume
 Venice GPT-6 Luna is available merely because another harness supports it.
 

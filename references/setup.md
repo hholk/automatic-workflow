@@ -1,7 +1,9 @@
 # Native setup (installation and repair only)
 
-From the absolute AW directory, run `node scripts/install-agents.mjs --apply`.
-Without `--apply`, it checks installed profiles and reports drift. It validates
+From the absolute AW directory, first check only the requested host with
+`node scripts/install-agents.mjs --host <codex|opencode|github-copilot>`.
+After authorization for those exact target files, add `--apply`. Applying without
+an explicit host selection is refused. Without `--apply`, it checks installed profiles and reports drift. It validates
 all destinations before writes and refuses unrelated files. Review and back up
 changed copies before replacing them; it never silently overwrites user edits.
 

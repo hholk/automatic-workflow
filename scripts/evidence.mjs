@@ -254,6 +254,8 @@ export const normalizeRun = (input, attestation = null) => {
     attested: Boolean(attestation),
     source: attestation ? "host-attestation" : "untrusted-run-claim",
     routing_provenance_complete: routingProvenanceComplete,
+    policy_provenance_complete: booleanOrNull(input.quality?.policy_provenance_complete, "quality.policy_provenance_complete") !== false
+      && input.recipe_id !== "unknown" && prompt.profile_id !== "unknown",
     verify_id: stringOrNull(rawQuality.verify_id, "quality.verify_id"),
     verify_exit_code: integerOrNull(rawQuality.verify_exit_code, "quality.verify_exit_code"),
     semantic_success: booleanOrNull(rawQuality.semantic_success, "quality.semantic_success"),
@@ -262,7 +264,7 @@ export const normalizeRun = (input, attestation = null) => {
     review_pass: booleanOrNull(rawQuality.review_pass, "quality.review_pass"),
     forbidden_changes: integerOrNull(rawQuality.forbidden_changes, "quality.forbidden_changes"),
   }
-  quality.eligible = quality.attested && quality.routing_provenance_complete && Boolean(
+  quality.eligible = quality.attested && quality.routing_provenance_complete && quality.policy_provenance_complete && Boolean(
     quality.verify_id
     && quality.verify_exit_code === 0
     && quality.semantic_success === true

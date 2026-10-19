@@ -71,3 +71,41 @@ export const effectivePolicy = (input, { playbook = defaultPlaybook } = {}) => {
   assertFields(policy, playbook)
   return { ...policy, playbook_version: playbook.version, cell_id: cellID || taskCell, policy_cell_id: matched, capabilities }
 }
+
+// Resolver input is explicit caller-supplied metadata, not host authentication.
+// Never turn configured model intent into claimed execution provenance.
+export const validateActorProvenance = (actors) => {
+  const roles = ["main", "worker", "teacher"]
+  if (!actors || typeof actors !== "object" || Array.isArray(actors) ||
+      Object.keys(actors).some((key) => !roles.includes(key))) throw new Error("actors must contain only main, worker and teacher metadata")
+  const fields = new Set(["used", "requested_model", "resolved_model", "fallback_reason", "model_source", "tokens", "token_source"])
+  const modelID = (value) => typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_./:-]{0,199}$/.test(value)
+  const explicitFallback = (value) => typeof value === "string" &&
+    /^(?:primary-(?:http-[1-5]\d\d|[a-z0-9]+-[a-z0-9-]+)|provider-[a-z0-9][a-z0-9_-]{2,47}|runtime-[a-z0-9]+-[a-z0-9-]+)$/.test(value) &&
+    !["provider-error", "runtime-resolved-different-from-primary"].includes(value)
+  for (const role of roles) {
+    const actor = actors[role]
+    if (!actor || typeof actor !== "object" || Array.isArray(actor) || typeof actor.used !== "boolean" ||
+        Object.keys(actor).some((key) => !fields.has(key))) throw new Error(`actors.${role} must contain only supported actor metadata`)
+    if (actor.used) {
+      if (!["native", "provider"].includes(actor.model_source) || !modelID(actor.resolved_model) || !modelID(actor.requested_model)) {
+        throw new Error(`actors.${role} requires requested and resolved models with native or provider model_source`)
+      }
+      const substituted = actor.requested_model !== actor.resolved_model
+      if (substituted ? !explicitFallback(actor.fallback_reason) : Boolean(actor.fallback_reason)) {
+        throw new Error(`actors.${role} requires explicit fallback provenance only for differing models`)
+      }
+    } else if ((actor.requested_model != null && !modelID(actor.requested_model)) || actor.resolved_model || actor.fallback_reason || actor.tokens != null ||
+        (actor.token_source != null && actor.token_source !== "unknown") ||
+        (actor.model_source != null && actor.model_source !== "unknown")) {
+      throw new Error(`actors.${role} cannot claim execution metadata when unused`)
+    }
+    if (actor.tokens != null && (!Number.isFinite(actor.tokens) || actor.tokens < 0 || !["native", "provider"].includes(actor.token_source))) {
+      throw new Error(`actors.${role} tokens require observed native or provider usage`)
+    }
+    if (actor.token_source != null && !["native", "provider", "unknown"].includes(actor.token_source)) {
+      throw new Error(`actors.${role} has invalid token_source`)
+    }
+  }
+  return actors
+}

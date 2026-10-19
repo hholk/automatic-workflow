@@ -112,7 +112,9 @@ export const assessRecovery = (request = {}) => {
     return decision(false, "VERIFIED_PROGRESS_REQUIRED")
   }
   const scoped = request.attempts.filter((attempt) => sameAttemptScope(attempt, request))
-  if (scoped.some((attempt) => attempt.outcome === "progress" && attempt.sequence > request.last_progress_sequence)) {
+  if (request.attempts.some((attempt) => attempt &&
+      ["task_id", "objective_revision", "blocker_id"].every((key) => attempt[key] === request[key]) &&
+      attempt.outcome === "progress" && attempt.sequence > request.last_progress_sequence)) {
     return decision(false, "PROGRESS_MARKER_STALE")
   }
   if (!unique(request.attempts.map((attempt) => attempt?.attempt_id))) return decision(false, "DUPLICATE_OR_INVALID_ATTEMPT")

@@ -104,6 +104,11 @@ test("verified progress resets the attempt window and repeated state cycles trig
   assert.equal(recovery({ attempts: [attempt(1, { before_state: "a", after_state: "b" }), attempt(2, { before_state: "b", after_state: "a" })] }).reason, "CYCLE_DETECTED")
 })
 
+test("cross-state progress invalidates old probes before considering another recovery", () => {
+  const progress = attempt(3, { state_id: "earlier-state", before_state: "earlier-state", after_state: "same-state", outcome: "progress" })
+  assert.equal(recovery({ attempts: [attempt(1), attempt(2), progress] }).reason, "PROGRESS_MARKER_STALE")
+})
+
 const authority = { task_id: "task-a", objective_revision: "objective-2", decision_id: "decision-1", scope: "publish site-a to production", kind: "missing_authority" }
 test("authority asks once, waits on the stable id, and reuses the exact answered scope", () => {
   assert.equal(resolveAuthority(authority).action, "ASK_ONCE")

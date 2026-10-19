@@ -17,7 +17,13 @@ tool. No recursive agents or alternate-model retries. A child that still
 inherits a large context is a measured cost, not a reason to fork more.
 
 From the absolute skill directory:
-`node scripts/resolve-profile.mjs --host codex --role worker --route fix`.
+`node scripts/resolve-profile.mjs --host codex --role worker --route fix --task-class diagnosed-bug --complexity small`.
+Use the actual brief's task class and complexity. Supply `--actors <file>` only
+for observed native/provider model metadata, and scoped lesson inputs when enabled.
+The current hook CLI does not export its active AW run ID to the caller. Selection
+receipts require independently known exact host metadata via `--run-id`; without
+it, policy identity stays UNKNOWN and is excluded from learning. Do not guess the
+current conversation from a global latest-run record.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host codex --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
 using native metadata and router request evidence, never model self-reports.

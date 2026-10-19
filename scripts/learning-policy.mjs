@@ -82,6 +82,26 @@ export const requireLearningReview = (packet, review) => {
   }
 }
 
+// Only an in-process host capability can authenticate external review and
+// holdout provenance. JSON metadata is never an authorization capability.
+export const authorizeLearningPromotion = (packet, review, host) => {
+  requireLearningReview(packet, review)
+  const denied = () => { throw new Error("REVIEW_REQUIRED: a trusted aw-reviewed-promotion-v1 host verifier must approve this exact packet") }
+  if (host?.capability !== "aw-reviewed-promotion-v1" || typeof host.verifyPromotion !== "function") denied()
+  const freeze = (value) => {
+    if (value && typeof value === "object") {
+      for (const child of Object.values(value)) freeze(child)
+      Object.freeze(value)
+    }
+    return value
+  }
+  const exact = freeze(JSON.parse(canonical({ packet, review })))
+  let verified
+  try { verified = host.verifyPromotion(exact.packet, exact.review) } catch { denied() }
+  if (verified !== true) denied()
+  return Object.freeze({ authorized: true, review_id: packet.review_id, capability: host.capability })
+}
+
 // Deliberately accepts authored structured lessons, never sessions or traces.
 export const selectReviewedLessons = (entries, context, now = new Date()) => {
   if (!Array.isArray(entries)) throw new Error("lessons must be a structured array")

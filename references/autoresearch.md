@@ -41,20 +41,27 @@ operational default.
 
 6. `insufficient-data` stays pending or closes `no-change`; `no-change` closes
    unchanged; `revise-or-revert` discards the candidate; only
-   `eligible-to-promote` may run contract tests and promotion.
+   `eligible-to-promote` may run contract tests and prepare independent review.
 7. Create an explicit split manifest and run `research.mjs evaluate` to produce
    the review packet. Obtain a separate independent approval artifact for that
-   exact packet. Promotion review is required initially and cannot be disabled
-   through the playbook. See [Learning and review](learning-v5.md) for formats.
-8. Promote with `research.mjs promote --manifest <split.json> --proposer <author>
-   --review <approval.json>`, append numeric before/after/delta evidence to
-   `LESSONS.md`, then call `research.mjs close`.
+   exact packet. Review metadata is not authorization. Promotion requires a
+   trusted host verifier for the exact packet and independently established
+   holdout provenance. This cannot be disabled through the playbook. See
+   [Learning and review](learning-v5.md) for formats and the pending integration.
+8. The current CLI has no registered trusted host bridge. `research.mjs promote`
+   returns `REVIEW_REQUIRED` even for internally consistent review JSON and
+   never writes a playbook. Keep the candidate pending, or use a separately
+   authorized manual patch review with the exact packet and holdout evidence.
+   Only after that reviewed patch is applied, record numeric before/after/delta
+   evidence in `LESSONS.md` and call `research.mjs close`.
 
 Evaluation and promotion recompute the existing quality and cost analysis
 independently on discovery and holdout evidence from the local event store.
 Both must be eligible. Approval binds exact baseline, candidate, split manifest,
-and run-evidence identities. Missing, stale or self-review approval fails before
-the playbook write. A supplied verdict cannot replace local evidence.
+and run-evidence identities. Self-issued review flags, reviewer names, manifest
+labels or supplied verdicts never authorize a playbook write. The current CLI
+cannot promote automatically. Offline tests use explicitly labelled trusted-host
+mocks only, never real approval or promotion of an installed skill.
 A weekly run never guarantees a
 new version. Historical alternate-model runs remain separate cells and are not
 current dispatch options. Direct harness preflights are measurement probes; never pool

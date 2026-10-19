@@ -5,6 +5,7 @@ import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { appendRun } from "../../scripts/evidence.mjs"
+import { readSelectionReceipt } from "../../scripts/selection-receipt.mjs"
 
 const modulePath = fileURLToPath(import.meta.url)
 const defaultPlaybookPath = fileURLToPath(new URL("../../playbooks/current.json", import.meta.url))
@@ -70,11 +71,6 @@ export const handleHook = (host, event, options = {}) => {
   if (!id) return { run: null }
   const stateDir = options.stateDir || process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
   const playbookPath = options.playbookPath || process.env.AW_PLAYBOOK_PATH || defaultPlaybookPath
-  const primaryWorkerModel = options.primaryWorkerModel !== undefined
-    ? options.primaryWorkerModel
-    : process.env.AW_PRIMARY_WORKER_MODEL || (host === "codex" || host === "github-copilot"
-      ? "venice/openai-gpt-6-luna"
-      : null)
   const path = hookPath(stateDir, host, id)
   const name = eventName(event)
 
@@ -89,8 +85,7 @@ export const handleHook = (host, event, options = {}) => {
       run_id: runID,
       main_model: cleanModel(event.model),
       playbook_version: playbook.version,
-      recipe_id: playbook.defaults?.recipe_id,
-      prompt_profile_id: playbook.defaults?.prompt_profile_id,
+      selection_started_at: Date.now(),
       harness_version: options.harnessVersion || event.harness_version || event.harnessVersion || null,
     })
     return { run: null, run_id: runID }
@@ -134,7 +129,9 @@ export const handleHook = (host, event, options = {}) => {
   const mainModel = activation.main_model || cleanModel(event.model)
   const workerModel = mixedModel(workers.map((item) => item.model))
   const teacherModel = mixedModel(teachers.map((item) => item.model))
-  const route = routes.at(-1) || (teachers.length ? "teacher" : workers.length ? "unknown" : "direct")
+  const policy = readSelectionReceipt({ runID: activation.run_id, profileHost: host, playbookVersion: activation.playbook_version, startedAt: activation.selection_started_at, stateDir })
+  const selected = policy.receipt
+  const route = selected?.route || routes.at(-1) || (teachers.length ? "teacher" : workers.length ? "unknown" : "direct")
   const timeline = events.filter((item) => ["tool", "worker", "teacher", "error"].includes(item.type)).map((item) => ({
     at_ms: item.at_ms ?? null,
     actor: item.type === "worker" ? "worker" : item.type === "teacher" ? "teacher" : "main",
@@ -159,11 +156,11 @@ export const handleHook = (host, event, options = {}) => {
     host,
     harness_version: activation.harness_version,
     route,
-    task: { id: activation.run_id, class: route, complexity: "unknown" },
-    recipe_id: activation.recipe_id,
+    task: { id: activation.run_id, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
+    recipe_id: selected?.recipe_id || "unknown",
     playbook_version: activation.playbook_version,
     prompt: {
-      profile_id: activation.prompt_profile_id,
+      profile_id: selected?.prompt_profile_id || "unknown",
       component_ids: loadedFiles,
       component_tokens: null,
       loaded_files: loadedFiles,
@@ -171,10 +168,10 @@ export const handleHook = (host, event, options = {}) => {
     },
     actors: {
       main: actor({ used: true, requested: mainModel, resolved: mainModel }),
-      worker: actor({ used: workers.length > 0, requested: primaryWorkerModel, resolved: workerModel }),
+      worker: actor({ used: workers.length > 0, requested: selected?.requested_worker_model || null, resolved: workerModel }),
       teacher: actor({ used: teachers.length > 0, requested: teacherModel, resolved: teacherModel }),
     },
-    quality: blankQuality,
+    quality: { ...blankQuality, policy_provenance_complete: policy.complete },
     work: {
       main_actions: events.reduce((sum, item) => sum + (item.action || 0), 0),
       worker_actions: null,

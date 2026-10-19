@@ -88,8 +88,8 @@ const recordVerifiedAt = (targetState, item) => {
 }
 const recordVerified = (item) => recordVerifiedAt(state, item)
 
-// Each promotion fixture creates a separate synthetic holdout and reviewer.
-const reviewedPromotionArgs = (targetState, playbookPath, candidatePath) => {
+// Synthetic metadata exercises consistency checks only, never real review.
+const syntheticReviewArgs = (targetState, playbookPath, candidatePath) => {
   const baseline = JSON.parse(readFileSync(playbookPath, "utf8"))
   const candidate = JSON.parse(readFileSync(candidatePath, "utf8"))
   const discovery = readRuns(targetState)
@@ -252,7 +252,7 @@ test("compares only paired cells and requires verified quality", () => {
   assert.equal(analysis.verdict, "revise-or-revert")
 })
 
-test("promotes only one mutable playbook field with eligible evidence", () => {
+test("evaluates one mutable field but cannot promote with self-issued review metadata", () => {
   const promotionState = mkdtempSync(join(tmpdir(), "aw-promotion-"))
   const playbookPath = join(promotionState, "playbook.json")
   const candidatePath = join(promotionState, "candidate.json")
@@ -270,7 +270,7 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "candidate-v1", defaults: { ...current.defaults, context_budget: 1200 } }))
 
-  const approvalArgs = reviewedPromotionArgs(promotionState, playbookPath, candidatePath)
+  const approvalArgs = syntheticReviewArgs(promotionState, playbookPath, candidatePath)
   const evaluateArgs = [researchScript, "evaluate", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs.slice(0, 4)]
   const evaluated = spawnSync(process.execPath, evaluateArgs, { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
   assert.equal(evaluated.status, 0, evaluated.stderr)
@@ -281,8 +281,9 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   assert.match(noReview.stderr, /--review is required/)
   assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).version, current.version)
   let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: promotionState }, encoding: "utf8" })
-  assert.equal(result.status, 0)
-  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.context_budget, 1200)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /REVIEW_REQUIRED/)
+  assert.deepEqual(JSON.parse(readFileSync(playbookPath, "utf8")), current)
 
   const promoted = JSON.parse(readFileSync(playbookPath, "utf8"))
   writeFileSync(candidatePath, JSON.stringify({ ...promoted, version: "evil-v1", evil: { context_budget: 1 } }))
@@ -301,7 +302,7 @@ test("promotes only one mutable playbook field with eligible evidence", () => {
   assert.notEqual(result.status, 0)
 })
 
-test("promotes only a registered immutable prompt profile", () => {
+test("evaluates registered profiles but denies CLI promotion without trusted host review", () => {
   const profileState = mkdtempSync(join(tmpdir(), "aw-profile-promotion-"))
   const playbookPath = join(profileState, "playbook.json")
   const candidatePath = join(profileState, "candidate.json")
@@ -327,10 +328,13 @@ test("promotes only a registered immutable prompt profile", () => {
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "profile-v1", defaults: { ...current.defaults, prompt_profile_id: "mimo-tight-v1" } }))
 
-  const approvalArgs = reviewedPromotionArgs(profileState, playbookPath, candidatePath)
+  const approvalArgs = syntheticReviewArgs(profileState, playbookPath, candidatePath)
+  const evaluated = spawnSync(process.execPath, [researchScript, "evaluate", "--playbook", playbookPath, "--candidate", candidatePath, "--profiles", profilesPath, ...approvalArgs.slice(0, 4)], { env: { ...process.env, AW_STATE_DIR: profileState }, encoding: "utf8" })
+  assert.equal(evaluated.status, 0, evaluated.stderr)
   let result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, "--profiles", profilesPath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: profileState }, encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).defaults.prompt_profile_id, "mimo-tight-v1")
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /REVIEW_REQUIRED/)
+  assert.deepEqual(JSON.parse(readFileSync(playbookPath, "utf8")), current)
 
   const promoted = JSON.parse(readFileSync(playbookPath, "utf8"))
   writeFileSync(candidatePath, JSON.stringify({ ...promoted, version: "unknown-profile-v1", defaults: { ...promoted.defaults, prompt_profile_id: "missing-profile" } }))
@@ -355,7 +359,7 @@ test("runs the weekly boundary once and records no-change", () => {
   assert.equal(JSON.parse(result.stdout).due, false)
 })
 
-test("can promote one field into a new harness-specific playbook cell", () => {
+test("cell evaluation rejects unrelated provenance and CLI promotion still requires a trusted host", () => {
   const cellState = mkdtempSync(join(tmpdir(), "aw-cell-promotion-"))
   const playbookPath = join(cellState, "cell-playbook.json")
   const candidatePath = join(cellState, "cell-candidate.json")
@@ -373,7 +377,7 @@ test("can promote one field into a new harness-specific playbook cell", () => {
   const cellID = readRuns(cellState)[0].cell_id
   writeFileSync(playbookPath, JSON.stringify(current))
   writeFileSync(candidatePath, JSON.stringify({ ...current, version: "cell-v1", cells: { [cellID]: { context_budget: 1200 } } }))
-  const approvalArgs = reviewedPromotionArgs(cellState, playbookPath, candidatePath)
+  const approvalArgs = syntheticReviewArgs(cellState, playbookPath, candidatePath)
   const candidate = JSON.parse(readFileSync(candidatePath, "utf8"))
   const manifest = JSON.parse(readFileSync(approvalArgs[1], "utf8"))
   for (const wrongCell of [cellID.replace("worker:venice/mimo-2.6-flash>venice/mimo-2.6-flash", "worker:other-model>other-model"),
@@ -392,9 +396,12 @@ test("can promote one field into a new harness-specific playbook cell", () => {
   const packet = evaluateLearningCandidate({ baseline: current, candidate, runs: readRuns(cellState), manifest, proposer: "synthetic-author" })
   writeFileSync(approvalArgs.at(-1), JSON.stringify({ schema_version: 1, decision: "approve", review_id: packet.review_id,
     identities: packet.identities, approved_by: "synthetic-independent-reviewer", approved_at: "2026-10-19T00:00:00Z" }))
+  const evaluated = spawnSync(process.execPath, [researchScript, "evaluate", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs.slice(0, 4)], { env: { ...process.env, AW_STATE_DIR: cellState }, encoding: "utf8" })
+  assert.equal(evaluated.status, 0, evaluated.stderr)
   const result = spawnSync(process.execPath, [researchScript, "promote", "--playbook", playbookPath, "--candidate", candidatePath, ...approvalArgs], { env: { ...process.env, AW_STATE_DIR: cellState }, encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  assert.equal(JSON.parse(readFileSync(playbookPath, "utf8")).cells[cellID].context_budget, 1200)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /REVIEW_REQUIRED/)
+  assert.deepEqual(JSON.parse(readFileSync(playbookPath, "utf8")), current)
 })
 
 test("does not trust a supplied promotion verdict without local paired evidence", () => {

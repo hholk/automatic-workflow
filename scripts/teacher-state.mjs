@@ -41,7 +41,9 @@ export const assessTeacherInspection = (request = {}) => {
     attempt.status === "completed" && attempt.main_verified === true &&
     [attempt.action_ref, attempt.result_ref, attempt.before_state, attempt.after_state].every(text) &&
     attempt.before_state !== attempt.after_state && attempt.after_state === request.state_id)) return reject("UNVERIFIED_PROGRESS_MARKER")
-  if (scoped.some((attempt) => attempt.outcome === "progress" && attempt.sequence > request.last_progress_sequence)) {
+  if (request.attempts.some((attempt) => attempt &&
+      ["task_id", "objective_revision", "blocker_id"].every((key) => attempt[key] === request[key]) &&
+      attempt.outcome === "progress" && attempt.sequence > request.last_progress_sequence)) {
     return reject("PROGRESS_MARKER_STALE")
   }
   const recent = scoped.filter((attempt) => attempt.sequence > request.last_progress_sequence)

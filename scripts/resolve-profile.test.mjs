@@ -201,7 +201,7 @@ test("rejects a teacher binding to a different registered profile", () => {
 test("configured models never activate a provenance cell without supplied actor evidence", () => {
   const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
   const playbook = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))
-  const actor = (model) => ({ used: true, requested_model: model, resolved_model: model, fallback_reason: null })
+  const actor = (model) => ({ used: true, requested_model: model, resolved_model: model, model_source: "provider", fallback_reason: null })
   const actors = { main: actor(registry.main_default), worker: actor(registry.worker_defaults.opencode), teacher: { used: false } }
   const input = { host: "opencode", role: "worker", route: "fix", taskClass: "bug", complexity: "small" }
   const cellID = buildCellID({ ...input, actors, task: { class: "bug", complexity: "small" }, promptProfileID: playbook.defaults.prompt_profile_id })
@@ -227,4 +227,15 @@ test("eligible inspection stays unsupported on both native teacher hosts and T3 
     assert.equal(value.native_agent, "aw-teacher")
     assert.equal(value.effective_policy.capabilities.teacher_text_snapshot, false)
   }
+})
+
+test("programmatic resolver rejects unproved actor metadata instead of converting intent to proof", () => {
+  const input = { host: "opencode", role: "worker", route: "fix" }
+  const actor = (model) => ({ used: true, requested_model: model, resolved_model: model, model_source: "native" })
+  const actors = { main: actor("venice/mimo-2.6-flash"), worker: actor("venice/openai-gpt-6-luna"), teacher: { used: false } }
+  assert.equal(resolveSelection({ ...input, actors }).model, actors.worker.resolved_model)
+  for (const model_source of [undefined, "unknown"]) {
+    assert.throws(() => resolveSelection({ ...input, actors: { ...actors, worker: { ...actors.worker, model_source } } }), /native or provider model_source/)
+  }
+  assert.throws(() => resolveSelection({ ...input, actors: { ...actors, worker: { ...actors.worker, requested_model: "venice/other", fallback_reason: "provider-error" } } }), /explicit fallback provenance/)
 })

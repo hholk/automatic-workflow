@@ -17,7 +17,7 @@ test("installs regular Codex/Copilot agents and keeps OpenCode native symlinks",
   try {
     const target = join(home, ".codex/agents/aw-reviewer.toml")
     symlinkSync(fileURLToPath(new URL("../agents/codex/aw-reviewer.toml", import.meta.url)), target)
-    installAgents({ home, apply: true })
+    installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true })
     assert.equal(lstatSync(target).isSymbolicLink(), false)
     assert.equal(lstatSync(target).mode & 0o777, 0o600)
     assert.match(readFileSync(target, "utf8"), /model_provider = "codex-router"/)
@@ -36,7 +36,7 @@ test("an unrelated agent blocks the whole installation before any writes", () =>
   try {
     const target = join(home, ".codex/agents/aw-teacher.toml")
     writeFileSync(target, "user content")
-    assert.throws(() => installAgents({ home, apply: true }), /Refusing unrelated destination/)
+    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
     assert.equal(readFileSync(target, "utf8"), "user content")
     assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
     assert.throws(() => lstatSync(join(home, ".copilot")), /ENOENT/)
@@ -49,7 +49,7 @@ test("an unrelated Copilot agent blocks the installation before any writes", () 
     const target = join(home, ".copilot/agents/aw-worker.agent.md")
     mkdirSync(join(home, ".copilot/agents"), { recursive: true })
     writeFileSync(target, "user content")
-    assert.throws(() => installAgents({ home, apply: true }), /Refusing unrelated destination/)
+    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
     assert.equal(readFileSync(target, "utf8"), "user content")
     assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
   } finally { rmSync(home, { recursive: true }) }
@@ -77,7 +77,7 @@ test("an unrelated dangling symlink blocks every selected host before writes", (
   try {
     const target = join(home, ".codex/agents/aw-teacher.toml")
     symlinkSync(join(home, "unrelated-missing.toml"), target)
-    assert.throws(() => installAgents({ home, apply: true }), /Refusing unrelated destination/)
+    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
     assert.equal(lstatSync(target).isSymbolicLink(), true)
     assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
     assert.throws(() => lstatSync(join(home, ".local")), /ENOENT/)
@@ -106,9 +106,21 @@ test("a symlink ancestor or manifest is rejected before agent writes", () => {
         writeFileSync(join(external, "manifest.json"), "{}")
         symlinkSync(join(external, "manifest.json"), join(home, ".local/state/aw/installed-agents.json"))
       }
-      assert.throws(() => installAgents({ home, apply: true }), /Refusing/)
+      assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing/)
       assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
       assert.throws(() => lstatSync(join(external, "agents")), /ENOENT/)
     } finally { rmSync(home, { recursive: true }); rmSync(external, { recursive: true }) }
   }
+})
+
+
+test("apply without explicit host scope refuses before any write", () => {
+  const home = mkdtempSync(join(tmpdir(), "aw-install-no-scope-"))
+  try {
+    assert.throws(() => installAgents({ home, apply: true }), /explicit host/)
+    assert.throws(() => lstatSync(join(home, ".codex")), /ENOENT/)
+    assert.throws(() => lstatSync(join(home, ".config")), /ENOENT/)
+    assert.throws(() => lstatSync(join(home, ".copilot")), /ENOENT/)
+    assert.throws(() => lstatSync(join(home, ".local")), /ENOENT/)
+  } finally { rmSync(home, { recursive: true }) }
 })

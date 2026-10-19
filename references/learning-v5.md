@@ -46,7 +46,8 @@ This command checks the one-field mutation and emits a packet without changing
 the playbook. The packet contains the results and SHA-256 identities for the
 exact baseline, candidate, manifest and evidence in both splits. The reviewer
 must inspect the packet and the proposed change. The host or human reviewer
-then supplies a separate approval artifact:
+may record review metadata in a separate artifact. This is a consistency record,
+not authorization to promote:
 
 ```json
 {
@@ -65,11 +66,10 @@ then supplies a separate approval artifact:
 }
 ```
 
-The candidate author must not manufacture this approval. The CLI checks a
-separate artifact, distinct reviewer identity and exact packet hashes. Reviewer
-identity authentication belongs to the host review process; a local JSON file
-is not a signature or an identity service. The CLI also cannot prove when
-holdout tasks were chosen, so the reviewer must inspect that experiment record.
+The candidate author must not manufacture review or holdout provenance. The
+CLI checks a separate artifact, distinct reviewer identity and exact packet
+hashes, then requires a trusted host verifier. Local JSON cannot authenticate a
+reviewer, prove independently reserved holdout tasks, or grant that capability.
 
 ```sh
 node scripts/research.mjs promote --playbook <baseline.json> \
@@ -77,10 +77,33 @@ node scripts/research.mjs promote --playbook <baseline.json> \
   --proposer <author-id> --review <approval.json>
 ```
 
-Promotion repeats the checks against current local records before writing and
-logs the approval identity. Changes to either playbook, evidence or manifest
-require a new review. Do not run promotion against an installed active skill
-while developing or testing the mechanism. Use temporary synthetic fixtures.
+The current CLI has no registered host approval bridge. This command repeats
+the evidence, mutation, cell and metadata checks, then exits with
+`REVIEW_REQUIRED` without writing the playbook. No flag, environment variable,
+review name or JSON approval field can enable automatic promotion.
+
+`authorizeLearningPromotion(packet, review, host)` is an authorization-only API.
+After the metadata checks it requires an in-process host capability named
+`aw-reviewed-promotion-v1` with a synchronous `verifyPromotion` function. The
+function receives immutable copies of the exact packet and review and must
+return the boolean `true`. Missing capabilities, asynchronous results, rejection
+or exceptions fail closed. The host must authenticate independent review and
+holdout provenance through its trusted review process, rather than trusting
+claims in either artifact. The function does not write a policy. A future
+registered host integration must own that write and prevent task inputs from
+supplying or replacing its verifier. Such a production integration remains
+unimplemented. Offline tests use a labelled trusted-host mock only.
+
+Until that integration exists, keep candidates pending or submit a concrete
+manual patch for separately authorized independent review. Give the reviewer
+the exact candidate and baseline hashes, disjoint task reservation record,
+paired results and unchanged safety fields. The reviewer checks the sources,
+acceptance criteria and reserved holdout provenance independently. Apply only
+the explicitly reviewed patch through the normal repository review process,
+then record the decision and evidence. Do not interpret the candidate author's
+review flags or a successful evaluation as approval. Changes to either playbook,
+evidence or manifest require a new review. Development and tests use temporary
+synthetic fixtures and do not promote an installed active skill.
 
 ## Reviewed lessons
 

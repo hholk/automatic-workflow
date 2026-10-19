@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs"
+import { closeSync, constants, existsSync, fstatSync, openSync, readFileSync, readSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { effectivePolicy, hostCapabilities } from "./effective-policy.mjs"
+import { effectivePolicy, hostCapabilities, validateActorProvenance } from "./effective-policy.mjs"
 import { assessTeacherInspection } from "./teacher-state.mjs"
+import { selectReviewedLessons } from "./learning-policy.mjs"
+import { writeSelectionReceipt } from "./selection-receipt.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
@@ -33,6 +35,7 @@ export const resolveSelection = (input, overrides = {}) => {
   const playbook = overrides.playbook || defaultPlaybook
   if (![4, 5].includes(playbook.schema_version)) throw new Error("playbook schema_version 4 or 5 is required")
   if (registry.schema_version !== 1) throw new Error("profile registry schema_version 1 is required")
+  if (input.actors !== undefined) validateActorProvenance(input.actors)
   const capabilities = hostCapabilities(input.host, input.providerHost)
   const profileHost = capabilities.profile_host
   if (!new Set(["worker", "teacher"]).has(input.role)) throw new Error(`unknown role: ${input.role}`)
@@ -86,7 +89,20 @@ export const resolveSelection = (input, overrides = {}) => {
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
   if (profile.retired) throw new Error(`retired worker profile: ${input.host}|${model}`)
+  if (input.actors && (!input.actors.worker.used || input.actors.worker.resolved_model !== model)) {
+    throw new Error("observed worker model must match the selected worker model")
+  }
   const policy = effectivePolicy(input, { playbook })
+  if (input.lessons !== undefined && (!input.prerequisites || typeof input.prerequisites !== "object" || Array.isArray(input.prerequisites) ||
+      Object.values(input.prerequisites).some((value) => !["string", "number", "boolean"].includes(typeof value)))) {
+    throw new Error("reviewed lessons require explicit scalar prerequisite facts")
+  }
+  const lessons = input.lessons === undefined ? [] : selectReviewedLessons(input.lessons, {
+    project_id: input.projectID,
+    project_version: input.projectVersion,
+    policy_version: policy.playbook_version,
+    prerequisites: input.prerequisites,
+  })
   const promptProfile = resolvePromptProfile({ ...input, promptProfileID: policy.prompt_profile_id }, registry, playbook, profile)
   const recipeID = policy.recipe_id
   const components = [...new Set([
@@ -122,17 +138,52 @@ export const resolveSelection = (input, overrides = {}) => {
     recipe_id: recipeID,
     components,
     teacher: null,
+    lessons,
   }
 }
 
 const arg = (name) => {
   const index = process.argv.indexOf(name)
-  return index >= 0 ? process.argv[index + 1] : undefined
+  if (index < 0) return undefined
+  if (process.argv.lastIndexOf(name) !== index) throw new Error(`${name} may be supplied only once`)
+  const value = process.argv[index + 1]
+  if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`)
+  return value
+}
+
+// Read only explicitly named bounded regular JSON files. Never discover state,
+// scan sessions or read transcripts to reconstruct actors or lesson evidence.
+const readBoundedJson = (path, maxBytes) => {
+  const fd = openSync(resolve(path), constants.O_RDONLY | constants.O_NONBLOCK)
+  try {
+    if (!fstatSync(fd).isFile()) throw new Error("JSON input must be a regular file")
+    const buffer = Buffer.alloc(maxBytes + 1)
+    let size = 0
+    while (size < buffer.length) {
+      const count = readSync(fd, buffer, size, buffer.length - size, null)
+      if (count === 0) break
+      size += count
+    }
+    if (size > maxBytes) throw new Error(`JSON input exceeds ${maxBytes} bytes`)
+    return JSON.parse(buffer.subarray(0, size).toString("utf8"))
+  } finally { closeSync(fd) }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
+    const actorsPath = arg("--actors")
+    const lessonsPath = arg("--lessons")
+    const prerequisitesPath = arg("--prerequisites")
+    const playbookPath = arg("--playbook")
+    if (lessonsPath && (!arg("--project") || !arg("--project-version") || !prerequisitesPath)) {
+      throw new Error("--lessons requires --project, --project-version and --prerequisites")
+    }
     const value = resolveSelection({
+      actors: actorsPath ? readBoundedJson(actorsPath, 16384) : undefined,
+      lessons: lessonsPath ? readBoundedJson(lessonsPath, 262144) : undefined,
+      projectID: arg("--project"),
+      projectVersion: arg("--project-version"),
+      prerequisites: prerequisitesPath ? readBoundedJson(prerequisitesPath, 16384) : undefined,
       host: arg("--host"),
       providerHost: arg("--provider-host"),
       role: arg("--role"),
@@ -142,7 +193,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       complexity: arg("--complexity"),
       promptProfileID: arg("--prompt-profile-id"),
       explicitModelRequest: process.argv.includes("--explicit-model-request"),
-    })
+    }, playbookPath ? { playbook: readBoundedJson(playbookPath, 1048576) } : {})
+    const runID = arg("--run-id") || process.env.AW_RUN_ID
+    if (value.role === "worker" && runID) {
+      if (!value.task_class || !value.complexity) {
+        value.selection_receipt = { status: "UNRECORDED", reason: "MISSING_TASK_IDENTITY" }
+      } else {
+        writeSelectionReceipt({ runID, selection: value })
+        value.selection_receipt = { status: "RECORDED" }
+      }
+    }
     process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
   } catch (error) {
     process.stderr.write(`resolve-profile.mjs: ${error.message}\n`)

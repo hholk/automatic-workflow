@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { handleHook } from "./aw-hook.mjs"
+import { writeSelectionReceipt } from "../../scripts/selection-receipt.mjs"
 
 test("Codex CLI records a run when the skill directory is a symlink", () => {
   const { stateDir, playbookPath } = fixture()
@@ -57,7 +58,9 @@ test("Codex lifecycle hooks record native models without reading transcripts or 
 
   assert.equal(result.run.route, "fix")
   assert.equal(result.run.schema_version, 4)
-  assert.equal(result.run.prompt.profile_id, "codex-gpt6-luna-worker-v1")
+  assert.equal(result.run.prompt.profile_id, "unknown")
+  assert.equal(result.run.recipe_id, "unknown")
+  assert.equal(result.run.quality.policy_provenance_complete, false)
   assert.equal(result.run.timeline.length, 2)
   assert.equal(result.run.playbook_version, "weekly-v2")
   assert.equal(result.run.actors.worker.resolved_model, "venice/openai-gpt-6-luna")
@@ -78,7 +81,7 @@ test("Copilot lifecycle hooks record participation but keep undocumented model a
 
   assert.equal(result.run.actors.main.resolved_model, null)
   assert.equal(result.run.actors.worker.used, true)
-  assert.equal(result.run.actors.worker.requested_model, "venice/openai-gpt-6-luna")
+  assert.equal(result.run.actors.worker.requested_model, null)
   assert.equal(result.run.actors.worker.resolved_model, null)
   assert.equal(result.run.actors.worker.model_source, "unknown")
   assert.equal(result.run.tokens.operational_total, null)
@@ -94,4 +97,25 @@ test("ignores non-AW sessions", () => {
   handleHook("codex", { hook_event_name: "UserPromptSubmit", session_id: "ordinary", model: "venice/mimo-2.6-flash", prompt: "normal task" }, options)
   const result = handleHook("codex", { hook_event_name: "Stop", session_id: "ordinary", model: "venice/mimo-2.6-flash" }, options)
   assert.equal(result.run, null)
+})
+
+
+test("lifecycle uses only an explicit receipt bound to its run and native profile host", () => {
+  const { stateDir, playbookPath } = fixture()
+  const options = { stateDir, playbookPath }
+  try {
+    const activation = handleHook("codex", { hook_event_name: "UserPromptSubmit", session_id: "explicit-receipt", prompt: "$aw fix" }, options)
+    writeSelectionReceipt({ stateDir, runID: activation.run_id, selection: {
+      role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/openai-gpt-6-luna",
+      profile_id: "codex-gpt6-luna-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "lean-worker-v2",
+      effective_policy: { playbook_version: "weekly-v2", capabilities: { profile_host: "codex" } },
+    } })
+    const { run } = handleHook("codex", { hook_event_name: "Stop", session_id: "explicit-receipt" }, options)
+    assert.equal(run.recipe_id, "lean-worker-v2")
+    assert.equal(run.prompt.profile_id, "model-bound-v1")
+    assert.equal(run.task.class, "known-change")
+    assert.equal(run.task.complexity, "small")
+    assert.equal(run.quality.policy_provenance_complete, true)
+    assert.equal(run.actors.worker.requested_model, "venice/openai-gpt-6-luna")
+  } finally { rmSync(stateDir, { recursive: true, force: true }) }
 })
