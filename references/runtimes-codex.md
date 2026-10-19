@@ -20,6 +20,9 @@ From the absolute skill directory:
 `node scripts/resolve-profile.mjs --host codex --role worker --route fix --task-class diagnosed-bug --complexity small`.
 Use the actual brief's task class and complexity. Supply `--actors <file>` only
 for observed native/provider model metadata, and scoped lesson inputs when enabled.
+For paired fixtures, also supply `--task-id`, `--snapshot-id` and `--check-version`
+from the frozen host-verified fixture. Resolver `model_capability` stays
+`unverified`; it cannot replace the native preflight.
 The current hook CLI does not export its active AW run ID to the caller. Selection
 receipts require independently known exact host metadata via `--run-id`; without
 it, policy identity stays UNKNOWN and is excluded from learning. Do not guess the

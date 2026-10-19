@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto"
 import { compareRecipes } from "./evidence.mjs"
+import { taskComparisonKey } from "./run-identity.mjs"
 
 const canonical = (value) => JSON.stringify(value && typeof value === "object"
   ? Array.isArray(value) ? value.map((item) => JSON.parse(canonical(item)))
@@ -44,7 +45,9 @@ export const evaluateLearningCandidate = ({ baseline, candidate, runs, manifest,
         if (matches.length !== 1) throw new Error(`evidence run missing or ambiguous: ${id}`)
         const run = matches[0]
         if (run.playbook_version !== (side === "baseline" ? baseline.version : candidate.version)) throw new Error(`wrong evidence version: ${id}`)
-        const taskCell = `${run.cell_id.replace(/\|profile:[^|]+$/, "")}|task:${run.task.id}`
+        const taskKey = taskComparisonKey(run.task)
+        if (!taskKey) throw new Error(`evidence task identity is incomplete: ${id}`)
+        const taskCell = `${run.cell_id.replace(/\|profile:[^|]+$/, "")}|task:${taskKey}`
         if (sideTasks.has(taskCell)) throw new Error(`duplicate paired task in ${split}: ${run.task.id}`)
         if (split === "holdout" && tasks.has(run.task.id)) throw new Error(`holdout task overlaps discovery: ${run.task.id}`)
         usedRuns.add(id)
@@ -56,7 +59,7 @@ export const evaluateLearningCandidate = ({ baseline, candidate, runs, manifest,
     // Unpaired records must not disappear from an otherwise eligible analysis.
     const taskPairs = new Map()
     for (const run of selected) {
-      const key = `${run.cell_id.replace(/\|profile:[^|]+$/, "")}|task:${run.task.id}`
+      const key = `${run.cell_id.replace(/\|profile:[^|]+$/, "")}|task:${taskComparisonKey(run.task)}`
       taskPairs.set(key, (taskPairs.get(key) || 0) + 1)
     }
     if ([...taskPairs.values()].some((count) => count !== 2)) throw new Error(`${split} evidence must contain only matched pairs`)

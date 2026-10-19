@@ -40,6 +40,22 @@ test("missing, stale, foreign, future and mixed receipts cannot identify a polic
   }
 })
 
+test("receipts preserve frontend/provider and reject mixed task or provider selections", () => {
+  const f = fixture()
+  const task = { id: "fixture-a", snapshot_id: "sha256:revision-a", check_version: "check-v1" }
+  try {
+    f.put({ host: "t3", task_identity: task })
+    let result = readSelectionReceipt(f.scope)
+    assert.equal(result.receipt.frontend_host, "t3")
+    assert.equal(result.receipt.provider_host, "opencode")
+    assert.equal(result.receipt.task_id, "fixture-a")
+    assert.throws(() => f.put({ host: "codex" }), /must match providerHost/)
+    f.put({ host: "t3", task_identity: { ...task, snapshot_id: "sha256:revision-b" } })
+    result = readSelectionReceipt(f.scope)
+    assert.equal(result.reason, "MIXED_SELECTION_RECEIPTS")
+  } finally { rmSync(f.stateDir, { recursive: true, force: true }) }
+})
+
 test("receipts require complete selected metadata and reject corrupt or oversized ledgers", () => {
   const f = fixture()
   try {

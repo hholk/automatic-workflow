@@ -119,3 +119,31 @@ test("lifecycle uses only an explicit receipt bound to its run and native profil
     assert.equal(run.actors.worker.requested_model, "venice/openai-gpt-6-luna")
   } finally { rmSync(stateDir, { recursive: true, force: true }) }
 })
+
+test("resolver CLI carries stable fixture identity through Codex/T3 and Copilot lifecycle events", () => {
+  for (const [provider, frontend] of [["codex", "t3"], ["github-copilot", "github-copilot"]]) {
+    const { stateDir, playbookPath } = fixture()
+    const options = { stateDir, playbookPath }
+    try {
+      const activation = handleHook(provider, { hook_event_name: "UserPromptSubmit", session_id: "fixture-session", prompt: "$aw fix" }, options)
+      const selected = spawnSync(process.execPath, [new URL("../../scripts/resolve-profile.mjs", import.meta.url).pathname,
+        "--host", frontend, ...(frontend === "t3" ? ["--provider-host", provider] : []), "--role", "worker", "--route", "fix",
+        "--task-class", "known-change", "--complexity", "small", "--task-id", "fixture-a", "--snapshot-id", "fixture-rev-a",
+        "--check-version", "fixture-check-v1", "--run-id", activation.run_id, "--playbook", playbookPath, "--prompt-profile-id", "model-bound-v1"], {
+        env: { ...process.env, AW_STATE_DIR: stateDir, AW_RUN_ID: "" }, encoding: "utf8", timeout: 5000,
+      })
+      assert.equal(selected.status, 0, selected.stderr)
+      const { run } = handleHook(provider, { hook_event_name: "Stop", session_id: "fixture-session" }, options)
+      assert.equal(run.host, provider)
+      assert.equal(run.frontend_host, frontend)
+      assert.equal(run.provider_host, provider)
+      assert.equal(run.task.id, "fixture-a")
+      assert.equal(run.task.snapshot_id, "fixture-rev-a")
+      assert.equal(run.task.check_version, "fixture-check-v1")
+      assert.notEqual(run.run_id, run.task.id)
+      assert.equal(run.quality.task_provenance_complete, true)
+      assert.equal(run.actors.worker.resolved_model, null)
+      assert.equal(run.quality.eligible, false)
+    } finally { rmSync(stateDir, { recursive: true, force: true }) }
+  }
+})

@@ -154,9 +154,12 @@ export const handleHook = (host, event, options = {}) => {
     run_id: activation.run_id,
     at: activation.at,
     host,
+    frontend_host: selected?.frontend_host || host,
+    provider_host: host,
     harness_version: activation.harness_version,
     route,
-    task: { id: activation.run_id, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
+    task: { id: selected?.task_id || "unknown", snapshot_id: selected?.snapshot_id || null,
+      check_version: selected?.check_version || null, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
     recipe_id: selected?.recipe_id || "unknown",
     playbook_version: activation.playbook_version,
     prompt: {

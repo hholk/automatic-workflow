@@ -198,6 +198,19 @@ test("rejects a teacher binding to a different registered profile", () => {
   assert.throws(() => resolveSelection({ host: "codex", role: "teacher", route: "teacher" }, { registry }), /inconsistent teacher binding/)
 })
 
+test("configured worker and teacher bindings are explicitly unverified on every host", () => {
+  for (const [host, providerHost] of [["codex"], ["opencode"], ["github-copilot"], ["t3", "codex"], ["t3", "opencode"]]) {
+    for (const role of host === "github-copilot" ? ["worker"] : ["worker", "teacher"]) {
+      const selected = resolveSelection({ host, providerHost, role, route: role === "worker" ? "fix" : "teacher" })
+      assert.equal(selected.model_capability.status, "unverified")
+      assert.equal(selected.model_capability.reason, "CONFIGURATION_ONLY")
+      assert.equal(selected.model_capability.model, selected.model)
+      assert.equal(selected.frontend_host, host)
+      assert.equal(selected.provider_host, providerHost || host)
+    }
+  }
+})
+
 test("configured models never activate a provenance cell without supplied actor evidence", () => {
   const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
   const playbook = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))

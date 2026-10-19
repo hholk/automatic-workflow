@@ -4,7 +4,21 @@ import { mkdtempSync, mkdirSync, lstatSync, readFileSync, rmSync, symlinkSync, w
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { spawnSync } from "node:child_process"
 import { installAgents } from "./install-agents.mjs"
+
+test("installed skill symlink executes installer CLI validation without writes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "aw-install-cli-"))
+  try {
+    symlinkSync(fileURLToPath(new URL("../", import.meta.url)), join(dir, "aw"), "dir")
+    const result = spawnSync(process.execPath, [join(dir, "aw/scripts/install-agents.mjs"), "--host", "unsupported"], {
+      encoding: "utf8", timeout: 5000,
+    })
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /unsupported install host/)
+    assert.equal(result.stdout, "")
+  } finally { rmSync(dir, { recursive: true }) }
+})
 
 const fixture = () => {
   const home = mkdtempSync(join(tmpdir(), "aw-install-test-"))

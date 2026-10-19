@@ -87,7 +87,8 @@ try {
       const evidenceIDs = new Set(["discovery", "holdout"].flatMap((split) =>
         ["baseline_run_ids", "candidate_run_ids"].flatMap((side) => manifest[split][side])))
       for (const run of runs.filter((item) => evidenceIDs.has(item.run_id))) {
-        const input = { host: run.host, actors: run.actors, route: run.route, task: run.task }
+        const input = { host: run.frontend_host || run.host, providerHost: run.provider_host || run.host,
+          actors: run.actors, route: run.route, task: run.task }
         const selected = effectivePolicy(input, { playbook: candidate })
         const prior = effectivePolicy(input, { playbook: current })
         if (selected.policy_cell_id !== targetCell || (Object.hasOwn(current.cells, targetCell) && prior.policy_cell_id !== targetCell)) {

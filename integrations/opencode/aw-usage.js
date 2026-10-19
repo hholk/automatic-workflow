@@ -253,9 +253,12 @@ export const AwUsagePlugin = async () => ({
       kind: "run",
       run_id: active.runID,
       host: "opencode",
+      frontend_host: selected?.frontend_host || "opencode",
+      provider_host: "opencode",
       harness_version: active.harnessVersion,
       route,
-      task: { id: active.runID, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
+      task: { id: selected?.task_id || "unknown", snapshot_id: selected?.snapshot_id || null,
+        check_version: selected?.check_version || null, class: selected?.task_class || "unknown", complexity: selected?.complexity || "unknown" },
       recipe_id: selected?.recipe_id || "unknown",
       playbook_version: active.playbookVersion,
       prompt: {

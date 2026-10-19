@@ -24,6 +24,12 @@ Use the actual brief's task class and complexity. The existing plugin's shell.en
 supplies AW_RUN_ID; the CLI records the selected policy for that exact run.
 Missing task metadata leaves the receipt UNRECORDED and telemetry ineligible.
 Pass `--actors <file>` for observed metadata and scoped lesson inputs when enabled.
+For paired fixtures, pass the frozen `--task-id`, `--snapshot-id` and
+`--check-version` to the resolver. The automatic adapter takes them from the
+run-bound receipt. Missing values stay unknown and exclude comparison.
+T3 calls additionally select `--host t3 --provider-host opencode`; the receipt
+preserves T3 separately from the native execution host. Model availability
+remains `unverified` in resolver output until a real native preflight proves it.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host opencode --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Load returned components once.
 

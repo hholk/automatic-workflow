@@ -1,23 +1,24 @@
 import { readFileSync } from "node:fs"
 import { buildCellID } from "./evidence.mjs"
+import { hostCell, resolveHostIdentity } from "./run-identity.mjs"
 
 const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8"))
 const defaultPlaybook = read("../playbooks/current.json")
-const nativeHosts = new Set(["codex", "opencode", "github-copilot"])
 const mutableFields = new Set(["recipe_id", "prompt_profile_id", "context_budget", "worker_step_budget"])
 
 // A declaration of supported dispatch, never runtime discovery or a tool grant.
 export const hostCapabilities = (host, providerHost) => {
-  if (host === "t3") {
-    if (!["codex", "opencode"].includes(providerHost)) throw new Error("t3 requires providerHost codex or opencode")
-  } else if (!nativeHosts.has(host)) throw new Error(`unknown host: ${host}`)
-  const profileHost = host === "t3" ? providerHost : host
+  const identity = resolveHostIdentity({ host, providerHost })
+  const profileHost = identity.provider_host
   return Object.freeze({
+    ...identity,
     profile_host: profileHost,
     dispatch: host === "t3" ? "provider-delegate" : "native-agent",
     worker: true,
     teacher: profileHost !== "github-copilot",
     model_provenance_required: true,
+    model_availability: "unverified",
+    dispatch_verified: false,
     teacher_text_snapshot: false,
   })
 }
@@ -58,12 +59,13 @@ export const effectivePolicy = (input, { playbook = defaultPlaybook } = {}) => {
   // Only supplied execution provenance can activate a full model/fallback cell.
   const cellID = input.actors && input.route && taskClass && complexity ? buildCellID({
     host: input.host,
+    providerHost: capabilities.provider_host,
     actors: input.actors,
     route: input.route,
     task: { class: taskClass, complexity },
     promptProfileID: input.promptProfileID || playbook.defaults?.prompt_profile_id,
   }) : null
-  const taskCell = taskClass && complexity ? [input.host, taskClass, complexity].join("|") : null
+  const taskCell = taskClass && complexity ? [hostCell({ host: input.host, providerHost: capabilities.provider_host }), taskClass, complexity].join("|") : null
   const matched = cellID && Object.hasOwn(playbook.cells, cellID) ? cellID
     : taskCell && Object.hasOwn(playbook.cells, taskCell) ? taskCell : null
   const policy = { ...playbook.defaults, ...(matched ? playbook.cells[matched] : {}) }

@@ -26,9 +26,9 @@ completion and never reset after a teacher ASK.
 
 | Host | Dispatch | Worker | Advisory teacher | Direct teacher snapshot |
 |---|---|---|---|---|
-| Codex | Existing native agent | Supported | Existing tool-free profile | Unsupported |
-| OpenCode | Existing native agent | Supported | Existing tool-free profile | Unsupported |
-| GitHub Copilot | Existing native agent | Supported | Unsupported | Unsupported |
+| Codex | Existing native agent | Configured, execution unverified | Existing tool-free profile | Unsupported |
+| OpenCode | Existing native agent | Configured, execution unverified | Existing tool-free profile | Unsupported |
+| GitHub Copilot | Existing native agent | Configured, execution unverified | Unsupported | Unsupported |
 | T3 with Codex provider | Provider delegate | Codex binding | Codex binding | Unsupported |
 | T3 with OpenCode provider | Provider delegate | OpenCode binding | OpenCode binding | Unsupported |
 
@@ -38,6 +38,19 @@ binding. It does not claim T3 native discovery, install a T3 agent, dispatch a
 live model, or prove that the delegate is available. Unknown hosts and missing
 or unsupported T3 provider hosts fail closed. Every dispatch still requires
 observed provider/model provenance from the execution host.
+
+The capability declaration describes repository bindings. It always returns
+`model_availability: "unverified"` and `dispatch_verified: false`; worker and
+teacher selections also return `model_capability.status: "unverified"`.
+Neither configuration nor caller-supplied actor metadata authenticates live
+availability. Only the actual execution host can establish that fact.
+
+Keep frontend and provider identities separate. A T3/OpenCode selection returns
+`frontend_host: "t3"`, `provider_host: "opencode"` and `profile_host: "opencode"`.
+Telemetry retains the native `host: "opencode"` wire field and both new identity
+fields. Its cells start with `t3>opencode`; T3/Codex cells start with `t3>codex`.
+Native cells keep their existing prefixes. Coarse cells use the same prefix,
+for example `t3>opencode|known-change|small`. These contexts never pool.
 
 Teacher bindings explicitly name their registered prompt profile while keeping
 the chosen native models. Teachers remain tool-free. An optional
@@ -100,3 +113,17 @@ without either still resolves and reports `UNRECORDED` with
 `MISSING_TASK_IDENTITY`; it does not invent task metadata. With no explicit or
 environment run ID, the resolver records no receipt. Teacher calls do not
 replace a worker selection receipt.
+
+For paired evaluation, supply all three of `--task-id FIXTURE_ID
+--snapshot-id SNAPSHOT_ID --check-version CHECK_VERSION`. These are bounded
+sanitized identifiers from the frozen, host-verified fixture and acceptance
+check. Use an immutable revision or digest for the snapshot and version the
+check when its semantics change. Never infer them from a prompt, session or
+run ID. Partial identity input is rejected before a receipt is written.
+
+Selection receipts now use schema 2, carrying the frontend/provider and separate
+task/snapshot/check identities. Missing task identity remains null; it does not
+prevent ordinary resolution but excludes the trace from learning. Old schema 1
+receipts are incomplete and cannot identify the current policy. Existing run-v4
+records remain readable with null missing fields; no historical identity is
+fabricated. Attestation cannot supply missing comparison identity.

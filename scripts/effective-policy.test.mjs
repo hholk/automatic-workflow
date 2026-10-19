@@ -26,6 +26,8 @@ test("host capabilities fail closed and T3 requires an explicit provider delegat
   for (const host of ["codex", "opencode", "github-copilot"]) {
     assert.equal(hostCapabilities(host).teacher_text_snapshot, false)
     assert.equal(hostCapabilities(host).dispatch, "native-agent")
+    assert.equal(hostCapabilities(host).model_availability, "unverified")
+    assert.equal(hostCapabilities(host).dispatch_verified, false)
   }
   assert.equal(hostCapabilities("github-copilot").teacher, false)
   for (const providerHost of ["codex", "opencode"]) {
@@ -37,6 +39,16 @@ test("host capabilities fail closed and T3 requires an explicit provider delegat
   assert.throws(() => hostCapabilities("unknown"), /unknown host/)
   assert.throws(() => hostCapabilities("t3"), /requires providerHost/)
   assert.throws(() => hostCapabilities("t3", "github-copilot"), /requires providerHost/)
+})
+
+test("T3 provider cells never pool with each other or native host cells", () => {
+  const book = { ...playbook, cells: { "t3>codex|bug|small": { context_budget: 700 },
+    "t3>opencode|bug|small": { context_budget: 900 }, "opencode|bug|small": { context_budget: 1100 } } }
+  const select = (host, providerHost) => effectivePolicy({ host, providerHost, taskClass: "bug", complexity: "small" }, { playbook: book })
+  assert.equal(select("t3", "codex").context_budget, 700)
+  assert.equal(select("t3", "opencode").context_budget, 900)
+  assert.equal(select("opencode").context_budget, 1100)
+  assert.throws(() => select("codex", "opencode"), /must match providerHost/)
 })
 
 test("rejects invalid policy values and cells that try to change capabilities", () => {

@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { detectWaste, redactExcerpt, wasteKinds } from "./diagnostics.mjs"
+import { hostCell, resolveHostIdentity, taskComparisonKey } from "./run-identity.mjs"
 
 const hosts = new Set(["codex", "opencode", "github-copilot"])
 const tokenSources = new Set(["native", "provider", "unknown"])
@@ -131,8 +132,8 @@ const actorCell = (name, value) => {
   return `${name}:${requested}>${resolved}@${provenance}`
 }
 
-export const buildCellID = ({ host, actors, route, task, promptProfileID }) => [
-  host,
+export const buildCellID = ({ host, providerHost, frontendHost, actors, route, task, promptProfileID }) => [
+  hostCell({ host, providerHost, frontendHost }),
   actorCell("main", actors.main),
   actorCell("worker", actors.worker),
   actorCell("teacher", actors.teacher),
@@ -234,9 +235,18 @@ export const normalizeRun = (input, attestation = null) => {
   assertPromptFree(input)
   if (input.schema_version !== 4 || input.kind !== "run") throw new Error("run must use schema_version 4 and kind run")
   if (!hosts.has(input.host)) throw new Error("host must be codex, opencode, or github-copilot")
+  const identity = resolveHostIdentity({ host: input.frontend_host || input.host, providerHost: input.provider_host || input.host })
+  if (identity.provider_host !== input.host) throw new Error("execution host must match provider_host")
   const at = input.at || new Date().toISOString()
   if (Number.isNaN(Date.parse(at))) throw new Error("at must be an ISO timestamp")
   const prompt = normalizePrompt(input.prompt)
+  const task = {
+    id: requiredString(input.task?.id, "task.id"),
+    snapshot_id: stringOrNull(input.task?.snapshot_id, "task.snapshot_id"),
+    check_version: stringOrNull(input.task?.check_version, "task.check_version"),
+    class: requiredString(input.task?.class, "task.class"),
+    complexity: requiredString(input.task?.complexity, "task.complexity"),
+  }
   const actors = {
     main: actor(input.actors?.main, "actors.main"),
     worker: actor(input.actors?.worker, "actors.worker"),
@@ -254,6 +264,7 @@ export const normalizeRun = (input, attestation = null) => {
     attested: Boolean(attestation),
     source: attestation ? "host-attestation" : "untrusted-run-claim",
     routing_provenance_complete: routingProvenanceComplete,
+    task_provenance_complete: taskComparisonKey(task) !== null,
     policy_provenance_complete: booleanOrNull(input.quality?.policy_provenance_complete, "quality.policy_provenance_complete") !== false
       && input.recipe_id !== "unknown" && prompt.profile_id !== "unknown",
     verify_id: stringOrNull(rawQuality.verify_id, "quality.verify_id"),
@@ -264,7 +275,7 @@ export const normalizeRun = (input, attestation = null) => {
     review_pass: booleanOrNull(rawQuality.review_pass, "quality.review_pass"),
     forbidden_changes: integerOrNull(rawQuality.forbidden_changes, "quality.forbidden_changes"),
   }
-  quality.eligible = quality.attested && quality.routing_provenance_complete && quality.policy_provenance_complete && Boolean(
+  quality.eligible = quality.attested && quality.routing_provenance_complete && quality.policy_provenance_complete && quality.task_provenance_complete && Boolean(
     quality.verify_id
     && quality.verify_exit_code === 0
     && quality.semantic_success === true
@@ -294,11 +305,6 @@ export const normalizeRun = (input, attestation = null) => {
     ? usedActors.reduce((sum, item) => sum + item.tokens, 0)
     : null
   const executionTotal = sumFinite([work.main_actions, work.accepted_worker_actions])
-  const task = {
-    id: requiredString(input.task?.id, "task.id"),
-    class: requiredString(input.task?.class, "task.class"),
-    complexity: requiredString(input.task?.complexity, "task.complexity"),
-  }
   const route = requiredString(input.route, "route")
   const participationComplete = route === "teacher"
     ? actors.teacher.used
@@ -314,7 +320,8 @@ export const normalizeRun = (input, attestation = null) => {
   const estimatedWaste = wasteEvents.reduce((sum, item) => sum + (item.estimated_wasted_tokens || 0), 0)
   const outcome = requiredString(input.outcome, "outcome")
   if (!outcomes.has(outcome)) throw new Error(`invalid outcome: ${outcome}`)
-  const cellID = buildCellID({ host: input.host, actors, route, task, promptProfileID: prompt.profile_id })
+  const cellID = buildCellID({ host: input.host, providerHost: identity.provider_host, frontendHost: identity.frontend_host,
+    actors, route, task, promptProfileID: prompt.profile_id })
   return {
     schema_version: 4,
     kind: "run",
@@ -322,6 +329,7 @@ export const normalizeRun = (input, attestation = null) => {
     at,
     week: input.week || isoWeek(at),
     host: input.host,
+    ...identity,
     harness_version: stringOrNull(input.harness_version, "harness_version"),
     route,
     task,
@@ -423,7 +431,10 @@ const average = (values) => {
   const finite = values.filter(Number.isFinite)
   return finite.length ? finite.reduce((sum, value) => sum + value, 0) / finite.length : null
 }
-const latestByTask = (runs) => new Map(runs.map((run) => [run.task.id, run]))
+const latestByTask = (runs) => new Map(runs.flatMap((run) => {
+  const key = taskComparisonKey(run.task)
+  return key ? [[key, run]] : []
+}))
 const comparisonCell = (run) => run.cell_id.replace(/\|profile:[^|]+$/, "")
 const summarizeSide = (runs) => {
   const tokenValues = runs.map((run) => run.tokens.operational_total).filter(Number.isFinite)

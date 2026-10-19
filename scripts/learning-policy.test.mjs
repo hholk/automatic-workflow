@@ -14,7 +14,7 @@ const fixture = () => {
         const run_id = `${split}-${side}-${index}`
         manifest[split][`${side}_run_ids`].push(run_id)
         runs.push({ run_id, playbook_version: side, cell_id: "codex|known-change|small|profile:base",
-          task: { id: `${split}-${index}` }, tokens: { operational_total: side === "baseline" ? 100 : 80 },
+          task: { id: `${split}-${index}`, snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1" }, tokens: { operational_total: side === "baseline" ? 100 : 80 },
           quality: { eligible: true }, metrics: {} })
       }
     }
@@ -57,6 +57,14 @@ test("holdout rejects overlap, reused evidence, failures, missing pairs and unpa
   input = fixture()
   input.runs.find((run) => run.run_id === "holdout-candidate-0").tokens.operational_total = 200
   assert.throws(() => evaluateLearningCandidate(input), /holdout recomputed analysis verdict/)
+})
+
+test("promotion evaluation rejects changed snapshots, checks and legacy incomplete identities", () => {
+  for (const changed of [{ snapshot_id: "other-revision" }, { check_version: "other-check" }, { snapshot_id: null }]) {
+    const input = fixture()
+    Object.assign(input.runs.find((run) => run.run_id === "discovery-candidate-0").task, changed)
+    assert.throws(() => evaluateLearningCandidate(input), /only matched pairs|task identity is incomplete/)
+  }
 })
 
 test("approval binds holdout evidence and cannot be replaced by a supplied verdict", () => {

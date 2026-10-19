@@ -61,6 +61,14 @@ run receives invented provenance, costs, versioned check results or review.
 Missing evidence stays unknown. Re-run the affected checks to obtain current
 evidence, rather than upgrading old records by assertion.
 
+The CLI entrypoints resolve installed skill symlinks before comparing paths.
+Run-v4 gains nullable snapshot/check identity and frontend/provider fields.
+Schema-2 selection receipts carry them from the resolver to both existing
+adapters. Old receipts fail closed, and old runs without stable fixture identity
+remain readable but cannot form learning pairs. T3 cells now use `t3>codex` or
+`t3>opencode`, rather than conflating providers. No cells or model defaults are
+rewritten by this migration. Configured model availability stays `unverified`.
+
 ## Remaining host work
 
 No live model call or host permission grant was used to validate this revision.

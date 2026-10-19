@@ -2,15 +2,19 @@ import { createHash } from "node:crypto"
 import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, writeSync } from "node:fs"
 import { homedir } from "node:os"
 import { join, resolve } from "node:path"
+import { resolveHostIdentity, resolveTaskIdentity } from "./run-identity.mjs"
 
 const defaultStateDir = () => process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
 const identifier = (value) => typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,299}$/.test(value) && value !== "unknown"
 const hosts = new Set(["codex", "opencode", "github-copilot"])
 const routes = new Set(["explore", "diagnose", "fix", "implement", "review", "computer-use"])
-const identityKeys = ["profile_host", "playbook_version", "recipe_id", "prompt_profile_id", "native_profile_id", "task_class", "complexity", "route", "requested_worker_model"]
-const valid = (receipt) => receipt && receipt.schema_version === 1 && identifier(receipt.run_id) &&
+const identityKeys = ["frontend_host", "provider_host", "profile_host", "playbook_version", "recipe_id", "prompt_profile_id", "native_profile_id", "task_class", "complexity", "route", "requested_worker_model"]
+const taskKeys = ["task_id", "snapshot_id", "check_version"]
+const valid = (receipt) => receipt && receipt.schema_version === 2 && identifier(receipt.run_id) &&
   Number.isSafeInteger(receipt.at_ms) && receipt.at_ms >= 0 && hosts.has(receipt.profile_host) && routes.has(receipt.route) &&
-  identityKeys.every((key) => identifier(receipt[key]))
+  identityKeys.every((key) => identifier(receipt[key])) && receipt.provider_host === receipt.profile_host &&
+  (receipt.frontend_host === receipt.provider_host || receipt.frontend_host === "t3" && ["codex", "opencode"].includes(receipt.provider_host)) &&
+  (taskKeys.every((key) => receipt[key] === null) || taskKeys.every((key) => identifier(receipt[key])))
 const safeDirectory = (path, create) => {
   let stat = lstatSync(path, { throwIfNoEntry: false })
   if (!stat && create) {
@@ -30,11 +34,20 @@ const receiptPath = (stateDir, runID, create = false) => {
 
 // This is local selection intent, never proof of a model's executed identity.
 export const writeSelectionReceipt = ({ runID, selection, stateDir = defaultStateDir(), atMs = Date.now() }) => {
+  const profileHost = selection?.effective_policy?.capabilities?.profile_host
+  const identity = resolveHostIdentity({ host: selection?.frontend_host || selection?.host || profileHost,
+    providerHost: selection?.provider_host || profileHost })
+  const task = resolveTaskIdentity({ taskID: selection?.task_identity?.id, snapshotID: selection?.task_identity?.snapshot_id,
+    checkVersion: selection?.task_identity?.check_version })
   const receipt = {
-    schema_version: 1,
+    schema_version: 2,
     run_id: runID,
     at_ms: atMs,
-    profile_host: selection?.effective_policy?.capabilities?.profile_host,
+    ...identity,
+    profile_host: profileHost,
+    task_id: task.id,
+    snapshot_id: task.snapshot_id,
+    check_version: task.check_version,
     playbook_version: selection?.effective_policy?.playbook_version,
     recipe_id: selection?.recipe_id,
     prompt_profile_id: selection?.prompt_profile_id,
@@ -85,6 +98,6 @@ export const readSelectionReceipt = ({ runID, profileHost, playbookVersion, star
   if (receipts.some((receipt) => receipt.run_id !== runID || receipt.profile_host !== profileHost ||
       receipt.playbook_version !== playbookVersion || receipt.at_ms < startedAt || receipt.at_ms > endedAt)) return unknown("STALE_OR_FOREIGN_SELECTION_RECEIPT")
   const first = receipts[0]
-  if (receipts.some((receipt) => identityKeys.some((key) => receipt[key] !== first[key]))) return unknown("MIXED_SELECTION_RECEIPTS")
+  if (receipts.some((receipt) => [...identityKeys, ...taskKeys].some((key) => receipt[key] !== first[key]))) return unknown("MIXED_SELECTION_RECEIPTS")
   return { complete: true, reason: null, receipt: first }
 }

@@ -21,7 +21,7 @@ const event = ({ runID, recipe, variant = recipe, taskID, tokens = 100, mainToke
   run_id: runID,
   host: "codex",
   route: "implement",
-  task: { id: taskID, class: "known-change", complexity: "small" },
+  task: { id: taskID, snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1", class: "known-change", complexity: "small" },
   recipe_id: recipe,
   playbook_version: variant,
   harness_version: "test",
@@ -402,6 +402,33 @@ test("cell evaluation rejects unrelated provenance and CLI promotion still requi
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /REVIEW_REQUIRED/)
   assert.deepEqual(JSON.parse(readFileSync(playbookPath, "utf8")), current)
+})
+
+test("research CLI evaluates an exact T3/provider cell from recorded frontend identities", () => {
+  const targetState = mkdtempSync(join(tmpdir(), "aw-t3-cell-"))
+  const playbookPath = join(targetState, "baseline.json")
+  const candidatePath = join(targetState, "candidate.json")
+  const baseline = { schema_version: 4, version: "t3-base", frozen: {},
+    defaults: { recipe_id: "base-v1", prompt_profile_id: "codex-gpt6-luna-worker-v1", context_budget: 1600,
+      worker_step_budget: 125, teacher_after_failed_hypotheses: 3 }, cells: {} }
+  for (let index = 0; index < 5; index++) {
+    for (const version of ["t3-base", "t3-next"]) {
+      const item = { ...event({ runID: `${version}-${index}`, taskID: `fixture-${index}`, recipe: "base-v1", variant: version,
+        tokens: version === "t3-base" ? 100 : 80 }), frontend_host: "t3", provider_host: "codex" }
+      assert.equal(recordVerifiedAt(targetState, item).status, 0)
+    }
+  }
+  const cell = readRuns(targetState)[0].cell_id
+  assert.match(cell, /^t3>codex\|/)
+  const candidate = { ...baseline, version: "t3-next", cells: { [cell]: { context_budget: 1200 } } }
+  writeFileSync(playbookPath, JSON.stringify(baseline))
+  writeFileSync(candidatePath, JSON.stringify(candidate))
+  const reviewArgs = syntheticReviewArgs(targetState, playbookPath, candidatePath)
+  const result = spawnSync(process.execPath, [researchScript, "evaluate", "--playbook", playbookPath,
+    "--candidate", candidatePath, ...reviewArgs.slice(0, 4)], { env: { ...process.env, AW_STATE_DIR: targetState }, encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(JSON.parse(result.stdout).results.holdout.cells[0].matched_pairs, 5)
+  assert.deepEqual(JSON.parse(readFileSync(playbookPath, "utf8")), baseline)
 })
 
 test("does not trust a supplied promotion verdict without local paired evidence", () => {

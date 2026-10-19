@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -19,6 +19,29 @@ const run = (args) => spawnSync(process.execPath, [join(root, "scripts/resolve-p
 })
 const json = (path, value) => { writeFileSync(path, JSON.stringify(value)); return path }
 const fixture = () => mkdtempSync(join(tmpdir(), "aw-resolver-cli-"))
+
+test("installed skill symlink runs the real resolver CLI", () => {
+  const dir = fixture()
+  try {
+    symlinkSync(root, join(dir, "aw"), "dir")
+    const result = spawnSync(process.execPath, [join(dir, "aw/scripts/resolve-profile.mjs"), ...base], {
+      encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "" },
+    })
+    assert.equal(result.status, 0, result.stderr)
+    const selected = JSON.parse(result.stdout)
+    assert.equal(selected.model, registry.worker_defaults.opencode)
+    assert.equal(selected.native_agent, "aw-worker")
+  } finally { rmSync(dir, { recursive: true }) }
+})
+
+test("CLI modules remain importable from stdin without running their entrypoints", () => {
+  const result = spawnSync(process.execPath, ["--input-type=module", "-"], {
+    input: `await import(${JSON.stringify(new URL("./resolve-profile.mjs", import.meta.url).href)}); await import(${JSON.stringify(new URL("./install-agents.mjs", import.meta.url).href)}); process.stdout.write("imported")`,
+    encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "" },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout, "imported")
+})
 
 test("normal resolver CLI selects an exact promoted cell only with observed actor metadata", () => {
   const dir = fixture()
@@ -94,13 +117,20 @@ test("resolver records explicit run selection using actual T3 provider host with
     const invocation = (args, runID = "") => spawnSync(process.execPath, [join(root, "scripts/resolve-profile.mjs"), ...args], {
       encoding: "utf8", env: { ...process.env, AW_RUN_ID: runID, AW_STATE_DIR: dir },
     })
-    const selected = invocation(["--host", "t3", "--provider-host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "bug", "--complexity", "small", "--run-id", "resolver-explicit-run"])
+    const selected = invocation(["--host", "t3", "--provider-host", "opencode", "--role", "worker", "--route", "fix", "--task-class", "bug", "--complexity", "small", "--run-id", "resolver-explicit-run",
+      "--task-id", "fixture-a", "--snapshot-id", "sha256:fixture-rev-a", "--check-version", "acceptance-v1"])
     assert.equal(selected.status, 0, selected.stderr)
     assert.equal(JSON.parse(selected.stdout).selection_receipt.status, "RECORDED")
     const receipt = readSelectionReceipt({ runID: "resolver-explicit-run", profileHost: "opencode", playbookVersion: current.version,
       startedAt: 0, endedAt: Date.now(), stateDir: dir })
     assert.equal(receipt.complete, true, receipt.reason)
     assert.equal(receipt.receipt.profile_host, "opencode")
+    assert.equal(receipt.receipt.frontend_host, "t3")
+    assert.equal(receipt.receipt.provider_host, "opencode")
+    assert.equal(receipt.receipt.task_id, "fixture-a")
+    assert.equal(receipt.receipt.snapshot_id, "sha256:fixture-rev-a")
+    assert.equal(receipt.receipt.check_version, "acceptance-v1")
+    assert.equal(JSON.parse(selected.stdout).model_capability.status, "unverified")
     assert.equal(receipt.receipt.playbook_version, current.version)
     assert.equal(receipt.receipt.recipe_id, current.defaults.recipe_id)
     assert.equal(receipt.receipt.prompt_profile_id, current.defaults.prompt_profile_id)
@@ -116,5 +146,12 @@ test("resolver records explicit run selection using actual T3 provider host with
     const legacy = invocation(["--host", "opencode", "--role", "worker", "--route", "fix"], "resolver-legacy-run")
     assert.equal(legacy.status, 0, legacy.stderr)
     assert.deepEqual(JSON.parse(legacy.stdout).selection_receipt, { status: "UNRECORDED", reason: "MISSING_TASK_IDENTITY" })
+    for (const args of [["--task-id", "fixture-a"], ["--task-id", "private task text", "--snapshot-id", "rev", "--check-version", "v1"]]) {
+      const partial = invocation([...base, ...args], "rejected-task")
+      assert.equal(partial.status, 1)
+      assert.match(partial.stderr, /task identity requires/)
+      assert.equal(readSelectionReceipt({ runID: "rejected-task", profileHost: "opencode", playbookVersion: current.version,
+        startedAt: 0, endedAt: Date.now(), stateDir: dir }).complete, false)
+    }
   } finally { rmSync(dir, { recursive: true }) }
 })

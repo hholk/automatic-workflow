@@ -27,6 +27,10 @@ manifest names exact run IDs from `AW_STATE_DIR/runs.jsonl`:
 ```
 
 Each split needs at least five matched token-bearing, verified pairs per cell.
+Each pair must share explicit stable task, snapshot and check-version identity.
+Separate runs of the same fixture share those identities, never their run IDs.
+Missing identity or a changed snapshot/check cannot be paired. Native execution,
+T3/Codex and T3/OpenCode occupy separate cells throughout evaluation.
 Run IDs cannot repeat, and holdout task IDs cannot occur in discovery. Unpaired
 records fail rather than disappearing from the analysis. Both splits must pass
 the existing no-regression and measured-improvement gates.

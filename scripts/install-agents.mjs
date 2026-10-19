@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { chmodSync, copyFileSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync, constants } from "node:fs"
+import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync, constants } from "node:fs"
 import { createHash } from "node:crypto"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
@@ -130,7 +130,7 @@ export function installAgents({ home = homedir(), apply = false, host, hosts } =
   }))
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const hostIndex = process.argv.indexOf("--host")
     const hostsIndex = process.argv.indexOf("--hosts")

@@ -56,6 +56,10 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    and explicit project/version/prerequisites per [policy inputs](references/policy-v5.md).
    Include returned lesson IDs and instructions in the next worker's CONTEXT;
    they remain subordinate to the task and safety rules.
+   For comparison evidence, also pass the sanitized `--task-id`, `--snapshot-id`
+   and `--check-version` from the verified fixture; never substitute a run ID.
+   Resolver model availability stays `unverified` until the execution host
+   supplies native proof. A configured binding alone cannot prove availability.
 4. Apply [execution gates](references/execution-v5.md) with
    `node scripts/execution-state-cli.mjs <action>` and bounded JSON on stdin.
    Validate the versioned brief before dispatch. Use proven capable profiles

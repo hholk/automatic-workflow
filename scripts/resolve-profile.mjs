@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { closeSync, constants, existsSync, fstatSync, openSync, readFileSync, readSync } from "node:fs"
+import { closeSync, constants, existsSync, fstatSync, openSync, readFileSync, readSync, realpathSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { effectivePolicy, hostCapabilities, validateActorProvenance } from "./effective-policy.mjs"
 import { assessTeacherInspection } from "./teacher-state.mjs"
 import { selectReviewedLessons } from "./learning-policy.mjs"
 import { writeSelectionReceipt } from "./selection-receipt.mjs"
+import { resolveTaskIdentity } from "./run-identity.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
@@ -38,6 +39,8 @@ export const resolveSelection = (input, overrides = {}) => {
   if (input.actors !== undefined) validateActorProvenance(input.actors)
   const capabilities = hostCapabilities(input.host, input.providerHost)
   const profileHost = capabilities.profile_host
+  const taskIdentity = resolveTaskIdentity(input)
+  const modelCapability = (model) => ({ status: "unverified", model, provider_host: profileHost, reason: "CONFIGURATION_ONLY" })
   if (!new Set(["worker", "teacher"]).has(input.role)) throw new Error(`unknown role: ${input.role}`)
 
   if (input.role === "teacher") {
@@ -58,9 +61,12 @@ export const resolveSelection = (input, overrides = {}) => {
     assertComponents(components)
     return {
       host: input.host,
+      frontend_host: capabilities.frontend_host,
+      provider_host: profileHost,
       role: input.role,
       route: input.route,
       ...binding,
+      model_capability: modelCapability(binding.model),
       profile_id: profile.id,
       prompt_profile_id: promptProfile.id,
       recipe_id: null,
@@ -116,11 +122,15 @@ export const resolveSelection = (input, overrides = {}) => {
   assertComponents(components)
   return {
     host: input.host,
+    frontend_host: capabilities.frontend_host,
+    provider_host: profileHost,
     role: input.role,
     route: input.route,
     task_class: input.taskClass || null,
     complexity: input.complexity || null,
+    task_identity: taskIdentity,
     model,
+    model_capability: modelCapability(model),
     model_provider: profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice"),
     native_agent: profileHost === "opencode" && input.model === "venice/z-ai-glm-5-3-flash"
       ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
@@ -169,7 +179,7 @@ const readBoundedJson = (path, maxBytes) => {
   } finally { closeSync(fd) }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const actorsPath = arg("--actors")
     const lessonsPath = arg("--lessons")
@@ -191,6 +201,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       route: arg("--route"),
       taskClass: arg("--task-class"),
       complexity: arg("--complexity"),
+      taskID: arg("--task-id"),
+      snapshotID: arg("--snapshot-id"),
+      checkVersion: arg("--check-version"),
       promptProfileID: arg("--prompt-profile-id"),
       explicitModelRequest: process.argv.includes("--explicit-model-request"),
     }, playbookPath ? { playbook: readBoundedJson(playbookPath, 1048576) } : {})

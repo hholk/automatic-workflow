@@ -20,6 +20,11 @@ The configured model is intent, not execution proof. Record the executed model
 from trustworthy Copilot metadata when exposed. If unavailable, record the
 resolved model as unresolved and its source as unknown; exclude that run from
 model-specific comparisons.
+
+The resolver reports model capability as `unverified` on Copilot as on every
+other host. A complete selection receipt also needs explicit sanitized
+`--task-id`, `--snapshot-id` and `--check-version` for the frozen fixture.
+Missing comparison identity stays unknown; never substitute the hook run ID.
 Documented hook payloads do not expose token usage; keep tokens null unless a
 native/provider usage source supplies exact values. Character counts are not
 tokens.
