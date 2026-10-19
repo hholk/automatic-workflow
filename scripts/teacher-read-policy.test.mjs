@@ -47,6 +47,42 @@ test("snapshot content is immutable, exact-path scoped and grants are single use
   assert.equal(result.truncated, false)
 })
 
+test("bounded search excerpts contain a late UTF-8 match with correct snapshot byte offsets", () => {
+  const query = "Treffer🙂"
+  const file = reviewedFile("src/long.txt", `intro\n${"🙂".repeat(2300)}aaa${query}${"尾".repeat(4000)}`)
+  const f = setup([file])
+  f.grant.max_bytes = 8192
+  const session = f.open()
+  const result = session.handle({ scope: f.scope, operation: "search", path: file.path, query })
+  assert.equal(result.ok, true)
+  assert.equal(result.matches.length, 1)
+  const match = result.matches[0]
+  assert.equal(match.line, 2)
+  assert.ok(match.text.includes(query))
+  assert.equal(match.text.includes("�"), false)
+  assert.ok(match.start_byte <= 9209)
+  assert.ok(match.end_byte >= 9220)
+  assert.equal(Buffer.from(file.text).subarray(match.start_byte, match.end_byte).toString("utf8"), match.text)
+  assert.equal(result.bytes, Buffer.byteLength(match.text))
+  assert.ok(result.bytes <= 8192)
+  assert.equal(result.truncated, true)
+  session.close()
+})
+
+test("search reports truncation without a false hit when the remaining budget cannot contain the query", () => {
+  const file = reviewedFile("src/long.txt", `abc${"x".repeat(9000)}needle`)
+  const f = setup([file])
+  f.grant.max_bytes = 8
+  const session = f.open()
+  assert.equal(session.handle({ scope: f.scope, operation: "read", path: file.path, max_bytes: 3 }).bytes, 3)
+  const result = session.handle({ scope: f.scope, operation: "search", path: file.path, query: "needle" })
+  assert.equal(result.ok, true)
+  assert.deepEqual(result.matches, [])
+  assert.equal(result.bytes, 0)
+  assert.equal(result.truncated, true)
+  session.close()
+})
+
 test("rejects traversal, absolute paths, hidden data, credentials, foreign trees and special files", () => {
   for (const path of ["../src/a.js", "/src/a.js", "src/../a.js", "src//a.js", "src\\a.js", "C:/a.js",
     "src/%2e%2e/a.js", ".git/config", ".env", "src/.env.production", "secrets/key.txt", "credentials.json",

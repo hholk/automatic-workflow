@@ -265,7 +265,7 @@ export const normalizeRun = (input, attestation = null) => {
     source: attestation ? "host-attestation" : "untrusted-run-claim",
     routing_provenance_complete: routingProvenanceComplete,
     task_provenance_complete: taskComparisonKey(task) !== null,
-    policy_provenance_complete: booleanOrNull(input.quality?.policy_provenance_complete, "quality.policy_provenance_complete") !== false
+    policy_provenance_complete: booleanOrNull(input.quality?.policy_provenance_complete, "quality.policy_provenance_complete") === true
       && input.recipe_id !== "unknown" && prompt.profile_id !== "unknown",
     verify_id: stringOrNull(rawQuality.verify_id, "quality.verify_id"),
     verify_exit_code: integerOrNull(rawQuality.verify_exit_code, "quality.verify_exit_code"),
