@@ -1,6 +1,6 @@
 ---
-description: AW independent GPT-6 Luna read-only reviewer
-model: venice/openai-gpt-6-luna
+description: AW independent DeepSeek 1017 read-only reviewer
+model: venice/deepseek-v4-1-flash-1017
 mode: all
 steps: 125
 permission:

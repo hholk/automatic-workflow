@@ -1,6 +1,6 @@
 ---
-description: AW GLM 5.3 Flash bounded implementation worker
-model: venice/z-ai-glm-5-3-flash
+description: AW DeepSeek 1017 implementation worker under its legacy profile name
+model: venice/deepseek-v4-1-flash-1017
 mode: all
 steps: 125
 permission:

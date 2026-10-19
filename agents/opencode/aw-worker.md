@@ -1,5 +1,5 @@
 ---
-description: AW bounded GPT-6 Luna implementation worker
+description: AW bounded DeepSeek 1017 implementation worker
 model: {{model}}
 mode: all
 steps: {{worker_steps}}

@@ -4,10 +4,17 @@ Use explicit native model selection and the resolved prompt profile.
 
 | Route | agent_type | model | model_provider |
 |---|---|---|---|
-| GUI/computer-use | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
-| fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` | `codex-router` |
-| explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` | `codex-router` |
+| GUI/computer-use | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
+| fix, implement | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
+| explore, diagnose, review, compare | `aw-reviewer` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` | `codex-router` |
+
+The current Codex binding targets the direct Responses route confirmed on the
+MacBook Pro. The Mac mini is awaiting the same router setup and native
+acceptance; this registry entry does not establish its availability there.
+Client `wire_api: responses` alone does not prove the provider upstream uses
+Responses. A `venice/` Chat Completions route is not an automatic substitute.
+Stop with `BLOCKED_ENVIRONMENT` until the exact local route is confirmed.
 
 Agent files bind model/provider/high effort, not inherited Ultra, and disable
 child skill-catalog instructions. Use native spawn/resume tools; set

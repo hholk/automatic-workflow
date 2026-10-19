@@ -12,8 +12,11 @@ warning that PATH aliases could not be created. That warning is not evidence
 of a model, credential or profile failure. No broader retry was attempted.
 
 The repository's native worker binding remains `codex-router` with
-`venice/openai-gpt-6-luna`. Local profiles and the CLI version establish intent
-and installed software only, not current provider availability.
+`venice-responses/deepseek-v4-1-flash-1017`. Local profiles and the CLI version establish intent
+and installed software only, not current provider availability. The direct
+Responses binding has been confirmed on the MacBook Pro; the Mac mini still
+needs its direct Responses setup and native acceptance. Do not install the
+new Mini profiles against its older Chat Completions route as a substitute.
 
 ## First authorized installation
 

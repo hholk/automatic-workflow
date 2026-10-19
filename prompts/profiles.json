@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "main_default": "venice/mimo-2.6-flash",
+  "main_default": "venice/deepseek-v4-1-flash-1017",
   "worker_defaults": {
-    "codex": "venice/openai-gpt-6-luna",
-    "opencode": "venice/openai-gpt-6-luna",
-    "github-copilot": "venice/openai-gpt-6-luna"
+    "codex": "venice-responses/deepseek-v4-1-flash-1017",
+    "opencode": "venice/deepseek-v4-1-flash-1017",
+    "github-copilot": "venice/deepseek-v4-1-flash-1017"
   },
   "worker_route_models": {
     "computer-use": {
-      "codex": "venice/openai-gpt-6-luna",
-      "opencode": "venice/openai-gpt-6-luna",
-      "github-copilot": "venice/openai-gpt-6-luna"
+      "codex": "venice-responses/deepseek-v4-1-flash-1017",
+      "opencode": "venice/deepseek-v4-1-flash-1017",
+      "github-copilot": "venice/deepseek-v4-1-flash-1017"
     }
   },
   "worker_profiles": {
@@ -18,25 +18,29 @@
       "id": "codex-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md"
+      "model_delta": "prompts/models/gpt-6-luna.md",
+      "retired": true
     },
     "opencode|venice/openai-gpt-6-luna": {
       "id": "opencode-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md"
+      "model_delta": "prompts/models/gpt-6-luna.md",
+      "retired": true
     },
     "github-copilot|venice/openai-gpt-6-luna": {
       "id": "copilot-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md"
+      "model_delta": "prompts/models/gpt-6-luna.md",
+      "retired": true
     },
     "opencode|venice/z-ai-glm-5-3-flash": {
       "id": "opencode-glm53-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/glm-5.3-flash-v4.md"
+      "model_delta": "prompts/models/glm-5.3-flash-v4.md",
+      "retired": true
     },
     "codex|gpt-5.6-luna": {
       "retired": true,
@@ -51,6 +55,25 @@
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
       "model_delta": "prompts/models/gpt-5.6-luna.md"
+    },
+    "opencode|venice/deepseek-v4-1-flash-1017": {
+      "id": "opencode-deepseek-1017-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/deepseek-1017.md"
+    },
+    "github-copilot|venice/deepseek-v4-1-flash-1017": {
+      "id": "copilot-deepseek-1017-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/deepseek-1017.md",
+      "unsupported_reason": "COPILOT_NATIVE_DEEPSEEK_BINDING_UNAVAILABLE"
+    },
+    "codex|venice-responses/deepseek-v4-1-flash-1017": {
+      "id": "codex-deepseek-1017-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/deepseek-1017.md"
     }
   },
   "teacher_profiles": {

@@ -13,7 +13,7 @@ test("native agents exist and enforce provider, effort and recursion boundaries"
     assert.match(codex, new RegExp(`name = "${name}"`))
     const rendered = read(`agents/generated/codex/${name}.toml`)
     assert.match(rendered, /model_provider = "codex-router"/)
-    assert.match(rendered, /model = "venice\/openai-gpt-6-luna"/)
+    assert.match(rendered, /model = "venice-responses\/deepseek-v4-1-flash-1017"/)
     assert.match(codex, /model_reasoning_effort = "high"/)
     assert.match(codex, /\[agents\]\nenabled = false/)
     assert.match(codex, /\[skills\]\ninclude_instructions = false/)

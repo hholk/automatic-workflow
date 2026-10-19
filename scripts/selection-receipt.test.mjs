@@ -6,7 +6,7 @@ import { join } from "node:path"
 import { writeSelectionReceipt, readSelectionReceipt } from "./selection-receipt.mjs"
 import { normalizeRun, compareRecipes } from "./evidence.mjs"
 
-const selection = (changes = {}) => ({ role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/openai-gpt-6-luna", profile_id: "opencode-gpt6-luna-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "lean-worker-v2", effective_policy: { playbook_version: "weekly-v2", capabilities: { profile_host: "opencode" } }, ...changes })
+const selection = (changes = {}) => ({ role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/deepseek-v4-1-flash-1017", profile_id: "opencode-deepseek-1017-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "lean-worker-v2", effective_policy: { playbook_version: "weekly-v2", capabilities: { profile_host: "opencode" } }, ...changes })
 const fixture = () => {
   const stateDir = mkdtempSync(join(tmpdir(), "aw-selection-"))
   const scope = { stateDir, runID: "run:synthetic", profileHost: "opencode", playbookVersion: "weekly-v2", startedAt: 100, endedAt: 200 }
@@ -21,7 +21,7 @@ test("receipt preserves only prompt-free selected identity and accepts repeated 
     const result = readSelectionReceipt(f.scope)
     assert.equal(result.complete, true)
     assert.equal(result.receipt.recipe_id, "lean-worker-v2")
-    assert.equal(result.receipt.requested_worker_model, "venice/openai-gpt-6-luna")
+    assert.equal(result.receipt.requested_worker_model, "venice/deepseek-v4-1-flash-1017")
     assert.equal("arbitrary_prompt" in result.receipt, false)
     assert.equal(readdirSync(join(f.stateDir, "selections")).length, 1)
   } finally { rmSync(f.stateDir, { recursive: true, force: true }) }

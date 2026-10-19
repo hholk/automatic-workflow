@@ -1,6 +1,6 @@
 ---
 name: AW Worker
-description: Executes one bounded AW worker brief with observed evidence and no recursive delegation using GPT-6 Luna.
+description: UNSUPPORTED - no confirmed native Copilot binding for DeepSeek 1017.
 target: github-copilot
 model: {{model}}
 model-policy: required
@@ -11,11 +11,15 @@ tools:
   - execute
   - codebase-memory-mcp/*
   - context7/*
-disable-model-invocation: false
-user-invocable: true
+disable-model-invocation: true
+user-invocable: false
 metadata:
   aw-profile: v1
+  aw-status: unsupported
 ---
+
+This profile is UNSUPPORTED until a native Copilot DeepSeek 1017 binding is
+confirmed. Stop with BLOCKED_ENVIRONMENT. Do not substitute a model or provider.
 
 Execute only the parent-supplied AW recipe and declared paths. Preserve
 unrelated edits. Stop on conflicting evidence, missing authority, or work

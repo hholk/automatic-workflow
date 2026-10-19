@@ -96,6 +96,7 @@ export const resolveSelection = (input, overrides = {}) => {
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
   if (profile.retired) throw new Error(`retired worker profile: ${input.host}|${model}`)
+  if (profile.unsupported_reason) throw new Error(`BLOCKED_ENVIRONMENT: unsupported worker profile: ${input.host}|${model}: ${profile.unsupported_reason}`)
   if (input.actors && (!input.actors.worker.used || input.actors.worker.resolved_model !== model)) {
     throw new Error("observed worker model must match the selected worker model")
   }
@@ -133,9 +134,7 @@ export const resolveSelection = (input, overrides = {}) => {
     model,
     model_capability: modelCapability(model),
     model_provider: profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice"),
-    native_agent: profileHost === "opencode" && input.model === "venice/z-ai-glm-5-3-flash"
-      ? (["fix", "implement"].includes(input.route) ? "aw-glm53-worker" : "aw-glm53-review")
-      : profileHost === "github-copilot"
+    native_agent: profileHost === "github-copilot"
         ? "aw-worker"
         : (["fix", "implement", "computer-use"].includes(input.route) ? "aw-worker" : "aw-reviewer"),
     effective_policy: policy,

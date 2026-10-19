@@ -1,5 +1,5 @@
 ---
-description: AW independent GPT-6 Luna read-only reviewer
+description: AW independent DeepSeek 1017 read-only reviewer
 model: {{model}}
 mode: all
 steps: {{worker_steps}}

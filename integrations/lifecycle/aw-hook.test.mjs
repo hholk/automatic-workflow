@@ -121,7 +121,7 @@ test("lifecycle uses only an explicit receipt bound to its run and native profil
   } finally { rmSync(stateDir, { recursive: true, force: true }) }
 })
 
-test("resolver CLI carries stable fixture identity through Codex/T3 and Copilot lifecycle events", () => {
+test("resolver CLI carries Codex/T3 fixture identity and blocks unsupported Copilot receipts", () => {
   for (const [provider, frontend] of [["codex", "t3"], ["github-copilot", "github-copilot"]]) {
     const { stateDir, playbookPath } = fixture()
     const options = { stateDir, playbookPath }
@@ -133,6 +133,17 @@ test("resolver CLI carries stable fixture identity through Codex/T3 and Copilot 
         "--check-version", "fixture-check-v1", "--run-id", activation.run_id, "--playbook", playbookPath, "--prompt-profile-id", "model-bound-v1"], {
         env: { ...process.env, AW_STATE_DIR: stateDir, AW_RUN_ID: "", AW_RUN_CONTEXT: "" }, encoding: "utf8", timeout: 5000,
       })
+      if (provider === "github-copilot") {
+        assert.equal(selected.status, 1)
+        assert.equal(selected.stdout, "")
+        assert.match(selected.stderr, /BLOCKED_ENVIRONMENT: unsupported worker profile/)
+        const { run } = handleHook(provider, { hook_event_name: "Stop", session_id: "fixture-session" }, options)
+        assert.equal(run.quality.task_provenance_complete, false)
+        assert.equal(run.quality.policy_provenance_complete, false)
+        assert.equal(run.actors.worker.resolved_model, null)
+        assert.equal(run.quality.eligible, false)
+        continue
+      }
       assert.equal(selected.status, 0, selected.stderr)
       const { run } = handleHook(provider, { hook_event_name: "Stop", session_id: "fixture-session" }, options)
       assert.equal(run.host, provider)

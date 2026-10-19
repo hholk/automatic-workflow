@@ -1,6 +1,6 @@
 # Managed by the AW skill; edit agents/codex/aw-reviewer.toml and reinstall.
 name = "aw-reviewer"
-description = "AW GPT-6 Luna read-only exploration, diagnosis, comparison and review."
+description = "AW DeepSeek 1017 read-only exploration, diagnosis, comparison and review."
 model_provider = "{{provider}}"
 model = "{{model}}"
 model_reasoning_effort = "high"

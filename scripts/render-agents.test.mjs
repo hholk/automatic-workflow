@@ -13,9 +13,19 @@ test("committed profiles match registry models and effective policy generation",
       const rendered = renderTemplate(read(`${directory}/${file}`), { host, role })
       assert.equal(read(`generated/${directory}/${file}`), rendered, `regenerate ${directory}/${file}`)
       assert.doesNotMatch(rendered, /\{\{[a-z_]+\}\}/)
-      if (directory === "opencode" && role === "worker" && !file.includes("luna")) {
+      if (directory === "opencode" && role === "worker") {
         assert.match(rendered, new RegExp(`steps: ${effectivePolicy({ host }).worker_step_budget}`))
       }
     }
   }
+})
+
+test("unsupported Copilot profile is visibly disabled without changing providers", () => {
+  const profile = read("generated/copilot/aw-worker.agent.md")
+  assert.match(profile, /model: venice\/deepseek-v4-1-flash-1017/)
+  assert.match(profile, /description: UNSUPPORTED/)
+  assert.match(profile, /disable-model-invocation: true/)
+  assert.match(profile, /user-invocable: false/)
+  assert.match(profile, /aw-status: unsupported/)
+  assert.match(profile, /Stop with BLOCKED_ENVIRONMENT/)
 })

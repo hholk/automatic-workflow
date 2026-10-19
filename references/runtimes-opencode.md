@@ -4,16 +4,17 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 
 | Route | subagent_type | Model |
 |---|---|---|
-| GUI/computer-use | `aw-worker` | pinned `venice/openai-gpt-6-luna` |
-| fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` |
-| explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` |
-| explicit GLM request, fix/implement | `aw-glm53-worker` | `venice/z-ai-glm-5-3-flash` |
-| explicit GLM request, explore/diagnose/review | `aw-glm53-review` | same GLM |
+| GUI/computer-use | `aw-worker` | pinned `venice/deepseek-v4-1-flash-1017` |
+| fix, implement | `aw-worker` | `venice/deepseek-v4-1-flash-1017` |
+| explore, diagnose, review, compare | `aw-reviewer` | `venice/deepseek-v4-1-flash-1017` |
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
 Teacher denies all tools. Generated workers use the playbook default `steps: 125`, including explicit
-GLM profiles. The selected cell may require an earlier handback; the cap is not completion.
+legacy profile names. Their generated model binding is now the same native
+DeepSeek 1017 worker; retained names do not select old models or trigger an
+alternate-model fallback.
+The selected cell may require an earlier handback; the cap is not completion.
 The `computer-use` route is pinned by `prompts/profiles.json`; an explicit
 different model is rejected by the resolver.
 Resume through `task_id` with new evidence only. Main validates n/N checks.
@@ -35,8 +36,8 @@ GUI/computer-use: `node scripts/resolve-profile.mjs --host opencode --role worke
 Teacher: `--role teacher --route teacher`. Load returned components once.
 
 Preflight once per unchanged session/profile: a cheap native child must prove
-`providerID`/`modelID` = `venice`/`openai-gpt-6-luna` or
-`venice`/`claude-opus-5-5` (GLM: `venice`/`z-ai-glm-5-3-flash`). Config and self-identification are not proof.
+`providerID`/`modelID` = `venice`/`deepseek-v4-1-flash-1017` or
+`venice`/`claude-opus-5-5`. Config and self-identification are not proof.
 On mismatch, missing metadata or missing agent, stop. Never use stale cached
 profiles or substitute general/explore. For installation/reload failures only,
 read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.

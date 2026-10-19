@@ -40,7 +40,7 @@ test("installs regular Codex/Copilot agents and keeps OpenCode native symlinks",
     assert.equal(lstatSync(join(home, ".config/opencode/agents/aw-glm53-worker.md")).isSymbolicLink(), true)
     const copilot = join(home, ".copilot/agents/aw-worker.agent.md")
     assert.equal(lstatSync(copilot).isSymbolicLink(), false)
-    assert.match(readFileSync(copilot, "utf8"), /model: venice\/openai-gpt-6-luna/)
+    assert.match(readFileSync(copilot, "utf8"), /model: venice\/deepseek-v4-1-flash-1017/)
     assert.match(readFileSync(copilot, "utf8"), /model-policy: required/)
     assert.ok(installAgents({ home }).every((entry) => entry.status === "current"))
   } finally { rmSync(home, { recursive: true }) }

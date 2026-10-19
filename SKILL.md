@@ -5,8 +5,8 @@ description: Use when supervising a multi-step task whose exploration, implement
 
 # AW v5
 
-Main alone orchestrates. GPT-6 Luna through Venice is the non-teacher default in every
-supported host. Claude Opus 5.5 through Venice is the advisory teacher.
+Main alone orchestrates. The profile registry defines the non-teacher binding for each
+supported host. Native Venice workers use DeepSeek 1017. Claude Opus 5.5 through Venice is the advisory teacher.
 No alternate-model fallback; unavailable profiles stop with BLOCKED_ENVIRONMENT.
 
 Optimize total cost to accepted completion at main-agent quality. Honor explicit

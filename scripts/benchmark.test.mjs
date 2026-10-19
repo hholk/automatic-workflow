@@ -41,7 +41,7 @@ test("offline benchmark succeeds with current v5 registry profiles, routes and e
     assert.equal(item.profile_id, registry.teacher_bindings[item.host].profile_id)
   }
   assert.deepEqual(Object.keys(value.invariants).sort(), [
-    "codex_default_worker", "opencode_default_worker", "copilot_default_worker", "native_worker_budgets",
+    "codex_default_worker", "opencode_default_worker", "copilot_model_unsupported", "native_worker_budgets",
     "codex_opus_teacher", "opencode_opus_teacher", "no_venice_sol", "teacher_frozen_limits",
     "teacher_ask_cap", "teacher_turns_per_ask_cap", "teacher_handback_threshold", "custom_runtime_removed",
   ].sort())
@@ -54,7 +54,7 @@ test("offline benchmark fails when a generated worker drifts from the current mo
   const skill = fixture()
   try {
     const path = join(skill, "agents/generated/opencode/aw-worker.md")
-    writeFileSync(path, readFileSync(path, "utf8").replace("model: venice/openai-gpt-6-luna", "model: stale/worker"))
+    writeFileSync(path, readFileSync(path, "utf8").replace("model: venice/deepseek-v4-1-flash-1017", "model: stale/worker"))
     const run = offline(skill)
     assert.equal(run.status, 1, run.stderr)
     const value = JSON.parse(run.stdout)
@@ -75,5 +75,16 @@ test("offline benchmark rejects changed frozen teacher limits", () => {
     const value = JSON.parse(run.stdout)
     assert.equal(value.invariants.teacher_frozen_limits, false)
     assert.equal(value.invariants.teacher_turns_per_ask_cap, false)
+  } finally { rmSync(skill, { recursive: true }) }
+})
+
+test("offline benchmark rejects an enabled Copilot profile without native model support", () => {
+  const skill = fixture()
+  try {
+    const path = join(skill, "agents/generated/copilot/aw-worker.agent.md")
+    writeFileSync(path, readFileSync(path, "utf8").replace("disable-model-invocation: true", "disable-model-invocation: false"))
+    const run = offline(skill)
+    assert.equal(run.status, 1, run.stderr)
+    assert.equal(JSON.parse(run.stdout).invariants.copilot_model_unsupported, false)
   } finally { rmSync(skill, { recursive: true }) }
 })

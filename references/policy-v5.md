@@ -18,7 +18,7 @@ cell or defaults. Configured model intent never activates a provenance cell.
 No runtime model discovery occurs here.
 
 `render-agents.mjs` renders native worker limits from the same playbook defaults.
-All default and GLM worker profiles now use 125 steps. A task cell can require
+All default and legacy-named worker profiles use 125 steps. A task cell can require
 an earlier handback. OpenCode enforces its generated native cap, so a higher
 cell budget needs a reviewed regeneration before use. Codex and Copilot worker
 instructions carry the generated default cap. These limits never prove task
@@ -28,7 +28,7 @@ completion and never reset after a teacher ASK.
 |---|---|---|---|---|
 | Codex | Existing native agent | Configured, execution unverified | Existing tool-free profile | Unsupported |
 | OpenCode | Existing native agent | Configured, execution unverified | Existing tool-free profile | Unsupported |
-| GitHub Copilot | Existing native agent | Configured, execution unverified | Unsupported | Unsupported |
+| GitHub Copilot | Blocked for current model | DeepSeek binding unsupported | Unsupported | Unsupported |
 | T3 with Codex provider | Provider delegate | Codex binding | Codex binding | Unsupported |
 | T3 with OpenCode provider | Provider delegate | OpenCode binding | OpenCode binding | Unsupported |
 
@@ -40,8 +40,10 @@ or unsupported T3 provider hosts fail closed. Every dispatch still requires
 observed provider/model provenance from the execution host.
 
 The capability declaration describes repository bindings. It always returns
-`model_availability: "unverified"` and `dispatch_verified: false`; worker and
-teacher selections also return `model_capability.status: "unverified"`.
+`model_availability: "unverified"` and `dispatch_verified: false`; supported
+worker and teacher selections also return `model_capability.status: "unverified"`.
+A profile with `unsupported_reason` instead stops with `BLOCKED_ENVIRONMENT`;
+it cannot produce a selection or receipt.
 Neither configuration nor caller-supplied actor metadata authenticates live
 availability. Only the actual execution host can establish that fact.
 
@@ -62,8 +64,10 @@ attempts alone do not grant tools. See [teacher inspection](teacher-inspection.m
 # Installing repository profiles
 
 `node scripts/install-agents.mjs --host codex` checks only Codex. Add `--apply`
-to install the selected repository profiles. `opencode` and `github-copilot`
-are also supported. Omit `--host` only for a read-only check of all native hosts.
+to install the selected repository profiles. `opencode` is also supported.
+The installer can copy Copilot profiles, but the current DeepSeek binding is
+unsupported; do not install or invoke it. Omit `--host` only for a read-only
+check of all native hosts.
 Applying requires `--host`, or an explicit `--hosts codex,opencode,github-copilot`
 list; there is no implicit multi-host write.
 The installer creates missing directories only for selected hosts, validates

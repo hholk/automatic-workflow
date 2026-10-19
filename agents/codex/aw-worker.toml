@@ -1,6 +1,6 @@
 # Managed by the AW skill; edit agents/codex/aw-worker.toml and reinstall.
 name = "aw-worker"
-description = "AW bounded GPT-6 Luna worker for implementation and fixes."
+description = "AW bounded DeepSeek 1017 worker for implementation and fixes."
 model_provider = "{{provider}}"
 model = "{{model}}"
 model_reasoning_effort = "high"

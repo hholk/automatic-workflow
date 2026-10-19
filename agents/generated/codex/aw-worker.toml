@@ -1,8 +1,8 @@
 # Managed by the AW skill; edit agents/codex/aw-worker.toml and reinstall.
 name = "aw-worker"
-description = "AW bounded GPT-6 Luna worker for implementation and fixes."
+description = "AW bounded DeepSeek 1017 worker for implementation and fixes."
 model_provider = "codex-router"
-model = "venice/openai-gpt-6-luna"
+model = "venice-responses/deepseek-v4-1-flash-1017"
 model_reasoning_effort = "high"
 web_search = "disabled"
 developer_instructions = """

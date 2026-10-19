@@ -83,7 +83,7 @@ const teacher = read("references/teacher.md")
 
 // Exercise the current resolver and teacher state machine. A stale generated
 // profile or changed frozen limit must fail the offline benchmark.
-const defaultWorkers = Object.keys(runtimeFor).map((host) => resolveSelection({ host, role: "worker", route: "fix" }, selectionOverrides))
+const defaultWorkers = ["codex", "opencode"].map((host) => resolveSelection({ host, role: "worker", route: "fix" }, selectionOverrides))
 const teacherSelections = ["codex", "opencode"].map((host) => resolveSelection({ host, role: "teacher", route: "teacher" }, selectionOverrides))
 const workerProfileMatches = (selection) => {
   const profile = registry.worker_profiles[`${selection.host}|${registry.worker_defaults[selection.host]}`]
@@ -91,6 +91,17 @@ const workerProfileMatches = (selection) => {
     : `agents/generated/${selection.host}/aw-worker.${selection.host === "codex" ? "toml" : "md"}`)
   return !profile?.retired && selection.model === registry.worker_defaults[selection.host]
     && selection.profile_id === profile?.id && generated.includes(selection.model)
+}
+const copilotUnsupported = () => {
+  const model = registry.worker_defaults["github-copilot"]
+  const profile = registry.worker_profiles[`github-copilot|${model}`]
+  const generated = read("agents/generated/copilot/aw-worker.agent.md")
+  if (!profile?.unsupported_reason || !generated.includes(`model: ${model}`)
+      || !generated.includes("aw-status: unsupported") || !generated.includes("disable-model-invocation: true")
+      || !generated.includes("user-invocable: false")) return false
+  try { resolveSelection({ host: "github-copilot", role: "worker", route: "fix" }, selectionOverrides) }
+  catch (error) { return error.message.startsWith("BLOCKED_ENVIRONMENT: unsupported worker profile:") }
+  return false
 }
 const workerBudgetMatches = (selection) => {
   const policy = effectivePolicy({ host: selection.host }, { playbook })
@@ -135,7 +146,7 @@ const result = {
   invariants: {
     codex_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "codex")),
     opencode_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "opencode")),
-    copilot_default_worker: workerProfileMatches(defaultWorkers.find((item) => item.host === "github-copilot")),
+    copilot_model_unsupported: copilotUnsupported(),
     native_worker_budgets: defaultWorkers.every(workerBudgetMatches),
     codex_opus_teacher: teacherBindingMatches(teacherSelections.find((item) => item.host === "codex")),
     opencode_opus_teacher: teacherBindingMatches(teacherSelections.find((item) => item.host === "opencode")),
@@ -163,7 +174,7 @@ if (live) {
     JSON.stringify(cases.map(({ id, prompt }) => ({ id, prompt }))),
   ].join("\n\n")
   const run = spawnSync("opencode", [
-    "run", "--pure", "--format", "json", "--model", "venice/xiaomi-mimo-v2-6-flash",
+    "run", "--pure", "--format", "json", "--model", registry.worker_defaults.opencode,
     "--dir", root, prompt,
   ], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 })
   if (run.status !== 0) {
@@ -178,7 +189,7 @@ if (live) {
   result.live = {
     status: "current",
     engine: "opencode --pure",
-    model: "venice/xiaomi-mimo-v2-6-flash",
+    model: registry.worker_defaults.opencode,
     instruction_characters: instructions.length,
     passed: scored.filter((item) => item.pass).length,
     total: scored.length,

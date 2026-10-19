@@ -21,6 +21,10 @@ const expected = [
   ["agents/generated/copilot/aw-worker.agent.md", new RegExp(`model: ${worker["github-copilot"]}`)],
 ]
 
+for (const name of ["aw-glm53-worker", "aw-glm53-review", "aw-luna-worker"]) {
+  expected.push([`agents/generated/opencode/${name}.md`, new RegExp(`model: ${worker.opencode}`)])
+}
+
 const failures = expected.filter(([path, pattern]) => !pattern.test(read(path))).map(([path]) => path)
 if (failures.length) {
   console.error(`model drift vs prompts/profiles.json: ${failures.join(", ")}`)

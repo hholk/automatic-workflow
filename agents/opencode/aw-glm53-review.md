@@ -1,6 +1,6 @@
 ---
-description: AW GLM 5.3 Flash read-only diagnostic and reviewer
-model: venice/z-ai-glm-5-3-flash
+description: AW DeepSeek 1017 read-only reviewer under its legacy profile name
+model: {{model}}
 mode: all
 steps: {{worker_steps}}
 permission:

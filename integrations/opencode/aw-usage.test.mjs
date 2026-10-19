@@ -122,7 +122,7 @@ test("uses the active playbook version and never reuses child evidence across ac
   writeFileSync(playbookPath, JSON.stringify({
     schema_version: 4,
     version: "weekly-v7",
-    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-gpt6-luna-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
+    defaults: { recipe_id: "lean-worker-v2", prompt_profile_id: "opencode-deepseek-1017-worker-v1", context_budget: 1200, worker_step_budget: 6, teacher_after_failed_hypotheses: 2 },
     cells: {},
   }))
   process.env.AW_STATE_DIR = stateDir
@@ -159,7 +159,7 @@ const observeRun = async (hooks, rootID) => {
   for (const [id, agent] of [[rootID, "build"], [childID, "aw-worker"]]) {
     await hooks.event({ event: { type: "message.updated", properties: { info: {
       id: `message-${id}`, role: "assistant", sessionID: id, agent,
-      providerID: "venice", modelID: "openai-gpt-6-luna", tokens: { input: 10, output: 5 },
+      providerID: "venice", modelID: "deepseek-v4-1-flash-1017", tokens: { input: 10, output: 5 },
     } } } })
   }
   await hooks.event({ event: { type: "session.idle", properties: { sessionID: rootID } } })
@@ -203,8 +203,8 @@ test("shell.env and the normal resolver subprocess preserve a selected task cell
     assert.deepEqual(run.task, { id: "fixture-a", snapshot_id: "fixture-rev-1", check_version: "fixture-check-v1", class: "known-change", complexity: "small" })
     assert.notEqual(run.task.id, run.run_id)
     assert.equal(run.playbook_version, "cell-policy-v1")
-    assert.equal(run.actors.worker.requested_model, "venice/openai-gpt-6-luna")
-    assert.equal(run.actors.worker.resolved_model, "venice/openai-gpt-6-luna")
+    assert.equal(run.actors.worker.requested_model, "venice/deepseek-v4-1-flash-1017")
+    assert.equal(run.actors.worker.resolved_model, "venice/deepseek-v4-1-flash-1017")
     assert.equal(run.actors.worker.fallback_reason, null)
     assert.equal(run.quality.policy_provenance_complete, true)
     attest(stateDir, run.run_id)
@@ -233,7 +233,7 @@ test("missing, stale and mixed policy receipts remain unknown and ineligible aft
         await hooks["tool.execute.before"]({ tool: "skill", sessionID: rootID }, { args: { name: "aw" } })
         const output = { env: {} }
         await hooks["shell.env"]({ sessionID: rootID }, output)
-        const selection = { role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/openai-gpt-6-luna", profile_id: "opencode-gpt6-luna-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "base-v1", effective_policy: { playbook_version: output.env.AW_PLAYBOOK_VERSION, capabilities: { profile_host: "opencode" } } }
+        const selection = { role: "worker", route: "fix", task_class: "known-change", complexity: "small", model: "venice/deepseek-v4-1-flash-1017", profile_id: "opencode-deepseek-1017-worker-v1", prompt_profile_id: "model-bound-v1", recipe_id: "base-v1", effective_policy: { playbook_version: output.env.AW_PLAYBOOK_VERSION, capabilities: { profile_host: "opencode" } } }
         if (mode !== "missing") writeSelectionReceipt({ runID: output.env.AW_RUN_ID, selection, stateDir, atMs: mode === "stale" ? Date.now() - 100000 : Date.now() })
         if (mode === "mixed") writeSelectionReceipt({ runID: output.env.AW_RUN_ID, selection: { ...selection, recipe_id: "lean-worker-v2" }, stateDir })
         await observeRun(hooks, rootID)

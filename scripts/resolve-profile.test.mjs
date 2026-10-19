@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs"
 import { buildCellID } from "./evidence.mjs"
 import { resolveSelection } from "./resolve-profile.mjs"
 
-test("selects the OpenCode GPT-6 Luna default worker components", () => {
+test("selects the native OpenCode DeepSeek 1017 worker components", () => {
   const value = resolveSelection({
     host: "opencode",
     role: "worker",
@@ -13,27 +13,38 @@ test("selects the OpenCode GPT-6 Luna default worker components", () => {
     complexity: "small",
   })
 
-  assert.equal(value.model, "venice/openai-gpt-6-luna")
-  assert.equal(value.profile_id, "opencode-gpt6-luna-worker-v1")
+  assert.equal(value.model, "venice/deepseek-v4-1-flash-1017")
+  assert.equal(value.profile_id, "opencode-deepseek-1017-worker-v1")
   assert.equal(value.prompt_profile_id, "model-bound-v1")
   assert.deepEqual(value.components, [
     "prompts/core/worker.md",
     "contracts/worker.md",
-    "prompts/models/gpt-6-luna.md",
+    "prompts/models/deepseek-1017.md",
     "workflows/fix.md",
     "playbooks/recipes/bounded-v3.md",
   ])
   assert.equal(value.teacher, null)
 })
 
-test("explicit GLM model binds a separate OpenCode AW worker without changing MiMo", () => {
-  const model = "venice/z-ai-glm-5-3-flash"
+test("Copilot DeepSeek binding is unsupported without native host availability", () => {
+  for (const route of ["explore", "diagnose", "fix", "implement", "review", "computer-use"]) {
+    for (const model of [undefined, "venice/deepseek-v4-1-flash-1017"]) {
+      assert.throws(() => resolveSelection({ host: "github-copilot", role: "worker", route, model }),
+        /BLOCKED_ENVIRONMENT: unsupported worker profile: github-copilot\|venice\/deepseek-v4-1-flash-1017/)
+    }
+  }
+})
+
+test("replaced OpenCode family profiles stay retired instead of silently switching models", () => {
+  for (const model of ["venice/z-ai-glm-5-3-flash", "venice/openai-gpt-6-luna"]) {
+    assert.throws(() => resolveSelection({ host: "opencode", role: "worker", model, route: "fix" }), /retired worker profile/)
+  }
   for (const route of ["diagnose", "fix"]) {
-    const value = resolveSelection({ host: "opencode", role: "worker", model, route })
-    assert.equal(value.profile_id, "opencode-glm53-worker-v1")
-    assert.equal(value.native_agent, route === "fix" ? "aw-glm53-worker" : "aw-glm53-review")
+    const value = resolveSelection({ host: "opencode", role: "worker", route })
+    assert.equal(value.profile_id, "opencode-deepseek-1017-worker-v1")
+    assert.equal(value.native_agent, route === "fix" ? "aw-worker" : "aw-reviewer")
     assert.equal(value.model_provider, "venice")
-    assert.ok(value.components.includes("prompts/models/glm-5.3-flash-v4.md"))
+    assert.ok(value.components.includes("prompts/models/deepseek-1017.md"))
   }
 })
 
@@ -56,11 +67,10 @@ test("binds Opus 5.5 to the correct native provider on each host", () => {
   }), /unsupported teacher model/)
 })
 
-test("uses the GPT-6 Luna default for every worker host with actionable bounded budgets", () => {
+test("uses each host registry binding with actionable bounded budgets", () => {
   const defaults = {
-    codex: "venice/openai-gpt-6-luna",
-    opencode: "venice/openai-gpt-6-luna",
-    "github-copilot": "venice/openai-gpt-6-luna",
+    codex: "venice-responses/deepseek-v4-1-flash-1017",
+    opencode: "venice/deepseek-v4-1-flash-1017",
   }
   for (const [host, model] of Object.entries(defaults)) {
     for (const route of ["explore", "diagnose", "fix", "implement", "review"]) {
@@ -69,24 +79,22 @@ test("uses the GPT-6 Luna default for every worker host with actionable bounded 
       assert.equal(value.model_provider, host === "codex" ? "codex-router" : model.split("/")[0])
       assert.equal(
         value.native_agent,
-        host === "github-copilot"
-          ? "aw-worker"
-          : ["fix", "implement"].includes(route) ? "aw-worker" : "aw-reviewer",
+        ["fix", "implement"].includes(route) ? "aw-worker" : "aw-reviewer",
       )
       assert.deepEqual(value.budget, { context_tokens: 1600, worker_steps: 125, failed_hypotheses: 2 })
       assert.equal(new Set(value.components).size, value.components.length)
     }
-    if (host === "github-copilot") continue
     assert.throws(() => resolveSelection({
       host, role: "worker", route: "fix", model: host === "codex" ? "gpt-5.6-luna" : "openai-codex/gpt-5.6-luna",
     }), /retired worker profile/)
   }
 })
 
-test("pins computer-use work to Venice GPT-6 Luna on every worker host", () => {
-  for (const host of ["codex", "opencode", "github-copilot"]) {
+test("pins computer-use work to the configured host model", () => {
+  const models = { codex: "venice-responses/deepseek-v4-1-flash-1017", opencode: "venice/deepseek-v4-1-flash-1017" }
+  for (const [host, model] of Object.entries(models)) {
     const value = resolveSelection({ host, role: "worker", route: "computer-use" })
-    assert.equal(value.model, "venice/openai-gpt-6-luna")
+    assert.equal(value.model, model)
     assert.equal(value.native_agent, "aw-worker")
     assert.ok(value.components.includes("workflows/computer-use.md"))
     assert.throws(() => resolveSelection({
@@ -94,7 +102,7 @@ test("pins computer-use work to Venice GPT-6 Luna on every worker host", () => {
       role: "worker",
       route: "computer-use",
       model: "venice/z-ai-glm-5-3-flash",
-    }), /requires worker model: venice\/openai-gpt-6-luna/)
+    }), /requires worker model:/)
   }
 })
 
@@ -199,8 +207,8 @@ test("rejects a teacher binding to a different registered profile", () => {
 })
 
 test("configured worker and teacher bindings are explicitly unverified on every host", () => {
-  for (const [host, providerHost] of [["codex"], ["opencode"], ["github-copilot"], ["t3", "codex"], ["t3", "opencode"]]) {
-    for (const role of host === "github-copilot" ? ["worker"] : ["worker", "teacher"]) {
+  for (const [host, providerHost] of [["codex"], ["opencode"], ["t3", "codex"], ["t3", "opencode"]]) {
+    for (const role of ["worker", "teacher"]) {
       const selected = resolveSelection({ host, providerHost, role, route: role === "worker" ? "fix" : "teacher" })
       assert.equal(selected.model_capability.status, "unverified")
       assert.equal(selected.model_capability.reason, "CONFIGURATION_ONLY")
@@ -245,7 +253,7 @@ test("eligible inspection stays unsupported on both native teacher hosts and T3 
 test("programmatic resolver rejects unproved actor metadata instead of converting intent to proof", () => {
   const input = { host: "opencode", role: "worker", route: "fix" }
   const actor = (model) => ({ used: true, requested_model: model, resolved_model: model, model_source: "native" })
-  const actors = { main: actor("venice/mimo-2.6-flash"), worker: actor("venice/openai-gpt-6-luna"), teacher: { used: false } }
+  const actors = { main: actor("venice/deepseek-v4-1-flash-1017"), worker: actor("venice/deepseek-v4-1-flash-1017"), teacher: { used: false } }
   assert.equal(resolveSelection({ ...input, actors }).model, actors.worker.resolved_model)
   for (const model_source of [undefined, "unknown"]) {
     assert.throws(() => resolveSelection({ ...input, actors: { ...actors, worker: { ...actors.worker, model_source } } }), /native or provider model_source/)
