@@ -1,13 +1,16 @@
 ---
 name: aw
-description: Use when supervising a multi-step task whose exploration, implementation, debugging, review, architecture, or measured agent optimization benefits from native subagents.
+description: AW v5 with scoped UI/UX design and live acceptance checks. Use when supervising a multi-step task whose exploration, implementation, debugging, review, architecture, or measured agent optimization benefits from native subagents.
 ---
 
-# AW v5
+# AW v5 · UI/UX
+
+On activation, state this heading and the selected route once in the first progress
+update, so the user can identify the loaded skill version.
 
 Main alone orchestrates. The profile registry defines the non-teacher binding for each
 supported host. Native Venice workers use DeepSeek 1017. Claude Opus 5.5 through Venice is the advisory teacher.
-No alternate-model fallback; unavailable profiles stop with BLOCKED_ENVIRONMENT.
+Unavailable profiles stop with BLOCKED_ENVIRONMENT. On native Codex workers only, an observed DeepSeek spend-limit, provider-disabled, or route-unavailable result may select native `gpt-6-luna`; the caller must preserve requested/resolved model and the exact failure reason. Never use this for auth, permission, approval, safety, unknown failures, explicit model requests, delegates, or computer-use.
 
 Optimize total cost to accepted completion at main-agent quality. Honor explicit
 requests for independent judgment.
@@ -19,7 +22,7 @@ First matching row wins. Details and load paths: [routing](references/routing.md
 | Signal | Route |
 |---|---|
 | Required authority or material user choice missing | human |
-| Live GUI/computer-use interaction is required | computer-use |
+| The objective is operating a live GUI, app or device | computer-use |
 | Main can finish and verify safely for less than a handoff | direct |
 | Decisive technical gap after a useful probe, or architecture/hard-fix unresolved | teacher |
 | Completed change needs independent evidence | review |
@@ -28,7 +31,11 @@ First matching row wins. Details and load paths: [routing](references/routing.md
 | Is/should gap, cause unknown | diagnose |
 | Read-only structure, ownership or callers question | explore |
 
-Direct executes and verifies; human asks for the missing decision. Other routes continue below.
+Direct executes and verifies, skipping workflow dispatch steps; human asks for the
+missing decision. For interface or module-design decisions, consult `codebase-design`
+as reference before considering teacher escalation. Other routes continue below.
+For UI changes, apply the scoped [UI/UX reference](references/ui-ux.md); retain the
+implementation, fix or review route and use computer-use for its bounded live checks.
 
 Substantial, high-risk, multi-session, or explicitly independently reviewed work uses
 `assurance: reviewed` and the [mission lifecycle](references/mission-lifecycle.md),
@@ -43,28 +50,31 @@ Run them only when explicitly requested.
 
 Use Codebase Memory for structure or Context7 for library behavior when either is likely
 cheaper than manual discovery; reuse sufficient supplied evidence.
+Main resolves named skills from the active catalog and passes relevant reference
+paths in CONTEXT. Consult only the named phases; AW retains dispatch and budgets.
+User-only or inactive skills require explicit invocation.
 
 1. Freeze `OBJECTIVE | SUCCESS | CONTEXT | PATHS | NON_GOALS | VERIFY` before dispatch.
    `SUCCESS` lists numbered, falsifiable criteria; `VERIFY` names one command.
+   Reuse the project's verification skill or existing test/run commands. If none
+   answers the criterion, first establish a narrow executable probe; an exit code
+   alone must not substitute for the promised behavior.
    Use a v2 brief with an explicit assurance mode. For reviewed work, preserve the
    original request, later decisions and applicable constraints, map them to criteria,
    and pass a fresh [contract review](workflows/contract-review.md) before work dispatch.
 2. Read one runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
 3. At a routing milestone, apply the strategy/model route gate before resolving
-   a changed profile. Keep the configured default when no proven alternative is
-   available; unknown cost never establishes a saving. Pass the selected model
+   a changed profile. Keep the configured default unless the native Codex host has confirmed one of the
+   bounded DeepSeek failure classes described above. Unknown cost or errors never
+   establish a fallback. Pass the selected model
    to the resolver and stop if the host/profile cannot support it.
    Run `node scripts/resolve-profile.mjs` with the host, role, route,
    `--task-class` and `--complexity` from the frozen brief; load only the returned component paths
-   once. Use its native binding and budget. For a model-specific policy cell,
-   pass bounded native/provider metadata with `--actors <file>`; a configured
-   model name is insufficient. When lessons are enabled, pass the reviewed store
-   and explicit project/version/prerequisites per [policy inputs](references/policy-v5.md).
-   Include returned lesson IDs and instructions in the next worker's CONTEXT;
-   they remain subordinate to the task and safety rules.
-   For comparison evidence, also pass the sanitized `--task-id`, `--snapshot-id`
-   and `--check-version` from the verified fixture; never substitute a run ID.
+   once, plus the applicable skill references. Use its native binding and budget.
+   Load [policy inputs](references/policy-v5.md) for model-specific cells, reviewed
+   lessons or comparison evidence; supply the required observed metadata and
+   scoped identities there.
    Resolver model availability stays `unverified` until the execution host
    supplies native proof. A configured binding alone cannot prove availability.
 4. Apply [execution gates](references/execution-v5.md) with
@@ -81,28 +91,24 @@ cheaper than manual discovery; reuse sufficient supplied evidence.
    VERIFY. Record dispatch IDs before acting to prevent duplicate starts.
 6. Read `DONE` or `TEACHER_REQUEST` via [worker contract](contracts/worker.md).
    Main owns unfinished work; missing evidence is UNKNOWN, never PASS.
-   Apply the recovery gate after observed progress or a failed probe. One bounded
-   recovery is allowed; unresolved cycles then stop. Reuse evidence only when
-   task, objective revision, snapshot and versioned check still match.
-   A discovered gap first uses the replan gate to identify the earliest invalid
-   artifact. Repair that artifact, revise changed criteria and revalidate affected
-   evidence; replanning never resets the recovery budget or shrinks user scope.
+   Apply the execution gates for recovery after failed probes and replanning after
+   discovered gaps. Repair the earliest invalid artifact and revalidate affected
+   evidence, preserving user scope and spent recovery budget. Reuse evidence only
+   when task, objective revision, snapshot and versioned check still match.
 7. Eligible teacher requests use [teacher loop](references/teacher.md). Advisory
    consultation can prevent failures. Direct [snapshot diagnosis](references/teacher-inspection.md)
    requires two proven no-progress attempts and a real scoped host grant.
    Unsupported hosts keep worker EVIDENCE and the tool-free teacher profile.
-8. Main integrates and verifies every SUCCESS criterion against the final artifact,
-   including visual fidelity or source support when relevant. Run the narrowest
-   acceptance probe and versioned acceptance gate; reuse fresh evidence elsewhere.
-   Reviewed work also needs a fresh [completion review](workflows/completion-review.md)
-   against the original request and later decisions, without builder reports or the
-   mission's criteria. Open gaps and unknown checks block completion. Accept the
-   checkpoint only after main verification. Record
-   prompt-free v4 telemetry. Use the exact [run context](references/run-context.md)
-   supplied by OpenCode's shell environment or Codex's turn hook. Copilot and
-   hosts without that metadata need an independently known `--run-id`; no receipt means
-   unknown policy identity and exclusion from learning, never default labels.
-   The v5 rollout preserves its wire schema.
+8. Main verifies every SUCCESS criterion against the integrated artifact, including
+   relevant visual fidelity or source support. Run the narrowest acceptance probe
+   and versioned gate. Reviewed work also passes a fresh
+   [completion review](workflows/completion-review.md) against the original request
+   and later decisions, without builder reports or mission criteria. Open gaps and
+   unknown checks block completion; accept checkpoints only after main verification.
+   Record prompt-free v4 telemetry with the host's exact
+   [run context](references/run-context.md) or independently known `--run-id`.
+   Missing receipts mean unknown policy identity and exclusion from learning.
+   The wire schema stays unchanged.
 
 Resume with deltas, never histories. Preflight once per unchanged session/profile.
 Research and lessons are opt-in. No secrets, recursive workers or implicit release.

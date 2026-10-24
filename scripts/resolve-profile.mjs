@@ -91,7 +91,22 @@ export const resolveSelection = (input, overrides = {}) => {
   if (routeModel && input.model && input.model !== routeModel) {
     throw new Error(`route ${input.route} requires worker model: ${routeModel}`)
   }
-  const model = routeModel || input.model || registry.worker_defaults?.[profileHost]
+  const primaryModel = routeModel || input.model || registry.worker_defaults?.[profileHost]
+  const fallbackPolicy = registry.worker_fallbacks?.[profileHost]
+  let fallback = null
+  if (input.primaryFailure !== undefined) {
+    const reason = fallbackPolicy?.confirmed_primary_failures?.[input.primaryFailure]
+    if (!reason) throw new Error(`fallback blocked: unconfirmed primary failure: ${input.primaryFailure}`)
+    if (input.host !== "codex" || profileHost !== "codex") throw new Error("fallback blocked: native Codex host required")
+    if (input.route === "computer-use") throw new Error("fallback blocked: computer-use capability is unverified")
+    if (input.explicitModelRequest) throw new Error("fallback blocked: explicit model request")
+    if (primaryModel !== fallbackPolicy.primary_model) throw new Error("fallback blocked: configured primary mismatch")
+    fallback = { requested_model: primaryModel, resolved_model: fallbackPolicy.fallback_model, reason }
+  }
+  const model = fallback?.resolved_model || primaryModel
+  if (!fallback && model === fallbackPolicy?.fallback_model) {
+    throw new Error("fallback blocked: Luna requires a confirmed primary failure")
+  }
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
@@ -99,6 +114,10 @@ export const resolveSelection = (input, overrides = {}) => {
   if (profile.unsupported_reason) throw new Error(`BLOCKED_ENVIRONMENT: unsupported worker profile: ${input.host}|${model}: ${profile.unsupported_reason}`)
   if (input.actors && (!input.actors.worker.used || input.actors.worker.resolved_model !== model)) {
     throw new Error("observed worker model must match the selected worker model")
+  }
+  if (fallback && input.actors && (input.actors.worker.requested_model !== fallback.requested_model ||
+      input.actors.worker.fallback_reason !== fallback.reason)) {
+    throw new Error("observed fallback provenance must match the confirmed primary failure")
   }
   const policy = effectivePolicy(input, { playbook })
   if (input.lessons !== undefined && (!input.prerequisites || typeof input.prerequisites !== "object" || Array.isArray(input.prerequisites) ||
@@ -133,7 +152,8 @@ export const resolveSelection = (input, overrides = {}) => {
     task_identity: taskIdentity,
     model,
     model_capability: modelCapability(model),
-    model_provider: profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice"),
+    ...(fallback ? {} : { model_provider: profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice") }),
+    ...(fallback ? { requested_model: fallback.requested_model, fallback_reason: fallback.reason } : {}),
     native_agent: profileHost === "github-copilot"
         ? "aw-worker"
         : (["fix", "implement", "computer-use"].includes(input.route) ? "aw-worker" : "aw-reviewer"),
@@ -206,6 +226,7 @@ if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[
       checkVersion: arg("--check-version"),
       promptProfileID: arg("--prompt-profile-id"),
       explicitModelRequest: process.argv.includes("--explicit-model-request"),
+      primaryFailure: arg("--primary-failure"),
     }, playbookPath ? { playbook: readBoundedJson(playbookPath, 1048576) } : {})
     const explicitRunID = arg("--run-id")
     const contextToken = arg("--run-context") || process.env.AW_RUN_CONTEXT

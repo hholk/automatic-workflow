@@ -219,6 +219,25 @@ test("configured worker and teacher bindings are explicitly unverified on every 
   }
 })
 
+test("falls back to native Codex Luna only for confirmed DeepSeek unavailability", () => {
+  const selected = resolveSelection({ host: "codex", role: "worker", route: "fix", primaryFailure: "DEEPSEEK_SPEND_LIMIT" })
+  assert.equal(selected.model, "gpt-6-luna")
+  assert.equal(selected.requested_model, "venice-responses/deepseek-v4-1-flash-1017")
+  assert.equal(selected.fallback_reason, "provider-deepseek-spend-limit")
+  assert.equal(Object.hasOwn(selected, "model_provider"), false)
+  assert.equal(selected.model_capability.status, "unverified")
+})
+
+test("does not fallback for denials, unknown errors, explicit requests, delegates, or computer-use", () => {
+  for (const primaryFailure of ["AUTH_DENIED", "PERMISSION_DENIED", "APPROVAL_DENIED", "SAFETY_DENIED", "UNKNOWN", "HTTP_402"]) {
+    assert.throws(() => resolveSelection({ host: "codex", role: "worker", route: "fix", primaryFailure }), /fallback blocked: unconfirmed primary failure/)
+  }
+  assert.throws(() => resolveSelection({ host: "codex", role: "worker", route: "fix", primaryFailure: "DEEPSEEK_SPEND_LIMIT", explicitModelRequest: true }), /explicit model request/)
+  assert.throws(() => resolveSelection({ host: "codex", role: "worker", route: "fix", model: "gpt-6-luna" }), /Luna requires a confirmed primary failure/)
+  assert.throws(() => resolveSelection({ host: "t3", providerHost: "codex", role: "worker", route: "fix", primaryFailure: "DEEPSEEK_SPEND_LIMIT" }), /native Codex host required/)
+  assert.throws(() => resolveSelection({ host: "codex", role: "worker", route: "computer-use", primaryFailure: "DEEPSEEK_SPEND_LIMIT" }), /computer-use capability is unverified/)
+})
+
 test("configured models never activate a provenance cell without supplied actor evidence", () => {
   const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
   const playbook = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))

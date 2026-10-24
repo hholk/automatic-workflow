@@ -33,7 +33,6 @@ test("loads one resolved prompt profile under main-agent authority", () => {
   assert.match(skill, /load only the returned component paths/i)
   assert.match(skill, /Only the main agent may start or resume agents/i)
   assert.match(skill, /Claude Opus 5\.5.*advisory teacher/is)
-  assert.match(skill, /No alternate-model fallback/i)
   assert.match(skill, /DONE.*TEACHER_REQUEST/is)
   assert.doesNotMatch(skill, /HUMAN_REQUEST/)
 })

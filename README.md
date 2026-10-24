@@ -1,4 +1,9 @@
-# AW
+# AW v5 · UI/UX
+
+The native skill picker displays this version through `agents/openai.yaml`;
+`$aw` and `/aw` retain the `aw` identity. UI changes use the shared
+[UI/UX acceptance reference](references/ui-ux.md), with design guidance loaded only
+for the affected surface and Main-owned visual evidence.
 
 AW is a native subagent supervision skill for Codex and OpenCode, including T3
 provider delegation backed by either host. The main agent keeps ownership of the

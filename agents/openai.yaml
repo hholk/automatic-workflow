@@ -1,7 +1,7 @@
 interface:
-  display_name: "AW v4"
-  short_description: "Evidence-driven native subagent supervision"
-  default_prompt: "Use $aw to supervise this task with native subagents."
+  display_name: "AW v5 · UI/UX"
+  short_description: "AW v5: native supervision with scoped UI/UX acceptance"
+  default_prompt: "Use $aw to supervise this task and verify the integrated result, including relevant UI/UX behavior."
 
 policy:
   allow_implicit_invocation: true

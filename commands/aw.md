@@ -1,13 +1,13 @@
 ---
-description: Native evidence-driven supervisor. Invoke as $aw or /aw.
+description: AW v5 with scoped UI/UX acceptance. Invoke as $aw or /aw.
 agent: build
 argument-hint: task
 ---
 
-Load `aw` and use its mode or decision tree. Keep the main session authoritative,
-load only the selected references, preserve permissions, and verify the result.
-The profile registry defines each host's non-teacher binding; native Venice workers use DeepSeek 1017. Claude
-Opus 5.5 through Venice is the advisory teacher. No alternate-model fallback.
+Load `aw` and use its mode or decision tree. Announce the loaded skill heading and
+route. Keep the main session authoritative, load only the selected references,
+preserve permissions, and verify the integrated result. Use the current profile
+registry and runtime rules for models, budgets and permitted recovery.
 
 If the request is exactly `learn`, run the `$aw learn` procedure from
 `references/lessons.md` instead of routing a task.
