@@ -10,7 +10,8 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
-Teacher denies all tools. Generated workers use the playbook default `steps: 125`, including explicit
+Teacher denies all tools and uses `steps: 2`; `steps: 1` makes OpenCode send a
+prefilled assistant turn that the Venice teacher model rejects. Generated workers use the playbook default `steps: 125`, including explicit
 legacy profile names. Their generated model binding is now the same native
 DeepSeek 1017 worker; retained names do not select old models or trigger an
 alternate-model fallback.

@@ -74,6 +74,12 @@
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
       "model_delta": "prompts/models/deepseek-1017.md"
+    },
+    "codex|gpt-6-luna": {
+      "id": "codex-gpt6-luna-native-worker-v1",
+      "core": "prompts/core/worker.md",
+      "contract": "contracts/worker.md",
+      "model_delta": "prompts/models/gpt-6-luna.md"
     }
   },
   "teacher_profiles": {
@@ -103,6 +109,18 @@
       "model_provider": "venice",
       "native_agent": "aw-teacher",
       "profile_id": "opus-teacher-v1"
+    }
+  },
+  "worker_fallbacks": {
+    "codex": {
+      "primary_model": "venice-responses/deepseek-v4-1-flash-1017",
+      "fallback_model": "gpt-6-luna",
+      "confirmed_primary_failures": {
+        "DEEPSEEK_SPEND_LIMIT": "provider-deepseek-spend-limit",
+        "DEEPSEEK_PROVIDER_DISABLED": "provider-deepseek-disabled",
+        "DEEPSEEK_ROUTE_UNAVAILABLE": "provider-deepseek-route-unavailable"
+      },
+      "computer_use_allowed": false
     }
   }
 }

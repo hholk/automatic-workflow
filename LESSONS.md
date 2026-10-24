@@ -1,6 +1,8 @@
 # AW skill improvement experiments
 
-This file contains AW improvement experiments and actionable usage lessons.
+This file records historical AW experiments and actionable usage lessons, not
+active routing, models or budgets; resolve those from the current policy and
+profiles. Pending proposals and old measurements never override current rules.
 Performance claims require numeric before/after values and a verify command.
 Qualitative lessons retain Failure / Cause / Prevention / Evidence; unresolved
 hypotheses stay explicit. Repository root causes belong in LESSONS-REPO.md.

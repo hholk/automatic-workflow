@@ -2,7 +2,8 @@
 description: AW Opus 5.5 adviser for decisive evidence gaps; no execution
 model: venice/claude-opus-5-5
 mode: all
-steps: 1
+# OpenCode sends a prefilled assistant turn for a single-step agent.
+steps: 2
 permission:
   "*": deny
 ---

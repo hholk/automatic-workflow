@@ -12,6 +12,9 @@ Inspect the actual artifact and exercise the requested behavior. Check user-visi
 flows, persistence, setup and relevant edge cases. Every finding must trace to the
 user request or accepted constraints. Code inference alone leaves runnable behavior
 unknown when execution is needed. Respect access limits and hidden holdouts.
+For changed interfaces, apply [UI/UX acceptance](../references/ui-ux.md) to the
+affected task and rendered states; Main owns visual judgment when the reviewer
+has only textual observations.
 
 Return the worker contract with a completion record in EVIDENCE:
 

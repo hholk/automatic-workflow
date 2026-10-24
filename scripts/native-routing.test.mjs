@@ -20,7 +20,9 @@ test("native agents exist and enforce provider, effort and recursion boundaries"
   }
   const teacher = read("agents/opencode/aw-teacher.md")
   assert.match(read("agents/generated/opencode/aw-teacher.md"), /model: venice\/claude-opus-5-5/)
-  assert.match(teacher, /steps: 1/)
+  // OpenCode adds an assistant prefill when an agent has only one step; Venice
+  // rejects that turn before the teacher can answer.
+  assert.match(teacher, /steps: 2/)
   assert.match(teacher, /"\*": deny/)
   const codex = read("agents/codex/aw-teacher.toml")
   const renderedTeacher = read("agents/generated/codex/aw-teacher.toml")

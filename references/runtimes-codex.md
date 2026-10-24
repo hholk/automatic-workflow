@@ -9,7 +9,10 @@ Use explicit native model selection and the resolved prompt profile.
 | explore, diagnose, review, compare | `aw-reviewer` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` | `codex-router` |
 
-The current Codex binding targets the direct Responses route confirmed on the
+The current primary binding targets the direct Responses route confirmed on the
+MacBook Pro. For a confirmed DeepSeek spend-limit/provider-disabled/route-unavailable
+result on native Codex, AW may select the native `gpt-6-luna` model; this fallback is
+not a Codex Router provider route and carries requested model plus exact reason. The
 MacBook Pro. The Mac mini is awaiting the same router setup and native
 acceptance; this registry entry does not establish its availability there.
 Client `wire_api: responses` alone does not prove the provider upstream uses
@@ -20,7 +23,8 @@ Agent files bind model/provider/high effort, not inherited Ultra, and disable
 child skill-catalog instructions. Use native spawn/resume tools; set
 `fork_turns: none` and model overrides only if exposed by the live schema.
 Send delta-only follow-ups. Close/interrupt finished children with the offered
-tool. No recursive agents or alternate-model retries. A child that still
+tool. No recursive agents or generic alternate-model retries. The bounded Luna fallback
+requires an explicit confirmed failure code and is unavailable for computer-use. A child that still
 inherits a large context is a measured cost, not a reason to fork more.
 
 From the absolute skill directory:
