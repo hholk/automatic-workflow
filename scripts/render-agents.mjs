@@ -13,6 +13,7 @@ const teacherBinding = (host) => profiles.teacher_bindings[host]
 
 // Each template gets its model and provider from one role-based lookup.
 const valuesFor = (host, role) => {
+  if (role === "deepseek") return { model: profiles.worker_route_models["computer-use"].opencode, provider: "venice" }
   if (role === "teacher") {
     const binding = teacherBinding(host)
     return { model: binding.model, provider: binding.model_provider }
@@ -20,7 +21,7 @@ const valuesFor = (host, role) => {
   return { model: workerModel(host), provider: host === "codex" ? "codex-router" : "venice" }
 }
 
-const roleOf = (file) => /teacher/.test(file) ? "teacher" : "worker"
+const roleOf = (file) => /teacher/.test(file) ? "teacher" : /deepseek/.test(file) ? "deepseek" : "worker"
 
 export function renderTemplate(template, { host, role }) {
   const { model, provider } = valuesFor(host, role)

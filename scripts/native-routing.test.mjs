@@ -41,6 +41,6 @@ test("active recipe uses one output contract and bounded context", () => {
   assert.match(recipe, /contracts\/worker.md/)
   assert.doesNotMatch(recipe, /STATUS \| CHANGED/)
   const runtime = read("references/runtimes-opencode.md")
-  assert.doesNotMatch(runtime, /codex exec|aw-luna-worker/)
+  assert.doesNotMatch(runtime, /codex exec/)
   assert.match(runtime, /once per.*session/is)
 })

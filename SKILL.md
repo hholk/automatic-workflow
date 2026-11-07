@@ -9,8 +9,8 @@ On activation, state this heading and the selected route once in the first progr
 update, so the user can identify the loaded skill version.
 
 Main alone orchestrates. The profile registry defines the non-teacher binding for each
-supported host. Native Venice workers use DeepSeek 1017. Claude Opus 5.5 through Venice is the advisory teacher.
-Unavailable profiles stop with BLOCKED_ENVIRONMENT. On native Codex workers only, an observed DeepSeek spend-limit, provider-disabled, or route-unavailable result may select native `gpt-6-luna`; the caller must preserve requested/resolved model and the exact failure reason. Never use this for auth, permission, approval, safety, unknown failures, explicit model requests, delegates, or computer-use.
+supported host. OpenCode workers use Luna. Codex workers and OpenCode computer-use use DeepSeek 1017. Claude Opus 5.5 through Venice is the advisory teacher.
+Unavailable profiles stop with BLOCKED_ENVIRONMENT. Native workers may use only the confirmed failure classes in `prompts/profiles.json`. Codex may select native `gpt-6-luna` after confirmed DeepSeek unavailability. OpenCode may select DeepSeek 1017 after confirmed Luna unavailability. Preserve requested model, resolved model, and exact reason. Auth, permission, approval, safety, unknown failures, explicit model requests, delegates, and computer-use never trigger fallback.
 
 Optimize total cost to accepted completion at main-agent quality. Honor explicit
 requests for independent judgment.
@@ -65,8 +65,8 @@ User-only or inactive skills require explicit invocation.
 2. Read one runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
 3. At a routing milestone, apply the strategy/model route gate before resolving
-   a changed profile. Keep the configured default unless the native Codex host has confirmed one of the
-   bounded DeepSeek failure classes described above. Unknown cost or errors never
+   a changed profile. Keep the configured default unless the native host has confirmed one of its
+   registry-defined primary failure classes. Unknown cost or errors never
    establish a fallback. Pass the selected model
    to the resolver and stop if the host/profile cannot support it.
    Run `node scripts/resolve-profile.mjs` with the host, role, route,

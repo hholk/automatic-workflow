@@ -54,7 +54,7 @@ test("offline benchmark fails when a generated worker drifts from the current mo
   const skill = fixture()
   try {
     const path = join(skill, "agents/generated/opencode/aw-worker.md")
-    writeFileSync(path, readFileSync(path, "utf8").replace("model: venice/deepseek-v4-1-flash-1017", "model: stale/worker"))
+    writeFileSync(path, readFileSync(path, "utf8").replace(/^model: .*$/m, "model: stale/worker"))
     const run = offline(skill)
     assert.equal(run.status, 1, run.stderr)
     const value = JSON.parse(run.stdout)

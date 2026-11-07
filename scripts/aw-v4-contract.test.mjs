@@ -92,7 +92,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   for (const name of ["aw-worker", "aw-reviewer"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
-    assert.match(read(`agents/generated/opencode/${name}.md`), /model: venice\/deepseek-v4-1-flash-1017/)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: venice\/openai-gpt-6-luna$/m)
     assert.match(profile, /mode: all/)
     assert.match(config, /task: deny/)
     assert.match(config, /"codebase-memory-mcp_\*": allow/)
@@ -104,16 +104,6 @@ test("binds dedicated native harness profiles without recursive agents", () => {
       assert.match(config, /write: allow/)
     }
   }
-  const luna = read("agents/opencode/aw-luna-worker.md")
-  const lunaConfig = frontmatter("agents/opencode/aw-luna-worker.md")
-  assert.match(luna, /model: \{\{model\}\}/)
-  assert.match(luna, /mode: all/)
-  assert.match(read("agents/generated/opencode/aw-luna-worker.md"), /model: venice\/deepseek-v4-1-flash-1017/)
-  assert.match(lunaConfig, /task: deny/)
-  assert.match(lunaConfig, /"codebase-memory-mcp_\*": allow/)
-  assert.match(lunaConfig, /"context7_\*": allow/)
-  assert.match(lunaConfig, /edit: allow/)
-  assert.match(lunaConfig, /write: allow/)
   assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /edit: deny/)
   assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /write: deny/)
 
