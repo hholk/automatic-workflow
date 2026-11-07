@@ -66,6 +66,45 @@ test("detects repeated work deterministically", () => {
   ]).map((item) => item.kind), ["duplicate_verification"])
 })
 
+test("detects unchanged reads across intervening reads in the same actor and phase", () => {
+  assert.deepEqual(detectWaste([
+    { actor: "worker", phase: "explore", event: "read", signature: "a", revision: "1" },
+    { actor: "worker", phase: "explore", event: "read", signature: "b", revision: "1" },
+    { actor: "worker", phase: "explore", event: "read", signature: "a", revision: "1" },
+  ]).map((item) => [item.kind, item.signature]), [["repeated_read", "a"]])
+})
+
+test("unknown revisions do not establish repeated-read waste", () => {
+  for (const revision of [undefined, null, ""]) {
+    const read = { actor: "worker", phase: "explore", event: "read", signature: "a", revision }
+    assert.deepEqual(detectWaste([read, read]), [])
+  }
+})
+
+test("rereads after a revision, actor or phase change are not inferred as waste", () => {
+  const read = { actor: "worker", phase: "explore", event: "read", signature: "a", revision: "1" }
+  for (const changed of [{ revision: "2" }, { actor: "main" }, { phase: "verify" }]) {
+    assert.deepEqual(detectWaste([read, { ...read, ...changed }]), [])
+  }
+  assert.deepEqual(detectWaste([read, { ...read, revision: "2" }, read]), [])
+})
+
+test("repeat detection stays within 32 preceding events and stops at state changes", () => {
+  const verify = { actor: "main", phase: "verify", event: "verify", signature: "check", changed: false }
+  const unrelated = { actor: "main", phase: "verify", event: "read", signature: "b", revision: null }
+  assert.deepEqual(detectWaste([verify, unrelated, verify]).map((item) => item.kind), ["duplicate_verification"])
+  assert.deepEqual(detectWaste([verify, ...Array(31).fill(unrelated), verify]).map((item) => item.kind), ["duplicate_verification"])
+  assert.deepEqual(detectWaste([verify, ...Array(32).fill(unrelated), verify]), [])
+  for (const boundary of [
+    { event: "write" },
+    { event: "edit" },
+    { event: "patch" },
+    { event: "probe", changed: true },
+    { event: "tool", changed: null },
+    { event: "teacher_evidence", information_gain: "new" },
+  ]) assert.deepEqual(detectWaste([verify, { ...unrelated, ...boundary }, verify]), [])
+})
+
 test("v4 rejects old schema and protected raw content", () => {
   assert.throws(() => normalizeRun({ ...run(), schema_version: 3 }), /schema_version 4/)
   assert.throws(() => normalizeRun({ ...run(), prompt: "raw task text" }), /prompt must be an object/)

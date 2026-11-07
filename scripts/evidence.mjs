@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import { detectWaste, redactExcerpt, wasteKinds } from "./diagnostics.mjs"
 import { hostCell, resolveHostIdentity, taskComparisonKey } from "./run-identity.mjs"
 
@@ -371,10 +371,20 @@ export const normalizeRun = (input, attestation = null) => {
   }
 }
 
-const readJsonLines = (path) => {
+const invalidRecord = (path, line, reason, onInvalid) => {
+  const issue = { file: basename(path), line, reason }
+  if (!onInvalid) throw new Error(`${issue.file}:${line}: ${reason}`)
+  onInvalid(issue)
+}
+
+const readJsonLines = (path, onInvalid) => {
   if (!existsSync(path)) return []
-  return readFileSync(path, "utf8").split(/\r?\n/).filter(Boolean).flatMap((line) => {
-    try { return [JSON.parse(line)] } catch { return [] }
+  return readFileSync(path, "utf8").split(/\r?\n/).flatMap((text, index) => {
+    if (!text.trim()) return []
+    try { return [{ value: JSON.parse(text), line: index + 1 }] } catch {
+      invalidRecord(path, index + 1, "invalid-json", onInvalid)
+      return []
+    }
   })
 }
 
@@ -407,13 +417,18 @@ export const appendAttestation = (input, stateDir) => {
   return attestation
 }
 
-export const readRuns = (stateDir) => {
-  const attestations = new Map(readJsonLines(join(stateDir, "attestations.jsonl"))
-    .filter((item) => item.schema_version === 4)
-    .map((item) => [item.run_id, item]))
-  return readJsonLines(join(stateDir, "runs.jsonl"))
-    .filter((item) => item.schema_version === 4 && item.kind === "run")
-    .map((item) => normalizeRun(item, attestations.get(item.run_id)))
+export const readRuns = (stateDir, { onInvalid } = {}) => {
+  const attestations = new Map(readJsonLines(join(stateDir, "attestations.jsonl"), onInvalid)
+    .filter(({ value }) => value?.schema_version === 4)
+    .map(({ value }) => [value.run_id, value]))
+  const path = join(stateDir, "runs.jsonl")
+  return readJsonLines(path, onInvalid).flatMap(({ value, line }) => {
+    if (value?.schema_version !== 4 || value.kind !== "run") return []
+    try { return [normalizeRun(value, attestations.get(value.run_id))] } catch {
+      invalidRecord(path, line, "invalid-run", onInvalid)
+      return []
+    }
+  })
 }
 
 const median = (values) => {

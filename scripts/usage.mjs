@@ -28,6 +28,8 @@ const filteredRuns = (runs) => runs.filter((run) => (
   (!arg("--route") || run.route === arg("--route"))
   && (!arg("--profile") || run.prompt.profile_id === arg("--profile"))
 ))
+const invalidRecords = []
+const diagnosticRuns = () => readRuns(stateDir, { onInvalid: (issue) => invalidRecords.push(issue) })
 
 try {
   if (command === "record") {
@@ -58,7 +60,7 @@ try {
     if (!run) throw new Error(`no runs found for host: ${host}`)
     process.stdout.write(`${JSON.stringify(run, null, 2)}\n`)
   } else if (command === "waste") {
-    const runs = filteredRuns(readRuns(stateDir))
+    const runs = filteredRuns(diagnosticRuns())
     const groups = new Map()
     for (const run of runs) {
       for (const event of run.waste_events) {
@@ -98,15 +100,16 @@ try {
       estimated_wasted_tokens: group.estimated_token_events ? group.estimated_wasted_tokens : null,
     })).sort((left, right) => `${left.kind}|${left.actor}|${left.phase}|${left.prompt_profile_id}`
       .localeCompare(`${right.kind}|${right.actor}|${right.phase}|${right.prompt_profile_id}`))
-    process.stdout.write(`${JSON.stringify({ schema_version: 4, runs: runs.length, groups: result }, null, 2)}\n`)
+    process.stdout.write(`${JSON.stringify({ schema_version: 4, runs: runs.length, excluded_records: invalidRecords.length, groups: result }, null, 2)}\n`)
   } else if (command === "teacher") {
-    const runs = filteredRuns(readRuns(stateDir)).filter((run) => run.teacher.length || run.actors.teacher.used)
+    const runs = filteredRuns(diagnosticRuns()).filter((run) => run.teacher.length || run.actors.teacher.used)
     const asks = runs.flatMap((run) => run.teacher).filter((turn) => turn.response_type === "ASK")
     const finals = runs.flatMap((run) => run.teacher).filter((turn) => turn.response_type === "FINAL")
     const decisions = runs.flatMap((run) => run.teacher).filter((turn) => turn.decision_changed !== null)
     process.stdout.write(`${JSON.stringify({
       schema_version: 4,
       runs: runs.length,
+      excluded_records: invalidRecords.length,
       ask_count: asks.length,
       answer_rate: asks.length ? asks.filter((turn) => turn.evidence_received === true).length / asks.length : null,
       decision_change_rate: decisions.length ? decisions.filter((turn) => turn.decision_changed === true).length / decisions.length : null,
@@ -127,16 +130,21 @@ try {
     )
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   } else if (command === "summary") {
-    const runs = readRuns(stateDir)
+    const runs = diagnosticRuns()
     process.stdout.write(`${JSON.stringify({
       schema_version: 4,
       runs: runs.length,
+      excluded_records: invalidRecords.length,
       eligible: runs.filter((run) => run.quality.eligible).length,
       waste_events: runs.reduce((sum, run) => sum + run.metrics.waste_event_count, 0),
       teacher_runs: runs.filter((run) => run.actors.teacher.used).length,
     }, null, 2)}\n`)
   } else {
     throw new Error("usage.mjs: use record, attest, show, latest, waste, teacher, analyze, or summary")
+  }
+  if (invalidRecords.length) {
+    const examples = invalidRecords.slice(0, 5).map((issue) => `${issue.file}:${issue.line}: ${issue.reason}`).join("; ")
+    process.stderr.write(`usage.mjs: excluded ${invalidRecords.length} invalid records (${examples})\n`)
   }
 } catch (error) {
   process.stderr.write(`usage.mjs: ${error.message}\n`)

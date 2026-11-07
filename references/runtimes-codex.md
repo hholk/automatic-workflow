@@ -7,7 +7,7 @@ Use explicit native model selection and the resolved prompt profile.
 | GUI/computer-use | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
 | fix, implement | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
 | explore, diagnose, review, compare | `aw-reviewer` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
-| teacher | `aw-teacher` | `venice/claude-opus-5-5` | `codex-router` |
+| teacher | `aw-teacher` | `venice-responses/claude-opus-5-5` | `codex-router` |
 
 The current primary binding targets the direct Responses route confirmed on the
 MacBook Pro. For a confirmed DeepSeek spend-limit/provider-disabled/route-unavailable
@@ -16,7 +16,9 @@ not a Codex Router provider route and carries requested model plus exact reason.
 MacBook Pro. The Mac mini is awaiting the same router setup and native
 acceptance; this registry entry does not establish its availability there.
 Client `wire_api: responses` alone does not prove the provider upstream uses
-Responses. A `venice/` Chat Completions route is not an automatic substitute.
+Responses. A `venice/` Chat Completions route is not an automatic substitute;
+when the local router hides the direct `venice` provider, the teacher must use
+the published `venice-responses/` model slug.
 Stop with `BLOCKED_ENVIRONMENT` until the exact local route is confirmed.
 
 Agent files bind model/provider/high effort, not inherited Ultra, and disable

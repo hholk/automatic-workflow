@@ -4,17 +4,14 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 
 | Route | subagent_type | Model |
 |---|---|---|
-| GUI/computer-use | `aw-worker` | pinned `venice/deepseek-v4-1-flash-1017` |
-| fix, implement | `aw-worker` | `venice/deepseek-v4-1-flash-1017` |
-| explore, diagnose, review, compare | `aw-reviewer` | `venice/deepseek-v4-1-flash-1017` |
+| GUI/computer-use | `aw-deepseek-worker` | pinned `venice/deepseek-v4-1-flash-1017` |
+| fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` |
+| explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` |
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
 Teacher denies all tools and uses `steps: 2`; `steps: 1` makes OpenCode send a
-prefilled assistant turn that the Venice teacher model rejects. Generated workers use the playbook default `steps: 125`, including explicit
-legacy profile names. Their generated model binding is now the same native
-DeepSeek 1017 worker; retained names do not select old models or trigger an
-alternate-model fallback.
+prefilled assistant turn that the Venice teacher model rejects. Generated workers use the playbook default `steps: 125`.
 The selected cell may require an earlier handback; the cap is not completion.
 The `computer-use` route is pinned by `prompts/profiles.json`; an explicit
 different model is rejected by the resolver.
@@ -37,10 +34,18 @@ GUI/computer-use: `node scripts/resolve-profile.mjs --host opencode --role worke
 Teacher: `--role teacher --route teacher`. Load returned components once.
 
 Preflight once per unchanged session/profile: a cheap native child must prove
-`providerID`/`modelID` = `venice`/`deepseek-v4-1-flash-1017` or
+`providerID`/`modelID` = `venice`/`openai-gpt-6-luna`,
+`venice`/`deepseek-v4-1-flash-1017` for a pinned or fallback worker, or
 `venice`/`claude-opus-5-5`. Config and self-identification are not proof.
 On mismatch, missing metadata or missing agent, stop. Never use stale cached
 profiles or substitute general/explore. For installation/reload failures only,
 read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.
 
 Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).
+
+Native OpenCode fallback requires `LUNA_SPEND_LIMIT`, `LUNA_PROVIDER_DISABLED`,
+or `LUNA_ROUTE_UNAVAILABLE` observed on the primary call. The resolver selects
+`aw-deepseek-worker` for writes and `aw-deepseek-reviewer` for read-only routes.
+These generated profiles bind the resolved model without changing the Luna default.
+Unknown failures, denials, explicit model requests, delegates, and computer-use
+never trigger fallback. Record requested model, resolved model, and exact reason.

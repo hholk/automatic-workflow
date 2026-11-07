@@ -10,6 +10,43 @@ See `references/lessons.md` for measurement and retention rules.
 
  <!-- lessons -->
 
+## 2026-11-07 — Diagnostic inspection survives invalid stored records
+
+- Failure: `node scripts/usage.mjs summary` and `waste` aborted with `prompt.profile_id is required`.
+- Cause: current-schema records were parsed but not validated individually on read; one incomplete record blocked every diagnostic command. Invalid JSON was silently discarded.
+- Change / Prevention: inspection explicitly counts invalid records and reports bounded file/line diagnostics; strict comparison readers reject invalid records. Preserve the event store and require current-schema validation rather than inventing missing metadata.
+- Verify: `node --test scripts/usage.test.mjs scripts/diagnostics.test.mjs integrations/opencode/aw-usage.test.mjs`; run `summary`, `waste` and `teacher` against the real local store.
+- Before / After / Delta: summary exit 1 → 0; valid-run count unavailable → 281; excluded records unreported → 164. At inspection, 0 runs were eligible for learning comparisons. These are correctness and data-quality observations, not efficiency measurements.
+- Evidence: the CLI regression failed before the fix and passed after it; mixed invalid JSON, missing profile identity and invalid outcome fixtures expose no record content. Comparative analysis still exits 1 on invalid data.
+- Result: keep the repair; efficiency unmeasured.
+- Lesson: diagnostic availability and trustworthy comparison are separate requirements; report exclusions while keeping comparison strict.
+- Status: validated (correctness only)
+- Applicability: AW current-schema event readers; no automatic structured lesson selection.
+- Review: independent lesson review pending.
+
+## 2026-11-07 — Bounded repeat detection requires evidence of unchanged work
+
+- Failure: an A → B → A read sequence was missed; two reads with unknown revisions could be labelled redundant.
+- Cause: detection considered only adjacent events and treated two absent revisions as equal evidence.
+- Change / Prevention: compare the nearest matching event within 32 preceding events and the same actor/phase/type/signature; reads require a known unchanged revision. State changes and new or unknown teacher evidence bound reuse.
+- Verify: `node --test scripts/diagnostics.test.mjs integrations/opencode/aw-usage.test.mjs`.
+- Before / After / Delta: unchanged A → B → A fixture, 0 → 1 repeat signal; unknown-revision duplicate fixture, 1 → 0 unsupported signals. No token or monetary saving was measured.
+- Evidence: both regressions failed before their fixes and passed afterwards; revision, actor, phase, state-change and lookback boundaries are covered. The OpenCode fixture now supplies an explicit revision for its repeat claim.
+- Result: keep the diagnostic repair; productive efficiency unmeasured.
+- Lesson: a repeated signature is a candidate for reuse; unchanged state must be evidenced before calling it waste.
+- Status: validated (correctness only)
+- Applicability: bounded timeline diagnostics with explicit identity and state evidence.
+- Review: independent lesson review pending.
+
+## 2026-11-07 — Reconcile historical experiments before starting new ones
+
+- Change: distinguish reproducible repairs from efficiency claims in `references/lessons.md`; reconcile all eight previously pending entries below without discarding their historical evidence.
+- Evidence: current policy uses `bounded-v3`, a two-failure teacher threshold, prompt-free v4 telemetry and an Opus teacher. The local summary has no comparison-eligible runs; old model bindings, v3 cohorts and retired default roles cannot establish current efficiency.
+- Result: retain the acceptance-first main-only comparison as pending; archive seven superseded experiments with their specific resolution. Historical validated results retain their original scope.
+- Lesson: close obsolete experiments explicitly; carry forward supported principles and state the exact missing evidence for relevant experiments.
+- Status: validated (documentation reconciliation only)
+- Review: independent lesson review pending; no policy, recipe or model change.
+
 ## 2026-10-08 — Looser teacher and worker budgets, explicit human escalation
 
 - Change: teacher allows up to 5 ASK, each ASK up to 7 turns (total cap 35 turns, no unbounded loop); worker slice budget 8 → 125 tool steps; failed-hypothesis threshold 2 → 3; teacher word limit removed (teacher answers concise and precise); new `HUMAN_QUESTION` contract for open questions that need user authority or knowledge.
@@ -19,7 +56,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Evidence: local telemetry has 58 runs, most `PARTIAL_WITH_UNKNOWN` or `BLOCKED_ENVIRONMENT`; none is attributed to a step or teacher cap.
 - Result: keep as a hypothesis; track `TEACHER_EXHAUSTED` and worker step exhaustion per cell and revise if the cost rises without quality gain.
 - Lesson: a budget cap is a guard against runaway cost, not a quality mechanism. Raise it only with an observed exhaustion case.
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): current policy retains 125 worker steps and 5 × 7 teacher turns, but fixes the failed-hypothesis threshold at two. The proposed threshold of three is superseded and cannot be a learning variable. Retain the lesson to require observed exhaustion before budget tuning; no matched cost/quality evidence validates the historical budget increase.
 
 ## 2026-09-21 — Acceptance-first routing and consistent handbacks
 
@@ -31,6 +69,7 @@ See `references/lessons.md` for measurement and retention rules.
 - Result: keep corrected instructions and evaluator; measured efficiency remains insufficient-data. Next evidence is five matched main-only/AW task pairs with identical acceptance criteria and all actor costs included, following references/lessons.md.
 - Lesson: handoff cost includes context, verification and repair. Higher worker share is not a useful optimization target; DONE ends a worker turn and cannot substitute for accepted task completion.
 - Status: pending
+- Resolution (2026-11-07): acceptance-first routing remains relevant under `acceptance-routing-v5` and `bounded-v3`. Missing evidence: five matched main-only/AW snapshots with identical acceptance criteria, complete actor costs and verified integrated outputs, plus disjoint holdout and independent review for promotion. The repaired local summary has zero eligible runs; static checks cannot close this experiment.
 
 
 ## 2026-09-13 — Host-bound Astra teacher, DeepSeek-only workers, bounded context
@@ -42,7 +81,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Delta: tests +7; entrypoint −9 words and −4 est. tokens; average route −128 est. tokens (−8.3%); Codex root input 101,798→72,520 (−28.8%) after disabling child skill instructions/plugins; OpenCode Astra teacher 1,874 tokens with zero tools; DeepSeek child still 137,249 input tokens
 - Result: keep; productive efficiency remains `insufficient-data` until five matched, token-bearing pairs per cell
 - Lesson: bind provider and agent with the model, install Codex roles as regular files (symlinks are discovered but rejected at spawn), and disable child skill/plugin context — but Codex child fork/context overhead can still dominate and must be measured per run
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): the Astra binding, DeepSeek-only restriction and bounded-v2 budget are superseded by the current profile registry and bounded-v3. Preserve the native-binding and context-overhead lessons; old model/context numbers do not establish current efficiency.
 
 ## 2026-09-07 — Native standard-MCP permissions for worker profiles
 
@@ -52,7 +92,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Before: 45/45 tests, 322 entrypoint words (~605 estimated tokens), 1,431 average route estimated tokens
 - After: 46/46 tests, 357 entrypoint words (~668 estimated tokens), 1,532 average route estimated tokens
 - Delta: tests +1; entrypoint +35 words and +63 estimated tokens; average route +101 estimated tokens; efficiency verdict not asserted (no five matched comparison pairs)
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): the probed `aw-glm-worker` profile is retired. Its two successful MCP probes remain historical evidence for that profile only. Current permissions follow generated profiles and their checks; the old cohort needs no further optimization experiment.
 
 ## 2026-09-07 — Evidence-seeking teacher gauntlet and resolved prompt profiles
 
@@ -63,7 +104,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Delta: tests +9; routes +1; entrypoint −27 words and −97 estimated tokens (−13.8%); average resolved route −4 estimated tokens (−0.3%); OpenCode direct preflight consumed 37,865 tokens; the two Sol turns consumed 50,001 native tokens and produced one `duplicate_context` event with 48,000 estimated wasted tokens
 - Result: keep v4 infrastructure; productive efficiency remains `insufficient-data` until five matched, fully attested pairs exist per comparable cell; revise direct CLI context loading before treating live canaries as representative
 - Lesson: resolve and prove the native model, keep prompt genes immutable and selectively loaded, let low-evidence workers request a bounded teacher, and measure every actor separately—contract correctness can coexist with severe harness-context overhead
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): v5 retains composable prompts, evidence contracts and bounded teacher interaction; the historical Sol/GLM bindings are superseded. Preserve the harness-overhead warning and native-model proof requirement without treating old canaries as current cost evidence.
 
 ## 2026-09-06 — Staged evidence flywheel with actor-level v3 telemetry
 
@@ -74,7 +116,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Delta: harness coverage +1; tests +20; entrypoint −110 words (−24.0%) and −137 estimated tokens (−16.3%); average route context −26 estimated tokens (−1.8%); verified operational before/after pairs 0
 - Result: keep infrastructure; efficiency verdict remains `insufficient-data` until at least 5 matched v3 pairs exist in a comparable cell
 - Lesson: total tokens require every used actor; quality and accepted work require separate host attestation; generic fallback, unproved models, heterogeneous cells, or equal-without-gain candidates cannot promote
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): current readers and integrations use v4 telemetry; the v3 paired experiment is obsolete. Preserve the total-actor-cost and independent-attestation lessons. Missing v3 pairs must not be fabricated, migrated or pooled with current cells.
 
 ## 2026-09-06 — Native default agents with runtime-model preflight
 
@@ -85,7 +128,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Delta: entrypoint +54 words (+104 est. tokens); Ø route context +392 est. tokens (preflight and evidence-detail cost); tests +4; live routing comparison pending
 - Result: pending — verdict after five matched runs per route under cohorts pre-default-roles vs default-roles-v1
 - Lesson: resolved config proves intent, not runtime; only native child message providerID/modelID proves the executed model, and a cached session keeps old routing until a real reload
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): native `general`/`explore` defaults and optional custom fallbacks were superseded by dedicated profiles. Preserve execution-host model proof and UNKNOWN-not-PASS; the retired-role comparison is closed without an efficiency verdict.
 
 ## 2026-08-31 — Native usage cohorts replace repeated synthetic benchmarking
 
@@ -96,7 +140,8 @@ See `references/lessons.md` for measurement and retention rules.
 - Delta: automatic records 0→1; tests +3; entrypoint +19 est. tokens; Ø route context +19 est. tokens; live quality comparison pending five matched runs per route and unavailable now because the Venice key spend limit was reached
 - Result: keep infrastructure; optimization verdict remains pending
 - Lesson: native completed-message events provide exact, deduplicated OpenCode token totals at near-zero prompt cost; compare only matched routes with at least five runs and treat missing cohorts as insufficient data
-- Status: pending
+- Status: archived
+- Resolution (2026-11-07): native telemetry is implemented in current integrations; legacy cohort marking and median-only comparisons are superseded by paired v4 evaluation. Preserve the native-token and matched-cell lessons. Historical smoke runs establish no current routing savings.
 
 ## 2026-08-31 — Host-split runtimes, domain-neutral routing, and user-gated learning
 

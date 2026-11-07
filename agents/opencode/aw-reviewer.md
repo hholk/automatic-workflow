@@ -1,5 +1,5 @@
 ---
-description: AW independent DeepSeek 1017 read-only reviewer
+description: AW independent read-only reviewer ({{model}})
 model: {{model}}
 mode: all
 steps: {{worker_steps}}

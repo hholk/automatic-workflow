@@ -1,6 +1,6 @@
 ---
-description: AW bounded DeepSeek 1017 implementation worker
-model: venice/deepseek-v4-1-flash-1017
+description: AW bounded implementation worker (venice/openai-gpt-6-luna)
+model: venice/openai-gpt-6-luna
 mode: all
 steps: 125
 permission:

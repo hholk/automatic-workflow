@@ -1,10 +1,10 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, writeFileSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
-import { compareRecipes, normalizeRun } from "./evidence.mjs"
+import { compareRecipes, normalizeRun, readRuns } from "./evidence.mjs"
 
 const usageScript = new URL("./usage.mjs", import.meta.url).pathname
 
@@ -56,6 +56,48 @@ const run = ({ runID, recipe, taskID, host = "codex", taskClass = "known-change"
   duration_ms: 100,
   }, quality)
 }
+
+test("diagnostic commands report invalid records without losing valid runs or exposing content", (t) => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-invalid-records-"))
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  const valid = run({ runID: "valid", recipe: "base", taskID: "fixture" })
+  writeFileSync(join(stateDir, "runs.jsonl"), [
+    JSON.stringify({ ...valid, prompt: { ...valid.prompt, profile_id: null } }),
+    "{sensitive-fixture-content",
+    JSON.stringify({ ...valid, outcome: "sensitive-fixture-content" }),
+    JSON.stringify(valid),
+  ].join("\n") + "\n")
+  const invoke = (...args) => spawnSync(process.execPath, [usageScript, ...args], {
+    encoding: "utf8", env: { ...process.env, AW_STATE_DIR: stateDir },
+  })
+  for (const command of ["summary", "waste", "teacher"]) {
+    const result = invoke(command)
+    assert.equal(result.status, 0, result.stderr)
+    const output = JSON.parse(result.stdout)
+    assert.equal(output.excluded_records, 3)
+    assert.equal(output.runs, command === "teacher" ? 0 : 1)
+    assert.match(result.stderr, /excluded 3 invalid records/)
+    assert.match(result.stderr, /runs\.jsonl:1: invalid-run/)
+    assert.match(result.stderr, /runs\.jsonl:2: invalid-json/)
+    assert.doesNotMatch(result.stdout + result.stderr, /sensitive-fixture-content/)
+  }
+  assert.throws(() => readRuns(stateDir), /runs\.jsonl:2: invalid-json/)
+  const analysis = invoke("analyze", "--baseline", "base", "--candidate", "next")
+  assert.equal(analysis.status, 1)
+  assert.equal(analysis.stdout, "")
+  assert.doesNotMatch(analysis.stderr, /sensitive-fixture-content/)
+  writeFileSync(join(stateDir, "runs.jsonl"), JSON.stringify({ ...valid, prompt: null }) + "\n")
+  assert.throws(() => readRuns(stateDir), /runs\.jsonl:1: invalid-run/)
+  writeFileSync(join(stateDir, "runs.jsonl"), JSON.stringify(valid) + "\n")
+  writeFileSync(join(stateDir, "attestations.jsonl"), "{sensitive-fixture-content\n")
+  const inspection = invoke("summary")
+  assert.equal(inspection.status, 0, inspection.stderr)
+  assert.equal(JSON.parse(inspection.stdout).excluded_records, 1)
+  assert.equal(JSON.parse(inspection.stdout).eligible, 0)
+  assert.match(inspection.stderr, /attestations\.jsonl:1: invalid-json/)
+  assert.doesNotMatch(inspection.stderr, /sensitive-fixture-content/)
+  assert.throws(() => readRuns(stateDir), /attestations\.jsonl:1: invalid-json/)
+})
 
 test("does not pair different tasks or harness cells", () => {
   const runs = [

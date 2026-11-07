@@ -92,7 +92,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   for (const name of ["aw-worker", "aw-reviewer"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
-    assert.match(read(`agents/generated/opencode/${name}.md`), /model: venice\/deepseek-v4-1-flash-1017/)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: venice\/openai-gpt-6-luna$/m)
     assert.match(profile, /mode: all/)
     assert.match(config, /task: deny/)
     assert.match(config, /"codebase-memory-mcp_\*": allow/)
@@ -104,16 +104,6 @@ test("binds dedicated native harness profiles without recursive agents", () => {
       assert.match(config, /write: allow/)
     }
   }
-  const luna = read("agents/opencode/aw-luna-worker.md")
-  const lunaConfig = frontmatter("agents/opencode/aw-luna-worker.md")
-  assert.match(luna, /model: \{\{model\}\}/)
-  assert.match(luna, /mode: all/)
-  assert.match(read("agents/generated/opencode/aw-luna-worker.md"), /model: venice\/deepseek-v4-1-flash-1017/)
-  assert.match(lunaConfig, /task: deny/)
-  assert.match(lunaConfig, /"codebase-memory-mcp_\*": allow/)
-  assert.match(lunaConfig, /"context7_\*": allow/)
-  assert.match(lunaConfig, /edit: allow/)
-  assert.match(lunaConfig, /write: allow/)
   assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /edit: deny/)
   assert.match(frontmatter("agents/opencode/aw-reviewer.md"), /write: deny/)
 
@@ -130,7 +120,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   assert.match(codex, /explicit native model selection/i)
   assert.match(codex, /prompt profile/i)
   assert.match(codex, /venice-responses\/deepseek-v4-1-flash-1017/)
-  assert.match(codex, /venice\/claude-opus-5-5/)
+  assert.match(codex, /venice-responses\/claude-opus-5-5/)
   const copilot = read("references/runtimes-copilot.md")
   assert.match(copilot, /unresolved.*unknown/is)
   assert.match(copilot, /exclude.*model-specific/is)
@@ -148,7 +138,7 @@ test("benchmarks resolved v4 component sets including explicit Opus", () => {
     assert.ok("expected_profile_id" in item, item.id)
   }
   const opus = cases.find((item) => item.id === "architecture_opus")
-  assert.equal(opus.teacher_model, "venice/claude-opus-5-5")
+  assert.equal(opus.teacher_model, "venice-responses/claude-opus-5-5")
   assert.equal(opus.explicit_model_request, true)
   assert.equal(opus.expected_profile_id, "opus-teacher-v1")
 

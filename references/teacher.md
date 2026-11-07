@@ -1,8 +1,8 @@
 # Teacher gauntlet
 
 Use for a material technical decision after the worker returns a valid
-`TEACHER_REQUEST`. Claude Opus 5.5 is the default: `venice/claude-opus-5-5` through
-Codex Router on Codex; `venice/claude-opus-5-5` on OpenCode. The teacher
+`TEACHER_REQUEST`. Claude Opus 5.5 is the default: `venice-responses/claude-opus-5-5`
+through Codex Router on Codex; `venice/claude-opus-5-5` on OpenCode. The teacher
 is a no-tools adviser by default. It may be consulted preventively before worker
 failures when main identifies a material technical decision. Direct diagnosis
 has a separate two-attempt and host-approval gate in

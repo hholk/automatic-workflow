@@ -95,17 +95,21 @@ export const resolveSelection = (input, overrides = {}) => {
   const fallbackPolicy = registry.worker_fallbacks?.[profileHost]
   let fallback = null
   if (input.primaryFailure !== undefined) {
-    const reason = fallbackPolicy?.confirmed_primary_failures?.[input.primaryFailure]
+    if (!fallbackPolicy) throw new Error("fallback blocked: no fallback policy for host")
+    const reason = fallbackPolicy.confirmed_primary_failures?.[input.primaryFailure]
     if (!reason) throw new Error(`fallback blocked: unconfirmed primary failure: ${input.primaryFailure}`)
-    if (input.host !== "codex" || profileHost !== "codex") throw new Error("fallback blocked: native Codex host required")
-    if (input.route === "computer-use") throw new Error("fallback blocked: computer-use capability is unverified")
+    if (input.host !== profileHost) throw new Error("fallback blocked: native host required")
+    if (input.route === "computer-use" && !fallbackPolicy.computer_use_allowed) throw new Error("fallback blocked: computer-use capability is unverified")
     if (input.explicitModelRequest) throw new Error("fallback blocked: explicit model request")
     if (primaryModel !== fallbackPolicy.primary_model) throw new Error("fallback blocked: configured primary mismatch")
     fallback = { requested_model: primaryModel, resolved_model: fallbackPolicy.fallback_model, reason }
   }
   const model = fallback?.resolved_model || primaryModel
-  if (!fallback && model === fallbackPolicy?.fallback_model) {
-    throw new Error("fallback blocked: Luna requires a confirmed primary failure")
+  const explicitNativeLunaReview = input.host === "codex" && profileHost === "codex" &&
+    input.route === "review" && input.explicitModelRequest === true &&
+    !input.primaryFailure && model === fallbackPolicy?.fallback_model
+  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !explicitNativeLunaReview) {
+    throw new Error(`fallback blocked: ${profileHost === "codex" ? "Luna" : fallbackPolicy.fallback_model} requires a confirmed primary failure`)
   }
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
@@ -152,9 +156,11 @@ export const resolveSelection = (input, overrides = {}) => {
     task_identity: taskIdentity,
     model,
     model_capability: modelCapability(model),
-    ...(fallback ? {} : { model_provider: profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice") }),
+    ...(fallback && profileHost === "codex" ? {} : { model_provider: explicitNativeLunaReview ? "codex" : (profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice")) }),
     ...(fallback ? { requested_model: fallback.requested_model, fallback_reason: fallback.reason } : {}),
-    native_agent: profileHost === "github-copilot"
+    native_agent: profileHost === "opencode" && model === registry.worker_route_models?.["computer-use"]?.opencode
+        ? (["fix", "implement", "computer-use"].includes(input.route) ? "aw-deepseek-worker" : "aw-deepseek-reviewer")
+        : profileHost === "github-copilot"
         ? "aw-worker"
         : (["fix", "implement", "computer-use"].includes(input.route) ? "aw-worker" : "aw-reviewer"),
     effective_policy: policy,
