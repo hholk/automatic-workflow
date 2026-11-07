@@ -18,8 +18,10 @@ DeepSeek 1017 binding is currently UNSUPPORTED and the generated profile is
 disabled. Do not install or execute it until an exact native Copilot binding
 is confirmed. A Venice model slug alone does not configure a Copilot provider.
 
-For Codex Router, use the exact host-specific non-teacher model declared in
-`prompts/profiles.json`. Keep `venice/claude-opus-5-5` for the teacher. Model
+For Codex Router, use the exact host-specific model declared in
+`prompts/profiles.json`: the Codex teacher uses
+`venice-responses/claude-opus-5-5`, while OpenCode uses the native
+`venice/claude-opus-5-5` binding. Model
 curation and publication use the installed router's native catalog mechanism;
 never edit generated `router-model-*.toml` files. This skill update does not
 change the router catalog or restart its service.

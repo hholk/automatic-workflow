@@ -34,6 +34,14 @@ signature, measured/estimated waste, and bounded excerpts. Supported kinds are
 `zero_information_gain`, `unusable_evidence`, `main_repair`, `scope_rework`,
 `model_mismatch`, and `fallback`.
 
+Automatic repeat detection compares at most 32 preceding timeline events within
+the same actor, phase, event type and signature. Reads require the same known
+revision; absent revisions establish no repeat. The nearest matching event wins.
+Intervening changes, writes, edits, patches, tools without an explicit unchanged
+state, and teacher evidence with new or unknown information gain stop the search.
+These are diagnostic signals; repeat detection does not establish wasted tokens
+or lower accepted-task cost.
+
 ## Quality gate (comparison eligibility)
 
 A run claim is diagnostic only. Verified success requires a separate main-host
@@ -52,6 +60,14 @@ node scripts/usage.mjs attest --run-id "$AW_RUN_ID" \
 ```
 
 ## Diagnosis and comparison
+
+`summary`, `waste` and `teacher` report valid current-schema runs and an
+`excluded_records` count. Invalid JSON or invalid current-schema runs are excluded
+with a bounded warning naming file, line and reason; record contents are omitted.
+Other schema versions remain outside the current dataset. Inspection leaves the
+event store unchanged and supplies no replacements for missing fields.
+`analyze`, research evaluation and other strict readers stop on invalid JSON or
+invalid current-schema runs. Diagnostic subsets cannot authorize learning.
 
 ```sh
 node scripts/usage.mjs waste [--kind <kind>] [--actor <actor>] \

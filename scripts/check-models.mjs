@@ -21,8 +21,8 @@ const expected = [
   ["agents/generated/copilot/aw-worker.agent.md", new RegExp(`model: ${worker["github-copilot"]}`)],
 ]
 
-for (const name of ["aw-glm53-worker", "aw-glm53-review", "aw-luna-worker"]) {
-  expected.push([`agents/generated/opencode/${name}.md`, new RegExp(`model: ${worker.opencode}`)])
+for (const role of ["worker", "reviewer"]) {
+  expected.push([`agents/generated/opencode/aw-deepseek-${role}.md`, new RegExp(`^model: ${profiles.worker_route_models["computer-use"].opencode}$`, "m")])
 }
 
 const failures = expected.filter(([path, pattern]) => !pattern.test(read(path))).map(([path]) => path)

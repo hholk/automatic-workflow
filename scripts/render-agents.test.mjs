@@ -9,7 +9,7 @@ test("committed profiles match registry models and effective policy generation",
   for (const directory of ["codex", "opencode", "copilot"]) {
     const host = directory === "copilot" ? "github-copilot" : directory
     for (const file of readdirSync(new URL(`../agents/${directory}/`, import.meta.url))) {
-      const role = file.includes("teacher") ? "teacher" : "worker"
+      const role = file.includes("teacher") ? "teacher" : file.includes("deepseek") ? "deepseek" : "worker"
       const rendered = renderTemplate(read(`${directory}/${file}`), { host, role })
       assert.equal(read(`generated/${directory}/${file}`), rendered, `regenerate ${directory}/${file}`)
       assert.doesNotMatch(rendered, /\{\{[a-z_]+\}\}/)

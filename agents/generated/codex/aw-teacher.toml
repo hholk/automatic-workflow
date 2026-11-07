@@ -2,7 +2,7 @@
 name = "aw-teacher"
 description = "AW Opus 5.5 advisory teacher through Codex Router and Venice."
 model_provider = "codex-router"
-model = "venice/claude-opus-5-5"
+model = "venice-responses/claude-opus-5-5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 web_search = "disabled"

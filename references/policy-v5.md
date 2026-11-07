@@ -18,7 +18,7 @@ cell or defaults. Configured model intent never activates a provenance cell.
 No runtime model discovery occurs here.
 
 `render-agents.mjs` renders native worker limits from the same playbook defaults.
-All default and legacy-named worker profiles use 125 steps. A task cell can require
+All generated worker profiles use 125 steps. A task cell can require
 an earlier handback. OpenCode enforces its generated native cap, so a higher
 cell budget needs a reviewed regeneration before use. Codex and Copilot worker
 instructions carry the generated default cap. These limits never prove task

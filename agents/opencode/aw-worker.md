@@ -1,5 +1,5 @@
 ---
-description: AW bounded DeepSeek 1017 implementation worker
+description: AW bounded implementation worker ({{model}})
 model: {{model}}
 mode: all
 steps: {{worker_steps}}

@@ -28,7 +28,8 @@ running tasks or installed defaults. The existing one-authorized-continuation
 limit in `bounded-v3` remains eight steps. It is a recovery slice, not a native
 default worker cap. Frozen teacher limits remain five ASKs and seven turns per
 ASK. Model aliases in runtime/setup documentation now match the registry's
-native `venice/claude-opus-5-5` binding; this does not change the model selection.
+host-specific bindings: `venice-responses/claude-opus-5-5` on Codex and
+`venice/claude-opus-5-5` on OpenCode.
 
 ## Adopt per host
 

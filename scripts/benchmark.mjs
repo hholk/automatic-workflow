@@ -90,7 +90,8 @@ const workerProfileMatches = (selection) => {
   const generated = read(selection.host === "github-copilot" ? "agents/generated/copilot/aw-worker.agent.md"
     : `agents/generated/${selection.host}/aw-worker.${selection.host === "codex" ? "toml" : "md"}`)
   return !profile?.retired && selection.model === registry.worker_defaults[selection.host]
-    && selection.profile_id === profile?.id && generated.includes(selection.model)
+    && selection.profile_id === profile?.id && generated.split("\n").includes(
+      selection.host === "codex" ? `model = "${selection.model}"` : `model: ${selection.model}`)
 }
 const copilotUnsupported = () => {
   const model = registry.worker_defaults["github-copilot"]

@@ -48,7 +48,7 @@ export function installAgents({ home = homedir(), apply = false, host, hosts } =
   assertDirectories(manifestPath, home)
   const manifest = readManifest(manifestPath)
   const entries = [
-    ["opencode", "opencode", join(home, ".config/opencode/agents"), ".md", [...names, "aw-glm53-worker", "aw-glm53-review"]],
+    ["opencode", "opencode", join(home, ".config/opencode/agents"), ".md", [...names, "aw-deepseek-worker", "aw-deepseek-reviewer"]],
     ["codex", "codex", join(home, ".codex/agents"), ".toml", names],
     ["copilot", "copilot", join(home, ".copilot/agents"), ".agent.md", ["aw-worker"]],
   ].filter(([host]) => selected.has(host)).flatMap(([host, sourceHost, directory, suffix, hostNames]) => {

@@ -96,12 +96,16 @@ The authoritative table and load paths are in
 
 ## Roles
 
-| Role | Purpose | Venice model |
+| Role | Purpose | Model |
 | --- | --- | --- |
 | Main agent | Owns the objective, integration, and acceptance | Host default |
-| Worker | Implements or fixes one bounded scope | `deepseek-v4-1-flash-1017` |
-| Reviewer | Read-only exploration, diagnosis, and review | `deepseek-v4-1-flash-1017` |
-| Teacher | Advisory decision support, no tools | `claude-opus-5-5` |
+| Worker / Reviewer on Codex | Bounded implementation or read-only investigation | DeepSeek 1017 |
+| Worker / Reviewer on OpenCode | Bounded implementation or read-only investigation | Luna |
+| OpenCode computer-use | Bounded GUI operation | DeepSeek 1017 |
+| Teacher | Advisory decision support, no tools | Opus 5.5 |
+
+Exact host bindings and confirmed-failure fallback rules are defined in
+`prompts/profiles.json` and the corresponding runtime reference.
 
 Workers have unique write ownership. Parallel writers need isolated worktrees
 and a separate integration check. Only the main agent may dispatch or resume

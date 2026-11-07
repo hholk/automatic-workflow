@@ -32,7 +32,8 @@ export const redactExcerpt = (value) => `${value || ""}`
 const sameSignature = (left, right) => Boolean(
   left?.signature
   && left.signature === right?.signature
-  && left.actor === right.actor,
+  && left.actor === right.actor
+  && left.phase === right.phase,
 )
 
 const wasteEvent = (kind, event) => ({
@@ -49,13 +50,23 @@ export const detectWaste = (events = []) => {
   const waste = []
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index]
-    const prior = events[index - 1]
     if (wasteKinds.has(event.kind) && event.attested === true) {
       waste.push(wasteEvent(event.kind, event))
       continue
     }
-    if (!sameSignature(prior, event)) continue
-    if (event.event === "read" && prior.event === "read" && event.revision === prior.revision) {
+    let prior
+    for (let previous = index - 1; previous >= Math.max(0, index - 32); previous -= 1) {
+      const candidate = events[previous]
+      if (sameSignature(candidate, event) && candidate.event === event.event) {
+        prior = candidate
+        break
+      }
+      if (candidate.changed === true || ["write", "edit", "patch"].includes(candidate.event)
+        || (candidate.event === "tool" && candidate.changed !== false)
+        || (candidate.event === "teacher_evidence" && candidate.information_gain !== "none")) break
+    }
+    if (!prior) continue
+    if (event.event === "read" && event.revision && event.revision === prior.revision) {
       waste.push(wasteEvent("repeated_read", event))
     } else if (event.event === "verify" && prior.event === "verify" && event.changed === false) {
       waste.push(wasteEvent("duplicate_verification", event))
