@@ -2,6 +2,11 @@
 
 Use explicit native model selection and the resolved prompt profile.
 
+For user-requested Luna on code routes, pass `--model gpt-6-luna
+--explicit-model-request`. No DeepSeek failure is required. The resolver returns
+`native_agent: default`, `model: gpt-6-luna`, `model_provider: codex`; dispatch
+that binding with the returned prompt components, not the fixed DeepSeek roles.
+
 | Route | agent_type | model | model_provider |
 |---|---|---|---|
 | GUI/computer-use | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |

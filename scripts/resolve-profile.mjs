@@ -105,10 +105,10 @@ export const resolveSelection = (input, overrides = {}) => {
     fallback = { requested_model: primaryModel, resolved_model: fallbackPolicy.fallback_model, reason }
   }
   const model = fallback?.resolved_model || primaryModel
-  const explicitNativeLunaReview = input.host === "codex" && profileHost === "codex" &&
-    input.route === "review" && input.explicitModelRequest === true &&
+  const explicitNativeLuna = input.host === "codex" && profileHost === "codex" &&
+    input.explicitModelRequest === true &&
     !input.primaryFailure && model === fallbackPolicy?.fallback_model
-  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !explicitNativeLunaReview) {
+  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !explicitNativeLuna) {
     throw new Error(`fallback blocked: ${profileHost === "codex" ? "Luna" : fallbackPolicy.fallback_model} requires a confirmed primary failure`)
   }
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
@@ -156,9 +156,9 @@ export const resolveSelection = (input, overrides = {}) => {
     task_identity: taskIdentity,
     model,
     model_capability: modelCapability(model),
-    ...(fallback && profileHost === "codex" ? {} : { model_provider: explicitNativeLunaReview ? "codex" : (profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice")) }),
+    ...(fallback && profileHost === "codex" ? {} : { model_provider: explicitNativeLuna ? "codex" : (profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice")) }),
     ...(fallback ? { requested_model: fallback.requested_model, fallback_reason: fallback.reason } : {}),
-    native_agent: profileHost === "opencode" && model === registry.worker_route_models?.["computer-use"]?.opencode
+    native_agent: explicitNativeLuna ? "default" : profileHost === "opencode" && model === registry.worker_route_models?.["computer-use"]?.opencode
         ? (["fix", "implement", "computer-use"].includes(input.route) ? "aw-deepseek-worker" : "aw-deepseek-reviewer")
         : profileHost === "github-copilot"
         ? "aw-worker"
