@@ -226,32 +226,25 @@ test("falls back to native Codex Luna only for confirmed DeepSeek unavailability
   assert.equal(selected.model_capability.status, "unverified")
 })
 
-test("allows only an explicit native Luna review selection without inventing a primary failure", () => {
-  const selected = resolveSelection({
-    host: "codex", role: "worker", route: "review", model: "gpt-6-luna", explicitModelRequest: true,
-  })
-  assert.equal(selected.model, "gpt-6-luna")
-  assert.equal(selected.model_provider, "codex")
-  assert.equal(selected.native_agent, "aw-reviewer")
-  assert.equal(selected.profile_id, "codex-gpt6-luna-native-worker-v1")
-  assert.equal(Object.hasOwn(selected, "requested_model"), false)
-  assert.equal(Object.hasOwn(selected, "fallback_reason"), false)
-  assert.equal(selected.model_capability.status, "unverified")
-
+test("honors explicit native Luna selection for every code route", () => {
+  for (const route of ["explore", "diagnose", "fix", "implement", "review"]) {
+    const selected = resolveSelection({
+      host: "codex", role: "worker", route, model: "gpt-6-luna", explicitModelRequest: true,
+    })
+    assert.equal(selected.model, "gpt-6-luna")
+    assert.equal(selected.model_provider, "codex")
+    assert.equal(selected.native_agent, "default")
+    assert.equal(selected.profile_id, "codex-gpt6-luna-native-worker-v1")
+    assert.equal(Object.hasOwn(selected, "requested_model"), false)
+    assert.equal(Object.hasOwn(selected, "fallback_reason"), false)
+    assert.equal(selected.model_capability.status, "unverified")
+  }
   assert.throws(() => resolveSelection({
-    host: "codex", role: "worker", route: "review", model: "gpt-6-luna",
-  }), /Luna requires a confirmed primary failure/)
-  assert.throws(() => resolveSelection({
-    host: "codex", role: "worker", route: "fix", model: "gpt-6-luna", explicitModelRequest: true,
-  }), /Luna requires a confirmed primary failure/)
+    host: "codex", role: "worker", route: "computer-use", model: "gpt-6-luna", explicitModelRequest: true,
+  }), /requires worker model/)
   assert.throws(() => resolveSelection({
     host: "opencode", role: "worker", route: "review", model: "gpt-6-luna", explicitModelRequest: true,
-  }), /unknown worker profile: opencode\|gpt-6-luna/)
-  const otherExplicitCodexModel = resolveSelection({
-    host: "codex", role: "worker", route: "review", model: "venice-responses/deepseek-v4-1-flash-1017", explicitModelRequest: true,
-  })
-  assert.equal(otherExplicitCodexModel.model, "venice-responses/deepseek-v4-1-flash-1017")
-  assert.equal(otherExplicitCodexModel.model_provider, "codex-router")
+  }), /unknown worker profile/)
 })
 
 test("does not fallback for denials, unknown errors, explicit requests, delegates, or computer-use", () => {
