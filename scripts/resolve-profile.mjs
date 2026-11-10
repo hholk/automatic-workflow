@@ -105,15 +105,13 @@ export const resolveSelection = (input, overrides = {}) => {
     fallback = { requested_model: primaryModel, resolved_model: fallbackPolicy.fallback_model, reason }
   }
   const model = fallback?.resolved_model || primaryModel
-  const explicitNativeLuna = input.host === "codex" && profileHost === "codex" &&
-    input.explicitModelRequest === true &&
-    !input.primaryFailure && model === fallbackPolicy?.fallback_model
-  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !explicitNativeLuna) {
-    throw new Error(`fallback blocked: ${profileHost === "codex" ? "Luna" : fallbackPolicy.fallback_model} requires a confirmed primary failure`)
+  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !input.explicitModelRequest) {
+    throw new Error("fallback blocked: alternate model requires an explicit request or confirmed primary failure")
   }
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
+  if (!profile.binding?.model_provider || !profile.binding.write_agent || !profile.binding.read_agent) throw new Error("incomplete worker binding")
   if (profile.retired) throw new Error(`retired worker profile: ${input.host}|${model}`)
   if (profile.unsupported_reason) throw new Error(`BLOCKED_ENVIRONMENT: unsupported worker profile: ${input.host}|${model}: ${profile.unsupported_reason}`)
   if (input.actors && (!input.actors.worker.used || input.actors.worker.resolved_model !== model)) {
@@ -156,13 +154,9 @@ export const resolveSelection = (input, overrides = {}) => {
     task_identity: taskIdentity,
     model,
     model_capability: modelCapability(model),
-    ...(fallback && profileHost === "codex" ? {} : { model_provider: explicitNativeLuna ? "codex" : (profileHost === "codex" ? "codex-router" : (model.includes("/") ? model.split("/")[0] : "venice")) }),
+    model_provider: profile.binding.model_provider,
     ...(fallback ? { requested_model: fallback.requested_model, fallback_reason: fallback.reason } : {}),
-    native_agent: explicitNativeLuna ? "default" : profileHost === "opencode" && model === registry.worker_route_models?.["computer-use"]?.opencode
-        ? (["fix", "implement", "computer-use"].includes(input.route) ? "aw-deepseek-worker" : "aw-deepseek-reviewer")
-        : profileHost === "github-copilot"
-        ? "aw-worker"
-        : (["fix", "implement", "computer-use"].includes(input.route) ? "aw-worker" : "aw-reviewer"),
+    native_agent: profile.binding[["fix", "implement", "computer-use"].includes(input.route) ? "write_agent" : "read_agent"],
     effective_policy: policy,
     budget: {
       context_tokens: policy.context_budget,

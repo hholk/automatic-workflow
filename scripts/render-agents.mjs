@@ -8,7 +8,9 @@ import { effectivePolicy } from "./effective-policy.mjs"
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const profiles = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
 
-const workerModel = (host) => profiles.worker_defaults[host]
+const workerModel = (host) => host === "codex"
+  ? profiles.worker_route_models["computer-use"].codex
+  : profiles.worker_defaults[host]
 const teacherBinding = (host) => profiles.teacher_bindings[host]
 
 // Each template gets its model and provider from one role-based lookup.

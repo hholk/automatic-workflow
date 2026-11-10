@@ -1,7 +1,8 @@
 # Mission lifecycle
 
-Use this lifecycle for substantial, high-risk, multi-session or explicitly reviewed
-work. Small tasks and bounded read-only probes use a v2 `assurance: "direct"` brief;
+Use checkpoints for long or multi-session work. Independent reviews are required
+for material risk, unresolved acceptance uncertainty or explicit user request.
+Other work uses a v2 `assurance: "direct"` brief;
 they retain ordinary evidence and main verification without review fanout or storage.
 Reviewed work uses `assurance: "reviewed"`, independent contract and completion
 reviews, and a main-owned checkpoint. A long direct task can also checkpoint.

@@ -30,7 +30,7 @@ const assertFields = (policy, playbook) => {
   for (const field of ["recipe_id", "prompt_profile_id"]) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(policy[field] || "")) throw new Error(`${field} must be a lowercase immutable ID`)
   }
-  if ((playbook.schema_version === 5 || /-v5$/.test(playbook.version || "")) && policy.teacher_after_failed_hypotheses !== 2) {
+  if ((playbook.schema_version === 5 || /-v[56](?:-|$)/.test(playbook.version || "")) && policy.teacher_after_failed_hypotheses !== 2) {
     throw new Error("v5 teacher handback threshold is fixed at two attempts")
   }
 }

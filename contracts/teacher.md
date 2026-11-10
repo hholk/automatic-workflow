@@ -61,9 +61,10 @@ to the teacher.
 A provider/host error while starting or resuming the teacher (for example, an
 unsupported message-prefill format) is an environment failure, not a teacher
 answer or a worker's TEACHER_REQUEST. Confirm the failure from runtime evidence;
-then stop with `BLOCKED_ENVIRONMENT`. Do not switch to another model or route
-the decision to a reviewer as an implicit fallback. Retry only after a concrete
-transport/configuration change, using the configured teacher profile.
+then mark the teacher route `BLOCKED_ENVIRONMENT`. Main may continue the hard
+slice itself when its available capabilities suffice; unresolved decisions remain
+UNKNOWN. Honor explicit model constraints. Do not silently substitute another
+teacher/provider. Retry that teacher only after a concrete configuration change.
 
 ## Optional v5 snapshot diagnosis
 

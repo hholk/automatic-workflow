@@ -1,6 +1,10 @@
-# Learning and review
+# Controlled learning and review
 
-Learning uses the existing prompt-free event store, quality attestations and
+This document governs explicitly requested controlled research and its promotion
+API. Default autonomous operating trials use [operating learning](operating-learning.md);
+they do not assert comparative improvement or pass through this promotion API.
+
+Controlled learning uses the existing prompt-free event store, quality attestations and
 paired analyzer. It does not read model sessions or extract lessons from raw
 conversation history. No evaluator, safety field, permission, teacher limit or
 two-attempt inspection threshold is a research variable.

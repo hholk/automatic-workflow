@@ -13,7 +13,9 @@ RISKS: <concrete risks or none>
 ```
 
 DONE reports the worker turn, not acceptance. VERIFY is mandatory: run the
-verification command named in the brief and report its exit code. A DONE without
+verification command named in the brief and report its exit code. When the user
+forbids that verification, report `VERIFY: NOT_RUN | user instruction | <missing
+proof>` and leave the affected result unverified; never invent an exit code. A DONE without
 a passing VERIFY line is never accepted as verified. EVIDENCE includes the answer
 or artifact and coverage n/N against SUCCESS. RISKS names every unfinished item,
 unmet criterion and missing check. On budget exhaustion or an environment block,
@@ -89,3 +91,12 @@ before and after states, completion and failure kind. Provider, network and
 permission failures do not count as fresh technical probes. Main verifies the
 state and maintains the attempt ledger. Human authority or a conflicting goal
 requires one scoped human decision; a teacher cannot grant permission.
+
+## Bounded autonomous work
+
+Resolve routine implementation choices from evidence within the assigned scope.
+Continue independent useful work while reporting a blocker in another criterion.
+Escalate only the decision that needs missing authority, evidence or capability.
+Report unexpected dependency/interface changes before dependent work proceeds.
+A successful teacher suggestion becomes a lesson only after observed acceptance.
+Use the resolved cumulative budget; resumes do not create a new allowance.

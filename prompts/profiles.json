@@ -2,7 +2,7 @@
   "schema_version": 1,
   "main_default": "venice/deepseek-v4-1-flash-1017",
   "worker_defaults": {
-    "codex": "venice-responses/deepseek-v4-1-flash-1017",
+    "codex": "gpt-6-luna",
     "opencode": "venice/openai-gpt-6-luna",
     "github-copilot": "venice/deepseek-v4-1-flash-1017"
   },
@@ -18,32 +18,57 @@
       "id": "opencode-gpt6-luna-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md"
+      "model_delta": "prompts/models/gpt-6-luna.md",
+      "binding": {
+        "model_provider": "venice",
+        "write_agent": "aw-worker",
+        "read_agent": "aw-reviewer"
+      }
     },
     "opencode|venice/deepseek-v4-1-flash-1017": {
       "id": "opencode-deepseek-1017-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/deepseek-1017.md"
+      "model_delta": "prompts/models/deepseek-1017.md",
+      "binding": {
+        "model_provider": "venice",
+        "write_agent": "aw-deepseek-worker",
+        "read_agent": "aw-deepseek-reviewer"
+      }
     },
     "github-copilot|venice/deepseek-v4-1-flash-1017": {
       "id": "copilot-deepseek-1017-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
       "model_delta": "prompts/models/deepseek-1017.md",
-      "unsupported_reason": "COPILOT_NATIVE_DEEPSEEK_BINDING_UNAVAILABLE"
+      "unsupported_reason": "COPILOT_NATIVE_DEEPSEEK_BINDING_UNAVAILABLE",
+      "binding": {
+        "model_provider": "venice",
+        "write_agent": "aw-worker",
+        "read_agent": "aw-worker"
+      }
     },
     "codex|venice-responses/deepseek-v4-1-flash-1017": {
       "id": "codex-deepseek-1017-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/deepseek-1017.md"
+      "model_delta": "prompts/models/deepseek-1017.md",
+      "binding": {
+        "model_provider": "codex-router",
+        "write_agent": "aw-worker",
+        "read_agent": "aw-reviewer"
+      }
     },
     "codex|gpt-6-luna": {
       "id": "codex-gpt6-luna-native-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md"
+      "model_delta": "prompts/models/gpt-6-luna.md",
+      "binding": {
+        "model_provider": "codex",
+        "write_agent": "default",
+        "read_agent": "default"
+      }
     }
   },
   "teacher_profiles": {
@@ -76,25 +101,21 @@
     }
   },
   "worker_fallbacks": {
-    "codex": {
-      "primary_model": "venice-responses/deepseek-v4-1-flash-1017",
-      "fallback_model": "gpt-6-luna",
-      "confirmed_primary_failures": {
-        "DEEPSEEK_SPEND_LIMIT": "provider-deepseek-spend-limit",
-        "DEEPSEEK_PROVIDER_DISABLED": "provider-deepseek-disabled",
-        "DEEPSEEK_ROUTE_UNAVAILABLE": "provider-deepseek-route-unavailable"
-      },
-      "computer_use_allowed": false
-    },
     "opencode": {
       "primary_model": "venice/openai-gpt-6-luna",
       "fallback_model": "venice/deepseek-v4-1-flash-1017",
       "confirmed_primary_failures": {
-        "LUNA_SPEND_LIMIT": "provider-luna-spend-limit",
-        "LUNA_PROVIDER_DISABLED": "provider-luna-disabled",
         "LUNA_ROUTE_UNAVAILABLE": "provider-luna-route-unavailable"
       },
       "computer_use_allowed": false
     }
+  },
+  "measurement": {
+    "cheap_models": [
+      "gpt-6-luna",
+      "venice/openai-gpt-6-luna",
+      "venice-responses/deepseek-v4-1-flash-1017",
+      "venice/deepseek-v4-1-flash-1017"
+    ]
   }
 }

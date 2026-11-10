@@ -1,7 +1,7 @@
 interface:
-  display_name: "AW v5 · UI/UX"
-  short_description: "AW v5: native supervision with scoped UI/UX acceptance"
-  default_prompt: "Use $aw to supervise this task and verify the integrated result, including relevant UI/UX behavior."
+  display_name: "AW v6 · Operating learning"
+  short_description: "Luna-first execution, focused advice and learning from real usage"
+  default_prompt: "Use $aw with compatible Poteto style and useful Hstack skills. Delegate bounded work to Luna, verify authorized acceptance, and learn from actual outcomes."
 
 policy:
   allow_implicit_invocation: true

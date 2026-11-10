@@ -1,122 +1,96 @@
 ---
 name: aw
-description: AW v5 with scoped UI/UX design and live acceptance checks. Use when supervising a multi-step task whose exploration, implementation, debugging, review, architecture, or measured agent optimization benefits from native subagents.
+description: AW v6 for Luna-first execution, focused teacher help, outcome-based acceptance and reversible learning from real usage. Use for multi-step implementation, diagnosis or review that benefits from scoped orchestration.
 ---
 
-# AW v5 · UI/UX
+# AW v6 · Operating learning
 
-On activation, state this heading and the selected route once in the first progress
-update, so the user can identify the loaded skill version.
+State this heading and the selected route once on activation. Main owns routing,
+integration and acceptance. Resolve models and complete native bindings from
+`prompts/profiles.json`; code workers default to Luna. Keep the current main
+model and explicit user model choices. Host instructions govern dispatch.
 
-Main alone orchestrates. The profile registry defines the non-teacher binding for each
-supported host. OpenCode workers use Luna. Codex workers and OpenCode computer-use use DeepSeek 1017. Claude Opus 5.5 through Venice is the advisory teacher.
-Unavailable profiles stop with BLOCKED_ENVIRONMENT. Native workers may use only the confirmed failure classes in `prompts/profiles.json`. An explicit user request for native Codex `gpt-6-luna` is supported on code routes without a prior DeepSeek failure: pass `--model gpt-6-luna --explicit-model-request` and use the returned native binding. Automatic Luna fallback still requires confirmed DeepSeek unavailability. OpenCode may select DeepSeek 1017 after confirmed Luna unavailability. Preserve requested model, resolved model, and exact reason. Auth, permission, approval, safety, unknown failures, explicit model requests, delegates, and computer-use never trigger fallback.
+Optimize accepted outcomes and total cost. Cheap-model token share is measured,
+never a quota or a reason to withhold useful Astra/Opus help. Availability and
+quality remain unverified until observed; configuration proves neither.
 
-Optimize total cost to accepted completion at main-agent quality. Honor explicit
-requests for independent judgment.
+## Hstack defaults
 
-## Route
+Use `poteto-mode` as the default style and judgment reference, subject to the
+[Hstack compatibility rules](references/hstack.md). Resolve its installed source
+from the active catalog and read it once per session. Automatically select useful
+Hstack skills for the actual task through the same rules. Load only relevant
+references; AW retains orchestration, model selection and operating learning.
 
-First matching row wins. Details and load paths: [routing](references/routing.md).
+## Route and scope
 
-| Signal | Route |
-|---|---|
-| Required authority or material user choice missing | human |
-| The objective is operating a live GUI, app or device | computer-use |
-| Main can finish and verify safely for less than a handoff | direct |
-| Decisive technical gap after a useful probe, or architecture/hard-fix unresolved | teacher |
-| Completed change needs independent evidence | review |
-| Root cause evidenced | fix |
-| Target state and verification known | implement |
-| Is/should gap, cause unknown | diagnose |
-| Read-only structure, ownership or callers question | explore |
+Use [routing](references/routing.md) at meaningful decision points. Finish direct
+work when delegation costs more than it contributes. Delegate for a separable
+result, independent evidence, a required capability, or useful parallelism.
 
-Direct executes and verifies, skipping workflow dispatch steps; human asks for the
-missing decision. For interface or module-design decisions, consult `codebase-design`
-as reference before considering teacher escalation. Other routes continue below.
-For UI changes, apply the scoped [UI/UX reference](references/ui-ux.md); retain the
-implementation, fix or review route and use computer-use for its bounded live checks.
+Give each worker one complete, observable outcome: OBJECTIVE, numbered SUCCESS,
+CONTEXT, PATHS, NON_GOALS and VERIFY. Include the relevant requirement sources,
+decisive evidence, dependencies and stop conditions. Freeze a v2 brief through
+[execution gates](references/execution-v5.md). Derive acceptance from the user's
+requirements and independent evidence, rather than only the builder's tests.
 
-Substantial, high-risk, multi-session, or explicitly independently reviewed work uses
-`assurance: reviewed` and the [mission lifecycle](references/mission-lifecycle.md),
-including when main implements directly. Small tasks and bounded read-only probes
-use `assurance: direct`; they need no mission checkpoint or review fanout.
-
-Modes outside the task route: `$aw research` and `$aw learn` (see
-[autoresearch](references/autoresearch.md) and [lessons](references/lessons.md)).
-Run them only when explicitly requested.
+Use `assurance: direct` by default. Use `reviewed` for material risk, unresolved
+acceptance uncertainty or explicitly requested independent review. Task size
+alone does not require review fanout. Long or resumed work checkpoints through
+[mission lifecycle](references/mission-lifecycle.md), including direct work.
+UI work also uses [UI/UX acceptance](references/ui-ux.md).
 
 ## Execute
 
-Use Codebase Memory for structure or Context7 for library behavior when either is likely
-cheaper than manual discovery; reuse sufficient supplied evidence.
-Main resolves named skills from the active catalog and passes relevant reference
-paths in CONTEXT. Consult only the named phases; AW retains dispatch and budgets.
-User-only or inactive skills require explicit invocation.
-
-1. Freeze `OBJECTIVE | SUCCESS | CONTEXT | PATHS | NON_GOALS | VERIFY` before dispatch.
-   `SUCCESS` lists numbered, falsifiable criteria; `VERIFY` names one command.
-   Reuse the project's verification skill or existing test/run commands. If none
-   answers the criterion, first establish a narrow executable probe; an exit code
-   alone must not substitute for the promised behavior.
-   Use a v2 brief with an explicit assurance mode. For reviewed work, preserve the
-   original request, later decisions and applicable constraints, map them to criteria,
-   and pass a fresh [contract review](workflows/contract-review.md) before work dispatch.
-2. Read one runtime: [Codex](references/runtimes-codex.md),
+1. Read the current host runtime: [Codex](references/runtimes-codex.md),
    [OpenCode](references/runtimes-opencode.md), or [Copilot](references/runtimes-copilot.md).
-3. At a routing milestone, apply the strategy/model route gate before resolving
-   a changed profile. Honor explicit user model requests. Otherwise keep the configured default unless the native host has confirmed one of its
-   registry-defined primary failure classes. Unknown cost or errors never
-   establish a fallback. Pass the selected model
-   to the resolver and stop if the host/profile cannot support it.
-   Run `node scripts/resolve-profile.mjs` with the host, role, route,
-   `--task-class` and `--complexity` from the frozen brief; load only the returned component paths
-   once, plus the applicable skill references. Use its native binding and budget.
-   Load [policy inputs](references/policy-v5.md) for model-specific cells, reviewed
-   lessons or comparison evidence; supply the required observed metadata and
-   scoped identities there.
-   Resolver model availability stays `unverified` until the execution host
-   supplies native proof. A configured binding alone cannot prove availability.
-4. Apply [execution gates](references/execution-v5.md) with
-   `node scripts/execution-state-cli.mjs <action>` and bounded JSON on stdin.
-   Validate the versioned brief before dispatch. Use proven capable profiles
-   and total run costs at milestones. Main confirms
-   evidence; missing provenance or cost stays unknown.
-   Reviewed and long-running work checkpoints its mission before dispatch and after
-   results. On resume, read the checkpoint and reconcile reserved/active task IDs
-   with the host before starting more work; follow the mission lifecycle.
-5. Dispatch one bounded worker. Only the main agent may start or resume agents.
-   At most two independent workers may run; use the dispatch gate, unique write
-   ownership, prepared isolated worktrees for parallel writes, and an integration
-   VERIFY. Record dispatch IDs before acting to prevent duplicate starts.
-6. Read `DONE` or `TEACHER_REQUEST` via [worker contract](contracts/worker.md).
-   Main owns unfinished work; missing evidence is UNKNOWN, never PASS.
-   Apply the execution gates for recovery after failed probes and replanning after
-   discovered gaps. Repair the earliest invalid artifact and revalidate affected
-   evidence, preserving user scope and spent recovery budget. Reuse evidence only
-   when task, objective revision, snapshot and versioned check still match.
-7. Eligible teacher requests use [teacher loop](references/teacher.md). Advisory
-   consultation can prevent failures. Direct [snapshot diagnosis](references/teacher-inspection.md)
-   requires two proven no-progress attempts and a real scoped host grant.
-   Unsupported hosts keep worker EVIDENCE and the tool-free teacher profile.
-8. Main verifies every SUCCESS criterion against the integrated artifact, including
-   relevant visual fidelity or source support. Run the narrowest acceptance probe
-   and versioned gate. Reviewed work also passes a fresh
-   [completion review](workflows/completion-review.md) against the original request
-   and later decisions, without builder reports or mission criteria. Open gaps and
-   unknown checks block completion; accept checkpoints only after main verification.
-   Record prompt-free v4 telemetry with the host's exact
-   [run context](references/run-context.md) or independently known `--run-id`.
-   Missing receipts mean unknown policy identity and exclusion from learning.
-   The wire schema stays unchanged.
+   Run `node scripts/resolve-profile.mjs` with host, role, route, task class and
+   complexity. Supply the exact run context when available. Load only returned
+   components and decision-relevant references. Use the complete returned binding.
+2. Main alone dispatches. At most two independent workers run concurrently.
+   A prerequisite is ready only when its output or interface is settled; different
+   files alone do not imply independence. Use unique write ownership and host-managed
+   isolated worktrees for parallel writes. Reserve IDs before dispatch, reconcile
+   ambiguous starts, and close/cancel finished or replaced agents through the host.
+3. Supply focused context, not inherited histories. Use the resolved context
+   budget as a briefing target; retain necessary evidence or split the task.
+   Resume with deltas and remaining cumulative budget. Model switches, teacher
+   questions and restarts do not reset spent budget. Tool-step limits are ceilings,
+   not targets; stop repeated work that produces no new evidence.
+4. Workers return [DONE or TEACHER_REQUEST](contracts/worker.md). Main owns all
+   unfinished work. After two distinct no-progress hypotheses, test their common
+   premise and use the existing bounded recovery gate. Provider outages are
+   environment failures, not technical attempts.
+5. Consult the [teacher](references/teacher.md) for a consequential unresolved
+   decision, conflicting evidence or a missing discriminating probe. Early help
+   is appropriate when a wrong boundary decision would cause substantial rework.
+   Ask for the smallest useful decision and its falsification check. Give original
+   evidence as well as the worker's interpretation. If advice is insufficient,
+   main takes over the hard slice or explicitly selects a capable host-supported
+   implementer; the advisory teacher's tool permissions remain unchanged.
+6. Integrate and check every SUCCESS criterion. Reuse valid evidence only for
+   unchanged task, revision, snapshot and check. Independent review, when required,
+   assesses the integrated result and original requirements. Unknown remains
+   unknown. If the user forbids tests or checks, honor that instruction, report
+   skipped verification and leave acceptance unverified; do not manufacture PASS.
+7. Record prompt-free usage and actual acceptance through the existing
+   [run context](references/run-context.md) and [telemetry](references/telemetry.md).
+   Include main repair, failed attempts and teacher work when observed. Missing
+   token, cost, model or quality data stays unknown.
 
-Resume with deltas, never histories. Preflight once per unchanged session/profile.
-Research and lessons are opt-in. No secrets, recursive workers or implicit release.
-Load [policy and host capabilities](references/policy-v5.md) for installation,
-host delegation or cell-specific routing. Load [learning rules](references/learning-v5.md)
-only for lessons or optimization; promotion requires independent review and
-disjoint holdout evidence. Safety, access rights and the two-attempt threshold
-are immutable to learning. Missing authority or goal conflicts use the authority
-gate once per exact decision scope; reuse an existing valid human answer.
-Workers may commit, push or deploy only when explicitly delegated and governed
-by the project's deployment guide.
+## Improve from operation
+
+Operating learning is enabled by `playbooks/current.json`. After a completed task
+with new useful evidence, main follows [operating learning](references/operating-learning.md).
+It may make one small, reversible local adaptation within the configured envelope
+without asking again. Keep real outcomes, trial state and rollback evidence;
+ordinary use supplies the next observations. No synthetic tasks or benchmark
+runs are required for a provisional operational trial.
+
+Research-backed performance claims remain a separate opt-in path:
+[`$aw research`](references/autoresearch.md). `$aw learn` follows the operating
+loop unless the user explicitly asks for a controlled experiment. Runtime
+adaptation never changes user requirements, acceptance standards, permissions,
+provider authorization, mandatory independence or frozen safety boundaries.
+Workers cannot recursively delegate or change AW. Release actions require an
+explicit assignment and the project's deployment instructions.

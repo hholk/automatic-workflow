@@ -1,4 +1,4 @@
-# AW v5 · UI/UX
+# AW v6 · Operating learning
 
 The native skill picker displays this version through `agents/openai.yaml`;
 `$aw` and `/aw` retain the `aw` identity. UI changes use the shared
@@ -73,7 +73,9 @@ $aw research
 $aw learn
 ```
 
-These are opt-in and are not started implicitly.
+Controlled research is opt-in. Operating learning runs at task-end when enabled;
+`$aw learn` invokes the same bounded, reversible loop explicitly.
+See [operating learning](references/operating-learning.md).
 
 ## Routing
 
@@ -99,10 +101,14 @@ The authoritative table and load paths are in
 | Role | Purpose | Model |
 | --- | --- | --- |
 | Main agent | Owns the objective, integration, and acceptance | Host default |
-| Worker / Reviewer on Codex | Bounded implementation or read-only investigation | DeepSeek 1017 |
+| Worker / Reviewer on Codex | Bounded implementation or read-only investigation | Native Luna |
 | Worker / Reviewer on OpenCode | Bounded implementation or read-only investigation | Luna |
-| OpenCode computer-use | Bounded GUI operation | DeepSeek 1017 |
+| Computer-use on Codex / OpenCode | Bounded GUI operation | DeepSeek 1017 |
 | Teacher | Advisory decision support, no tools | Opus 5.5 |
+
+Poteto supplies the default compatible style. Relevant Hstack skills are selected
+through [Hstack compatibility rules](references/hstack.md). Cheap-model token
+share is measured, never a quota.
 
 Exact host bindings and confirmed-failure fallback rules are defined in
 `prompts/profiles.json` and the corresponding runtime reference.
