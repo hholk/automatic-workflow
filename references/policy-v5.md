@@ -15,7 +15,11 @@ worker step budget and handback threshold together with `effective_policy`.
 Pass observed actor model/fallback metadata as `actors` for an exact provenance
 cell. Without observed actors, the resolver selects only an explicit coarse task
 cell or defaults. Configured model intent never activates a provenance cell.
-No runtime model discovery occurs here.
+No runtime model discovery occurs here. Worker profiles carry their complete
+provider/write-role/read-role binding; default code selection is Luna. Fixed Codex
+DeepSeek profiles remain pinned for computer-use rather than following the Luna
+default. Main applies bounded operational trials under operating-learning.md;
+research promotion is a separate, stricter path.
 
 `render-agents.mjs` renders native worker limits from the same playbook defaults.
 All generated worker profiles use 125 steps. A task cell can require

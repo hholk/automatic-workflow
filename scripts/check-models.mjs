@@ -12,8 +12,8 @@ const worker = profiles.worker_defaults
 const teacher = profiles.teacher_bindings
 
 const expected = [
-  ["agents/generated/codex/aw-worker.toml", new RegExp(`model = "${worker.codex}"`)],
-  ["agents/generated/codex/aw-reviewer.toml", new RegExp(`model = "${worker.codex}"`)],
+  ["agents/generated/codex/aw-worker.toml", new RegExp(`model = "${profiles.worker_route_models["computer-use"].codex}"`)],
+  ["agents/generated/codex/aw-reviewer.toml", new RegExp(`model = "${profiles.worker_route_models["computer-use"].codex}"`)],
   ["agents/generated/codex/aw-teacher.toml", new RegExp(`model = "${teacher.codex.model}"`)],
   ["agents/generated/opencode/aw-worker.md", new RegExp(`model: ${worker.opencode}`)],
   ["agents/generated/opencode/aw-reviewer.md", new RegExp(`model: ${worker.opencode}`)],

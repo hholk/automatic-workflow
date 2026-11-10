@@ -1,6 +1,7 @@
-# Auto-research v5
+# Controlled research
 
-Use only for `$aw research [weekly|status]`. An external scheduler may invoke a
+Use only for `$aw research [weekly|status]`. Ordinary `$aw learn` and autonomous
+end-of-task adaptation use [operating learning](operating-learning.md). An external scheduler may invoke a
 weekly run; AW is never a daemon. `research.mjs due` and `close` make the run
 idempotent per ISO week.
 

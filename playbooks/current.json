@@ -1,7 +1,7 @@
 {
   "schema_version": 4,
-  "version": "acceptance-routing-v5",
-  "generated_at": "2026-09-21T00:00:00.000Z",
+  "version": "acceptance-routing-v6",
+  "generated_at": "2026-11-10T00:00:00.000Z",
   "frozen": {
     "evaluator": "quality-v2",
     "telemetry": "run-v4",
@@ -14,11 +14,30 @@
     "teacher_max_turns_per_ask": 7
   },
   "defaults": {
-    "recipe_id": "bounded-v3",
+    "recipe_id": "bounded-v4",
     "prompt_profile_id": "model-bound-v1",
-    "context_budget": 1600,
+    "context_budget": 3200,
     "worker_step_budget": 125,
     "teacher_after_failed_hypotheses": 2
   },
-  "cells": {}
+  "cells": {},
+  "operating_learning": {
+    "enabled": true,
+    "minimum_observed_runs": 3,
+    "one_change_at_a_time": true,
+    "trial_run_limit": 10,
+    "max_relative_budget_change": 0.25,
+    "context_budget_range": [
+      1600,
+      6400
+    ],
+    "worker_step_budget_range": [
+      32,
+      125
+    ],
+    "cheap_token_share_target": null,
+    "requires_matched_pairs": false,
+    "status": "experimental",
+    "scope": "main-owned local reversible operating changes; host and user constraints remain authoritative"
+  }
 }

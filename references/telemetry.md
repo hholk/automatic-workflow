@@ -67,7 +67,9 @@ with a bounded warning naming file, line and reason; record contents are omitted
 Other schema versions remain outside the current dataset. Inspection leaves the
 event store unchanged and supplies no replacements for missing fields.
 `analyze`, research evaluation and other strict readers stop on invalid JSON or
-invalid current-schema runs. Diagnostic subsets cannot authorize learning.
+invalid current-schema runs. Diagnostic subsets cannot authorize research promotion or comparative quality
+claims. They may inform explicitly provisional operating trials under
+operating-learning.md, with exclusions and unknown outcomes retained.
 
 ```sh
 node scripts/usage.mjs waste [--kind <kind>] [--actor <actor>] \
@@ -97,3 +99,26 @@ and cannot be repaired by a quality attestation. Adapters obtain this metadata
 from an exact run-bound schema-2 resolver receipt; they never substitute their
 new run ID for the stable task ID. The receipt remains supplied selection
 metadata, so main must verify the frozen fixture and check before supplying it.
+
+## Operating diagnostics
+
+`node scripts/usage.mjs operating [--route <route>] [--profile <profile>]` reads
+existing records without executing tasks. It deduplicates run IDs and groups by
+policy version and the existing full provenance cell. Accepted outcomes require
+host-attested semantic success, full scope, passing actual verification and no
+forbidden changes. Independent review and paired snapshot identity remain additional
+requirements for research eligibility; missing ordinary acceptance stays unknown.
+
+Cheap-model token share uses actual resolved model IDs listed under
+`prompts/profiles.json.measurement.cheap_models`. Only runs with observed usage
+and model provenance for every participating main/worker/teacher enter the share.
+It reports cohort coverage, exclusions and observed model totals. It is never a
+quota. Separate research usage is reported separately because the wire schema
+does not attribute it by model. Provider cost and human interventions stay null
+until instrumentation supplies them. Duration and parent rework have their own
+observation counts; missing values do not become zero.
+
+For every real task, main records the actual verification result through the
+existing attestation interface, even when independent review was not needed
+(`review-pass false`). Do not attest an exit code for skipped verification.
+No new fabricated task IDs, costs or historical attestations are introduced.

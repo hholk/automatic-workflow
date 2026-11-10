@@ -10,6 +10,30 @@ See `references/lessons.md` for measurement and retention rules.
 
  <!-- lessons -->
 
+## 2026-11-10 — Luna-first operation with reversible learning
+
+- Change: native Luna code default on Codex; complete profile bindings; bounded-v4
+  with a 3200-token briefing target; risk-based reviews; focused teacher decisions
+  and main takeover; autonomous provisional operating adaptations.
+- Authorization: user requested implementation, no tests/benchmarks, learning from
+  real usage, more slack and self-optimization. Cheap-token share is measured only.
+- Baseline / Candidate: acceptance-routing-v5 / acceptance-routing-v6. The previous
+  bounded-v3 recipe remains historical evidence. This is the authorized initial
+  operating baseline, not an evidence-selected adaptation or open trial.
+- Evidence: prior resolver inspection showed mismatched automatic Luna/DeepSeek
+  binding; existing diagnostics lacked comparison-eligible data. No new live
+  model trials, tests or benchmarks were run for this change.
+- Verification: source/configuration inspection and syntax checks only.
+- Status: observation; deployment behavior and efficiency unverified.
+- Next: collect genuine task receipts and acceptance, inspect usage.mjs operating,
+  then make one scoped reversible trial after repeated relevant observations.
+- Rollback: restore the specific affected policy/binding/recipe selection on an
+  observed regression while retaining unrelated changes and the learning record.
+- Limitations: no quality parity or cost reduction established. Operating learning
+  runs under main in active sessions; no autonomous daemon or trusted research
+  promotion bridge is installed.
+
+
 ## 2026-11-07 — Diagnostic inspection survives invalid stored records
 
 - Failure: `node scripts/usage.mjs summary` and `waste` aborted with `prompt.profile_id is required`.

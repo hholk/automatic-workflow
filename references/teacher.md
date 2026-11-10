@@ -58,8 +58,8 @@ or `FINAL` stop the loop. Terminal outcomes are `VERIFIED`,
 
 ## Native hosts
 
-Use the selected runtime's native `aw-teacher`, not a nested CLI or
-another harness. Start without forked history; send only the contract and
+Use the selected runtime binding and the host's required dispatch API.
+T3 cross-provider teachers use its delegate API; native hosts use `aw-teacher`. Start without forked history; send only the contract and
 bounded decision evidence once, then delta-only follow-ups on the same thread.
 Be concise and precise; ask focused questions. OpenCode denies tools; Codex uses
 read-only, disabled shell/plugins/subagents and a no-tools instruction. Tool use
@@ -67,3 +67,21 @@ outside an approved snapshot session invalidates the advisory result. Existing
 hosts have no approved snapshot bridge and keep worker EVIDENCE. An unsupported
 teacher model/profile stops rather than substituting a model. The separate
 inspection-policy helper is not host permission or an installed adapter.
+
+## Focus and transfer
+
+Ask for the smallest missing decision, discriminating probe or boundary choice,
+with original evidence and the worker's interpretation clearly separated. A useful
+FINAL includes a falsification check within VERIFY and names assumptions. Advisory
+help may precede failure for consequential decisions; it is not a compulsory phase.
+
+After advice, main assigns a checkable action. If Luna cannot carry out the hard
+slice, main may implement it with its existing capabilities, or select an explicitly
+authorized host-supported implementer. Do not grant tools to the advisory role or
+silently substitute providers. A teacher outage does not invalidate available main
+capability; main continues only if it can resolve the gap, otherwise reports UNKNOWN.
+
+At task end, record observed decision change, post-teacher result and main repair
+through existing telemetry. Extract a reusable lesson only after observing the
+result. Use operating-learning.md for a bounded adaptation; avoid copying entire
+answers into prompts or treating unverified advice as established knowledge.

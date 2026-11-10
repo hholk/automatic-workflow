@@ -1,64 +1,46 @@
 # Codex runtime
 
-Use explicit native model selection and the resolved prompt profile.
+Code routes default to native `gpt-6-luna`. Resolve the complete model, provider,
+role and budget from `prompts/profiles.json`; Luna uses `native_agent: default`
+and `model_provider: codex`. The fixed `aw-worker` and `aw-reviewer` roles remain
+DeepSeek profiles for the pinned computer-use route or an explicit supported
+selection. Never put a Luna override on a role that fixes another provider/model.
 
-For user-requested Luna on code routes, pass `--model gpt-6-luna
---explicit-model-request`. No DeepSeek failure is required. The resolver returns
-`native_agent: default`, `model: gpt-6-luna`, `model_provider: codex`; dispatch
-that binding with the returned prompt components, not the fixed DeepSeek roles.
-
-| Route | agent_type | model | model_provider |
-|---|---|---|---|
-| GUI/computer-use | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
-| fix, implement | `aw-worker` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
-| explore, diagnose, review, compare | `aw-reviewer` | `venice-responses/deepseek-v4-1-flash-1017` | `codex-router` |
-| teacher | `aw-teacher` | `venice-responses/claude-opus-5-5` | `codex-router` |
-
-The current primary binding targets the direct Responses route confirmed on the
-MacBook Pro. For a confirmed DeepSeek spend-limit/provider-disabled/route-unavailable
-result on native Codex, AW may select the native `gpt-6-luna` model; this fallback is
-not a Codex Router provider route and carries requested model plus exact reason. The
-MacBook Pro. The Mac mini is awaiting the same router setup and native
-acceptance; this registry entry does not establish its availability there.
-Client `wire_api: responses` alone does not prove the provider upstream uses
-Responses. A `venice/` Chat Completions route is not an automatic substitute;
-when the local router hides the direct `venice` provider, the teacher must use
-the published `venice-responses/` model slug.
-Stop with `BLOCKED_ENVIRONMENT` until the exact local route is confirmed.
-
-Agent files bind model/provider/high effort, not inherited Ultra, and disable
-child skill-catalog instructions. Use native spawn/resume tools; set
-`fork_turns: none` and model overrides only if exposed by the live schema.
-Send delta-only follow-ups. Close/interrupt finished children with the offered
-tool. No recursive agents or generic alternate-model retries. The bounded Luna fallback
-requires an explicit confirmed failure code and is unavailable for computer-use. A child that still
-inherits a large context is a measured cost, not a reason to fork more.
+Keep the main model unchanged. Native Luna is selected through the native host
+when supported. For T3, follow its live orchestration instructions: cross-provider
+models and user-requested extra settings require its delegate API. A native role
+with an external-provider model is also cross-provider. The resolver supplies
+bindings, not dispatch permission or proof of runtime availability.
 
 From the absolute skill directory:
 `node scripts/resolve-profile.mjs --host codex --role worker --route fix --task-class diagnosed-bug --complexity small`.
-Use the actual brief's task class and complexity. Supply `--actors <file>` only
-for observed native/provider model metadata, and scoped lesson inputs when enabled.
-For paired fixtures, also supply `--task-id`, `--snapshot-id` and `--check-version`
-from the frozen host-verified fixture. Resolver `model_capability` stays
-`unverified`; it cannot replace the native preflight.
-With documented session and turn metadata, the hook CLI returns an exact
-`--run-context` locator through UserPromptSubmit additionalContext. Main passes
-that option to the resolver; this returns correlation metadata, not a persistent
-shell environment or permission grant. See [run context](run-context.md) for
-lifecycle and missing-metadata behavior. Without a context or independently
-known exact `--run-id`, policy identity stays UNKNOWN and is excluded from learning.
-GUI/computer-use: `node scripts/resolve-profile.mjs --host codex --role worker --route computer-use`.
-Review: pass `--role worker --route review`; the resolver selects the read-only
-`aw-reviewer` binding. `reviewer` is not a resolver role.
-Teacher: `--role teacher --route teacher`. Preflight once per unchanged profile
-using native metadata and router request evidence, never model self-reports.
-Stop on unknown/mismatched routing. For installation or unavailable agents,
-read [setup](setup.md); Codex role files must not be symlinks.
+Use the actual task class/complexity. Review uses `--role worker --route review`;
+Luna's default role needs the supplied read-only contract and host-enforced
+read-only tools/isolation when available. It does not inherit the fixed review
+role's sandbox. Main must not claim tool isolation that the host cannot enforce.
+GUI/computer-use uses `--route computer-use` and retains its proven host binding.
+Teacher uses `--role teacher --route teacher` and remains advisory/tool-free.
 
-Use configured native MCPs or fetch/browser, not hosted web_search on Venice.
-The selected effective policy supplies the workflow budget. Generated profiles
-use the playbook default of 125 tool steps; Codex has no claimed native hard cap. Main
-stops no-gain loops and verifies results. Missing exact usage tokens stay null;
-load telemetry details only when attesting, never read transcripts.
+Supply `--actors <file>` only for observed native/provider metadata. The resolver
+reports capability as unverified. Inspect host model metadata on the first actual
+worker execution for an unchanged session/profile; no synthetic preflight task is
+required. On an unavailable or mismatched binding, reconcile the environment or
+continue a suitable slice on the already available main. Honor explicit model
+requirements and T3 restrictions; no speculative alternate-provider retries.
 
-Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).
+Use `fork_turns: none` when offered and send only bounded task context. Enforce
+remaining cumulative budget from main; native `default` does not supply AW's
+fixed-role tool restrictions. Workers cannot delegate or modify AW. Close or
+interrupt finished children using the host's offered lifecycle operation.
+
+Pass the exact `--run-context` from the lifecycle hook, or an independently known
+`--run-id`, to correlate receipts and telemetry. Include task class and complexity.
+When available, pass real `--task-id`, `--snapshot-id`, `--check-version`; missing
+comparison identity stays unknown. Never reconstruct it from transcripts.
+See [run context](run-context.md) and [policy inputs](policy-v5.md).
+
+The generated DeepSeek profiles retain their installed tool-step ceiling.
+Task budgets may require earlier handback; budget changes never reset spent work.
+Use configured native MCPs and supported fetch tools for evidence. Read
+[setup](setup.md) only for actual installation/reload failures; this change does
+not require replacing the fixed DeepSeek roles to execute native Luna.

@@ -1,6 +1,6 @@
 # Routing
 
-Authoritative routing table. `SKILL.md` carries the short form; keep signals in sync.
+Authoritative routing table, reached from SKILL.md.
 First match wins.
 
 | Case | Signal | Route | Load |
@@ -34,3 +34,18 @@ probe; repeat only with a new hypothesis or changed evidence.
 `HUMAN_DECISION_REQUIRED` concerns missing authority or a material user choice.
 Reuse existing authorization. Ask one question for an independent missing choice;
 a dependent decision tree may use Grilling only when requested by the user.
+
+## Delegation and early advice
+
+State the expected benefit of a handoff: separable implementation, independent
+evidence, capability or a shorter critical path. Give a worker a complete result
+and its settled prerequisites. Parallelize only ready, independent outcomes;
+separate files do not establish independent interfaces or shared state. A second
+reviewer needs a different check, hypothesis or evidence source, not a request to
+confirm the first answer. Self-reported confidence is not acceptance evidence.
+
+Early advisory help is appropriate for conflicting requirements/evidence, an
+unverifiable important criterion or a consequential boundary decision after the
+cheapest useful inspection. Two no-progress hypotheses require testing their
+shared premise before another fix. Do not exhaust cheap retries before main can
+take over a clearly unsuitable slice. Preserve explicit model constraints.

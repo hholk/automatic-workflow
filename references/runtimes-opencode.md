@@ -33,7 +33,8 @@ remains `unverified` in resolver output until a real native preflight proves it.
 GUI/computer-use: `node scripts/resolve-profile.mjs --host opencode --role worker --route computer-use`.
 Teacher: `--role teacher --route teacher`. Load returned components once.
 
-Preflight once per unchanged session/profile: a cheap native child must prove
+Use metadata from the first actual worker execution per unchanged session/profile
+to establish
 `providerID`/`modelID` = `venice`/`openai-gpt-6-luna`,
 `venice`/`deepseek-v4-1-flash-1017` for a pinned or fallback worker, or
 `venice`/`claude-opus-5-5`. Config and self-identification are not proof.
@@ -43,8 +44,9 @@ read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.
 
 Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).
 
-Native OpenCode fallback requires `LUNA_SPEND_LIMIT`, `LUNA_PROVIDER_DISABLED`,
-or `LUNA_ROUTE_UNAVAILABLE` observed on the primary call. The resolver selects
+Native OpenCode fallback requires a confirmed model-scoped
+`LUNA_ROUTE_UNAVAILABLE` observed on the primary call. Account/key budget or
+provider-wide failures do not justify switching within the same Venice account. The resolver selects
 `aw-deepseek-worker` for writes and `aw-deepseek-reviewer` for read-only routes.
 These generated profiles bind the resolved model without changing the Luna default.
 Unknown failures, denials, explicit model requests, delegates, and computer-use

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs"
+import { operatingReport } from "./operating-report.mjs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { appendAttestation, appendRun, compareRecipes, readRuns } from "./evidence.mjs"
@@ -129,6 +130,12 @@ try {
       Number(arg("--min-pairs") || 5),
     )
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  } else if (command === "operating") {
+    const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
+    const policy = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))
+    const report = operatingReport(filteredRuns(diagnosticRuns()), registry.measurement.cheap_models)
+    process.stdout.write(`${JSON.stringify({ ...report, excluded_records: invalidRecords.length,
+      operating_learning: policy.operating_learning }, null, 2)}\n`)
   } else if (command === "summary") {
     const runs = diagnosticRuns()
     process.stdout.write(`${JSON.stringify({
@@ -140,7 +147,7 @@ try {
       teacher_runs: runs.filter((run) => run.actors.teacher.used).length,
     }, null, 2)}\n`)
   } else {
-    throw new Error("usage.mjs: use record, attest, show, latest, waste, teacher, analyze, or summary")
+    throw new Error("usage.mjs: use record, attest, show, latest, waste, teacher, analyze, operating, or summary")
   }
   if (invalidRecords.length) {
     const examples = invalidRecords.slice(0, 5).map((issue) => `${issue.file}:${issue.line}: ${issue.reason}`).join("; ")
