@@ -9,7 +9,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const profiles = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
 
 const workerModel = (host) => host === "codex"
-  ? profiles.worker_route_models["computer-use"].codex
+  ? Object.keys(profiles.worker_profiles).find((key) => key.startsWith("codex|") && profiles.worker_profiles[key].binding.write_agent === "aw-worker").slice("codex|".length)
   : profiles.worker_defaults[host]
 const teacherBinding = (host) => profiles.teacher_bindings[host]
 

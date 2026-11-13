@@ -3,8 +3,7 @@
 Code routes default to native `gpt-6-luna`. Resolve the complete model, provider,
 role and budget from `prompts/profiles.json`; Luna uses `native_agent: default`
 and `model_provider: codex`. The fixed `aw-worker` and `aw-reviewer` roles remain
-DeepSeek profiles for the pinned computer-use route or an explicit supported
-selection. Never put a Luna override on a role that fixes another provider/model.
+DeepSeek profiles for an explicit supported selection. Never put a Luna override on a role that fixes another provider/model.
 
 Keep the main model unchanged. Native Luna is selected through the native host
 when supported. For T3, follow its live orchestration instructions: cross-provider
@@ -18,7 +17,7 @@ Use the actual task class/complexity. Review uses `--role worker --route review`
 Luna's default role needs the supplied read-only contract and host-enforced
 read-only tools/isolation when available. It does not inherit the fixed review
 role's sandbox. Main must not claim tool isolation that the host cannot enforce.
-GUI/computer-use uses `--route computer-use` and retains its proven host binding.
+GUI/computer-use uses `--route computer-use` and resolves to native Luna; verify its host capabilities on actual use.
 Teacher uses `--role teacher --route teacher` and remains advisory/tool-free.
 
 Supply `--actors <file>` only for observed native/provider metadata. The resolver

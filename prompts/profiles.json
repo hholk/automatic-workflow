@@ -8,7 +8,7 @@
   },
   "worker_route_models": {
     "computer-use": {
-      "codex": "venice-responses/deepseek-v4-1-flash-1017",
+      "codex": "gpt-6-luna",
       "opencode": "venice/deepseek-v4-1-flash-1017",
       "github-copilot": "venice/deepseek-v4-1-flash-1017"
     }

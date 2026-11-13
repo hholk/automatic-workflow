@@ -89,11 +89,11 @@ test("uses each host registry binding with actionable bounded budgets", () => {
 })
 
 test("pins computer-use work to the configured host model", () => {
-  const models = { codex: "venice-responses/deepseek-v4-1-flash-1017", opencode: "venice/deepseek-v4-1-flash-1017" }
+  const models = { codex: "gpt-6-luna", opencode: "venice/deepseek-v4-1-flash-1017" }
   for (const [host, model] of Object.entries(models)) {
     const value = resolveSelection({ host, role: "worker", route: "computer-use" })
     assert.equal(value.model, model)
-    assert.equal(value.native_agent, host === "opencode" ? "aw-deepseek-worker" : "aw-worker")
+    assert.equal(value.native_agent, host === "opencode" ? "aw-deepseek-worker" : "default")
     assert.ok(value.components.includes("workflows/computer-use.md"))
     assert.throws(() => resolveSelection({
       host,
@@ -239,9 +239,9 @@ test("honors explicit native Luna selection for every code route", () => {
     assert.equal(Object.hasOwn(selected, "fallback_reason"), false)
     assert.equal(selected.model_capability.status, "unverified")
   }
-  assert.throws(() => resolveSelection({
+  assert.equal(resolveSelection({
     host: "codex", role: "worker", route: "computer-use", model: "gpt-6-luna", explicitModelRequest: true,
-  }), /requires worker model/)
+  }).model_provider, "codex")
   assert.throws(() => resolveSelection({
     host: "opencode", role: "worker", route: "review", model: "gpt-6-luna", explicitModelRequest: true,
   }), /unknown worker profile/)
