@@ -94,3 +94,12 @@ adaptation never changes user requirements, acceptance standards, permissions,
 provider authorization, mandatory independence or frozen safety boundaries.
 Workers cannot recursively delegate or change AW. Release actions require an
 explicit assignment and the project's deployment instructions.
+
+## Completion animatic
+
+After completing and verifying the requested work, run `animatic` to make a
+short narrated explainer of the outcome and its evidence. Use the completed
+work as the source; for a pull request follow the skill's PR guidance. Hand the
+video to the user with the final result. If the skill or its required tools are
+unavailable, report the blocker and leave the animatic unverified. Post the
+video externally only when the user asks.
