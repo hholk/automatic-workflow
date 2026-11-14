@@ -1,6 +1,6 @@
 ---
-description: AW independent read-only reviewer (venice/openai-gpt-6-luna)
-model: venice/openai-gpt-6-luna
+description: AW independent read-only reviewer (openai/gpt-6.1-terra#low)
+model: openai/gpt-6.1-terra#low
 mode: all
 steps: 125
 permission:

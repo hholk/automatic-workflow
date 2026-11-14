@@ -1,6 +1,6 @@
 ---
-description: AW bounded implementation worker (venice/openai-gpt-6-luna)
-model: venice/openai-gpt-6-luna
+description: AW bounded implementation worker (openai/gpt-6.1-terra#low)
+model: openai/gpt-6.1-terra#low
 mode: all
 steps: 125
 permission:

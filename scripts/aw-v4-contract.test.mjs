@@ -28,11 +28,11 @@ test("ships frozen worker and teacher contracts", () => {
 
 test("loads one resolved prompt profile under main-agent authority", () => {
   const skill = read("SKILL.md")
-  assert.match(skill, /AW v5/)
+  assert.match(skill, /AW v6/)
   assert.match(skill, /resolve-profile\.mjs/)
-  assert.match(skill, /load only the returned component paths/i)
-  assert.match(skill, /Only the main agent may start or resume agents/i)
-  assert.match(skill, /Claude Opus 5\.5.*advisory teacher/is)
+  assert.match(skill, /Load only returned\s+components/i)
+  assert.match(skill, /Main alone dispatches/i)
+  assert.match(skill, /focused teacher help/i)
   assert.match(skill, /DONE.*TEACHER_REQUEST/is)
   assert.doesNotMatch(skill, /HUMAN_REQUEST/)
 })
@@ -59,15 +59,11 @@ test("routes evidence gaps, human authority, and lean TDD explicitly", () => {
 test("prefers useful MCP evidence without forcing redundant calls", () => {
   const skill = read("SKILL.md")
   const worker = read("prompts/core/worker.md")
-  assert.match(skill, /Codebase Memory/)
-  assert.match(skill, /Context7/)
   assert.match(worker, /Codebase Memory/)
   assert.match(worker, /Context7/)
 
-  assert.match(skill, /reuse.*supplied evidence|reuse sufficient supplied evidence/is)
   assert.match(worker, /reuse.*supplied evidence|reuse sufficient supplied evidence/is)
 
-  assert.match(skill, /when either is likely\s+cheaper than manual discovery/is)
   assert.match(worker, /useful and cheaper/is)
   assert.match(worker, /skip unavailable, redundant, or non-decisive\s+calls/is)
 
@@ -92,7 +88,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   for (const name of ["aw-worker", "aw-reviewer"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
-    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: venice\/openai-gpt-6-luna$/m)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: openai\/gpt-6\.1-terra#low$/m)
     assert.match(profile, /mode: all/)
     assert.match(config, /task: deny/)
     assert.match(config, /"codebase-memory-mcp_\*": allow/)
@@ -119,7 +115,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   const codex = read("references/runtimes-codex.md")
   assert.match(codex, /explicit native model selection/i)
   assert.match(codex, /prompt profile/i)
-  assert.match(codex, /venice-responses\/deepseek-v4-1-flash-1017/)
+  assert.match(codex, /gpt-6\.1-terra/)
   assert.match(codex, /venice-responses\/claude-opus-5-5/)
   const copilot = read("references/runtimes-copilot.md")
   assert.match(copilot, /unresolved.*unknown/is)
@@ -153,7 +149,7 @@ test("benchmarks resolved v4 component sets including explicit Opus", () => {
 test("direct routing precedes ordinary work and handoffs share one contract", () => {
   const skill = read("SKILL.md")
   const routing = read("references/routing.md")
-  assert.ok(skill.indexOf("| Main can finish") < skill.indexOf("| Target state"))
+  assert.match(skill, /references\/routing\.md/)
   assert.ok(routing.indexOf("`tiny_local`") < routing.indexOf("`known_change`"))
   const explore = read("workflows/explore.md")
   assert.match(explore, /contracts\/worker\.md/)

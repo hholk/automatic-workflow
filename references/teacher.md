@@ -75,7 +75,7 @@ with original evidence and the worker's interpretation clearly separated. A usef
 FINAL includes a falsification check within VERIFY and names assumptions. Advisory
 help may precede failure for consequential decisions; it is not a compulsory phase.
 
-After advice, main assigns a checkable action. If Luna cannot carry out the hard
+After advice, main assigns a checkable action. If the worker cannot carry out the hard
 slice, main may implement it with its existing capabilities, or select an explicitly
 authorized host-supported implementer. Do not grant tools to the advisory role or
 silently substitute providers. A teacher outage does not invalidate available main

@@ -1,9 +1,9 @@
 # Managed by the AW skill; edit agents/codex/aw-reviewer.toml and reinstall.
 name = "aw-reviewer"
-description = "AW DeepSeek 1017 read-only exploration, diagnosis, comparison and review."
+description = "AW Terra read-only exploration, diagnosis, comparison and review."
 model_provider = "{{provider}}"
 model = "{{model}}"
-model_reasoning_effort = "high"
+model_reasoning_effort = "{{reasoning_effort}}"
 sandbox_mode = "read-only"
 web_search = "disabled"
 developer_instructions = """

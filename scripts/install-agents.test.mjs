@@ -34,7 +34,7 @@ test("installs regular Codex/Copilot agents and keeps OpenCode native symlinks",
     installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true })
     assert.equal(lstatSync(target).isSymbolicLink(), false)
     assert.equal(lstatSync(target).mode & 0o777, 0o600)
-    assert.match(readFileSync(target, "utf8"), /model_provider = "codex-router"/)
+    assert.match(readFileSync(target, "utf8"), /model_provider = "openai"/)
     assert.equal(lstatSync(join(home, ".config/opencode/agents/aw-reviewer.md")).isSymbolicLink(), true)
     const copilot = join(home, ".copilot/agents/aw-worker.agent.md")
     assert.equal(lstatSync(copilot).isSymbolicLink(), false)

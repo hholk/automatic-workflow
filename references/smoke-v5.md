@@ -11,12 +11,11 @@ were also absent. `codex --version` reported `codex-cli 0.163.0`, with a sandbox
 warning that PATH aliases could not be created. That warning is not evidence
 of a model, credential or profile failure. No broader retry was attempted.
 
-The repository's native worker binding remains `codex-router` with
-`venice-responses/deepseek-v4-1-flash-1017`. Local profiles and the CLI version establish intent
-and installed software only, not current provider availability. The direct
-Responses binding has been confirmed on the MacBook Pro; the Mac mini still
-needs its direct Responses setup and native acceptance. Do not install the
-new Mini profiles against its older Chat Completions route as a substitute.
+The current native code-worker binding is Terra with low reasoning: Codex uses
+`openai` / `gpt-6.1-terra`; OpenCode uses `openai/gpt-6.1-terra#low`.
+The dated Mini observations above remain historical. Local profiles and CLI
+versions establish intent and installed software, not execution availability.
+Confirm each machine's own model catalog and first real worker metadata.
 
 ## First authorized installation
 

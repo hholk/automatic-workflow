@@ -5,8 +5,8 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 | Route | subagent_type | Model |
 |---|---|---|
 | GUI/computer-use | `aw-deepseek-worker` | pinned `venice/deepseek-v4-1-flash-1017` |
-| fix, implement | `aw-worker` | `venice/openai-gpt-6-luna` |
-| explore, diagnose, review, compare | `aw-reviewer` | `venice/openai-gpt-6-luna` |
+| fix, implement | `aw-worker` | `openai/gpt-6.1-terra#low` |
+| explore, diagnose, review, compare | `aw-reviewer` | `openai/gpt-6.1-terra#low` |
 | teacher | `aw-teacher` | `venice/claude-opus-5-5` |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
@@ -35,8 +35,8 @@ Teacher: `--role teacher --route teacher`. Load returned components once.
 
 Use metadata from the first actual worker execution per unchanged session/profile
 to establish
-`providerID`/`modelID` = `venice`/`openai-gpt-6-luna`,
-`venice`/`deepseek-v4-1-flash-1017` for a pinned or fallback worker, or
+`providerID`/`modelID` = `openai`/`gpt-6.1-terra` with variant `low`,
+`venice`/`deepseek-v4-1-flash-1017` for the pinned computer-use worker, or
 `venice`/`claude-opus-5-5`. Config and self-identification are not proof.
 On mismatch, missing metadata or missing agent, stop. Never use stale cached
 profiles or substitute general/explore. For installation/reload failures only,
@@ -44,10 +44,7 @@ read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.
 
 Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).
 
-Native OpenCode fallback requires a confirmed model-scoped
-`LUNA_ROUTE_UNAVAILABLE` observed on the primary call. Account/key budget or
-provider-wide failures do not justify switching within the same Venice account. The resolver selects
-`aw-deepseek-worker` for writes and `aw-deepseek-reviewer` for read-only routes.
-These generated profiles bind the resolved model without changing the Luna default.
-Unknown failures, denials, explicit model requests, delegates, and computer-use
-never trigger fallback. Record requested model, resolved model, and exact reason.
+Terra workers select the native OpenAI/Codex provider and the `low` model variant.
+The resolver returns the base model plus `reasoning_effort: low`; generated
+profiles select `openai/gpt-6.1-terra#low`. No Luna fallback remains. On provider
+failure, report `BLOCKED_ENVIRONMENT` and preserve the requested model.

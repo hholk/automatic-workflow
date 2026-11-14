@@ -8,9 +8,6 @@ import { effectivePolicy } from "./effective-policy.mjs"
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const profiles = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
 
-const workerModel = (host) => host === "codex"
-  ? Object.keys(profiles.worker_profiles).find((key) => key.startsWith("codex|") && profiles.worker_profiles[key].binding.write_agent === "aw-worker").slice("codex|".length)
-  : profiles.worker_defaults[host]
 const teacherBinding = (host) => profiles.teacher_bindings[host]
 
 // Each template gets its model and provider from one role-based lookup.
@@ -20,15 +17,19 @@ const valuesFor = (host, role) => {
     const binding = teacherBinding(host)
     return { model: binding.model, provider: binding.model_provider }
   }
-  return { model: workerModel(host), provider: host === "codex" ? "codex-router" : "venice" }
+  const model = profiles.worker_defaults[host]
+  const binding = profiles.worker_profiles[`${host}|${model}`].binding
+  return { model: host === "opencode" ? `${model}#${binding.reasoning_effort}` : model,
+    provider: binding.model_provider, reasoning: binding.reasoning_effort }
 }
 
 const roleOf = (file) => /teacher/.test(file) ? "teacher" : /deepseek/.test(file) ? "deepseek" : "worker"
 
 export function renderTemplate(template, { host, role }) {
-  const { model, provider } = valuesFor(host, role)
+  const { model, provider, reasoning } = valuesFor(host, role)
   const policy = effectivePolicy({ host })
   return template.replaceAll("{{model}}", model).replaceAll("{{provider}}", provider)
+    .replaceAll("{{reasoning_effort}}", reasoning || "high")
     .replaceAll("{{worker_steps}}", String(policy.worker_step_budget))
     .replaceAll("{{failed_hypotheses}}", String(policy.teacher_after_failed_hypotheses))
 }

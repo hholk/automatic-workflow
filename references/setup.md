@@ -25,14 +25,10 @@ For Codex Router, use the exact host-specific model declared in
 curation and publication use the installed router's native catalog mechanism;
 never edit generated `router-model-*.toml` files. This skill update does not
 change the router catalog or restart its service.
-The Codex target is `venice-responses/deepseek-v4-1-flash-1017` on the direct
-Responses provider route. Confirm it separately in each machine's native router
-catalog before installation; the MacBook Pro confirmation does not establish
-Mini support. Preserve any existing machine-local override until its exact
-route has been verified. Do not copy a model slug between unlike adapters.
+Code workers and reviewers use native Terra with low reasoning: Codex binds
+`gpt-6.1-terra` through `openai`; OpenCode binds `openai/gpt-6.1-terra#low`.
+Confirm the model and low variant in each host's local catalog before installation.
 Preserve the main model and native Ultra configuration.
-Disable automatic alternate-model helpers such as the Luna vision bridge only
-with user approval; do not invent image capability for a text-only worker.
 
 Restart/reload harnesses after installation; never terminate user sessions.
 Run one native child probe per changed profile and verify execution metadata.

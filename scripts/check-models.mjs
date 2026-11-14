@@ -12,8 +12,8 @@ const worker = profiles.worker_defaults
 const teacher = profiles.teacher_bindings
 
 const expected = [
-  ["agents/generated/codex/aw-worker.toml", new RegExp(`model = "${profiles.worker_route_models["computer-use"].codex}"`)],
-  ["agents/generated/codex/aw-reviewer.toml", new RegExp(`model = "${profiles.worker_route_models["computer-use"].codex}"`)],
+  ["agents/generated/codex/aw-worker.toml", new RegExp(`model = "${worker.codex}"`)],
+  ["agents/generated/codex/aw-reviewer.toml", new RegExp(`model = "${worker.codex}"`)],
   ["agents/generated/codex/aw-teacher.toml", new RegExp(`model = "${teacher.codex.model}"`)],
   ["agents/generated/opencode/aw-worker.md", new RegExp(`model: ${worker.opencode}`)],
   ["agents/generated/opencode/aw-reviewer.md", new RegExp(`model: ${worker.opencode}`)],
@@ -23,6 +23,15 @@ const expected = [
 
 for (const role of ["worker", "reviewer"]) {
   expected.push([`agents/generated/opencode/aw-deepseek-${role}.md`, new RegExp(`^model: ${profiles.worker_route_models["computer-use"].opencode}$`, "m")])
+}
+
+for (const host of ["codex", "opencode"]) {
+  const binding = profiles.worker_profiles[`${host}|${worker[host]}`].binding
+  for (const role of ["worker", "reviewer"]) {
+    expected.push(host === "codex"
+      ? [`agents/generated/codex/aw-${role}.toml`, new RegExp(`model_reasoning_effort = "${binding.reasoning_effort}"`)]
+      : [`agents/generated/opencode/aw-${role}.md`, new RegExp(`^model: ${worker[host]}#${binding.reasoning_effort}$`, "m")])
+  }
 }
 
 const failures = expected.filter(([path, pattern]) => !pattern.test(read(path))).map(([path]) => path)

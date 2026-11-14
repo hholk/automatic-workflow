@@ -91,7 +91,7 @@ const workerProfileMatches = (selection) => {
     : `agents/generated/${selection.host}/aw-worker.${selection.host === "codex" ? "toml" : "md"}`)
   return !profile?.retired && selection.model === registry.worker_defaults[selection.host]
     && selection.profile_id === profile?.id && generated.split("\n").includes(
-      selection.host === "codex" ? `model = "${selection.model}"` : `model: ${selection.model}`)
+      selection.host === "codex" ? `model = "${selection.model}"` : `model: ${selection.model}${selection.reasoning_effort ? `#${selection.reasoning_effort}` : ""}`)
 }
 const copilotUnsupported = () => {
   const model = registry.worker_defaults["github-copilot"]

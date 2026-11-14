@@ -2,29 +2,18 @@
   "schema_version": 1,
   "main_default": "venice/deepseek-v4-1-flash-1017",
   "worker_defaults": {
-    "codex": "gpt-6-luna",
-    "opencode": "venice/openai-gpt-6-luna",
+    "codex": "gpt-6.1-terra",
+    "opencode": "openai/gpt-6.1-terra",
     "github-copilot": "venice/deepseek-v4-1-flash-1017"
   },
   "worker_route_models": {
     "computer-use": {
-      "codex": "gpt-6-luna",
+      "codex": "gpt-6.1-terra",
       "opencode": "venice/deepseek-v4-1-flash-1017",
       "github-copilot": "venice/deepseek-v4-1-flash-1017"
     }
   },
   "worker_profiles": {
-    "opencode|venice/openai-gpt-6-luna": {
-      "id": "opencode-gpt6-luna-worker-v1",
-      "core": "prompts/core/worker.md",
-      "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md",
-      "binding": {
-        "model_provider": "venice",
-        "write_agent": "aw-worker",
-        "read_agent": "aw-reviewer"
-      }
-    },
     "opencode|venice/deepseek-v4-1-flash-1017": {
       "id": "opencode-deepseek-1017-worker-v1",
       "core": "prompts/core/worker.md",
@@ -48,26 +37,28 @@
         "read_agent": "aw-worker"
       }
     },
-    "codex|venice-responses/deepseek-v4-1-flash-1017": {
-      "id": "codex-deepseek-1017-worker-v1",
+    "codex|gpt-6.1-terra": {
+      "id": "codex-gpt61-terra-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/deepseek-1017.md",
+      "model_delta": "prompts/models/gpt-6.1-terra.md",
       "binding": {
-        "model_provider": "codex-router",
+        "model_provider": "openai",
         "write_agent": "aw-worker",
-        "read_agent": "aw-reviewer"
+        "read_agent": "aw-reviewer",
+        "reasoning_effort": "low"
       }
     },
-    "codex|gpt-6-luna": {
-      "id": "codex-gpt6-luna-native-worker-v1",
+    "opencode|openai/gpt-6.1-terra": {
+      "id": "opencode-gpt61-terra-worker-v1",
       "core": "prompts/core/worker.md",
       "contract": "contracts/worker.md",
-      "model_delta": "prompts/models/gpt-6-luna.md",
+      "model_delta": "prompts/models/gpt-6.1-terra.md",
       "binding": {
-        "model_provider": "codex",
-        "write_agent": "default",
-        "read_agent": "default"
+        "model_provider": "openai",
+        "write_agent": "aw-worker",
+        "read_agent": "aw-reviewer",
+        "reasoning_effort": "low"
       }
     }
   },
@@ -100,21 +91,10 @@
       "profile_id": "opus-teacher-v1"
     }
   },
-  "worker_fallbacks": {
-    "opencode": {
-      "primary_model": "venice/openai-gpt-6-luna",
-      "fallback_model": "venice/deepseek-v4-1-flash-1017",
-      "confirmed_primary_failures": {
-        "LUNA_ROUTE_UNAVAILABLE": "provider-luna-route-unavailable"
-      },
-      "computer_use_allowed": false
-    }
-  },
   "measurement": {
     "cheap_models": [
-      "gpt-6-luna",
-      "venice/openai-gpt-6-luna",
-      "venice-responses/deepseek-v4-1-flash-1017",
+      "gpt-6.1-terra",
+      "openai/gpt-6.1-terra",
       "venice/deepseek-v4-1-flash-1017"
     ]
   }

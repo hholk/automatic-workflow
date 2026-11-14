@@ -91,23 +91,8 @@ export const resolveSelection = (input, overrides = {}) => {
   if (routeModel && input.model && input.model !== routeModel) {
     throw new Error(`route ${input.route} requires worker model: ${routeModel}`)
   }
-  const primaryModel = routeModel || input.model || registry.worker_defaults?.[profileHost]
-  const fallbackPolicy = registry.worker_fallbacks?.[profileHost]
-  let fallback = null
-  if (input.primaryFailure !== undefined) {
-    if (!fallbackPolicy) throw new Error("fallback blocked: no fallback policy for host")
-    const reason = fallbackPolicy.confirmed_primary_failures?.[input.primaryFailure]
-    if (!reason) throw new Error(`fallback blocked: unconfirmed primary failure: ${input.primaryFailure}`)
-    if (input.host !== profileHost) throw new Error("fallback blocked: native host required")
-    if (input.route === "computer-use" && !fallbackPolicy.computer_use_allowed) throw new Error("fallback blocked: computer-use capability is unverified")
-    if (input.explicitModelRequest) throw new Error("fallback blocked: explicit model request")
-    if (primaryModel !== fallbackPolicy.primary_model) throw new Error("fallback blocked: configured primary mismatch")
-    fallback = { requested_model: primaryModel, resolved_model: fallbackPolicy.fallback_model, reason }
-  }
-  const model = fallback?.resolved_model || primaryModel
-  if (!fallback && !routeModel && model === fallbackPolicy?.fallback_model && !input.explicitModelRequest) {
-    throw new Error("fallback blocked: alternate model requires an explicit request or confirmed primary failure")
-  }
+  const model = routeModel || input.model || registry.worker_defaults?.[profileHost]
+  if (input.primaryFailure !== undefined) throw new Error("fallback blocked: no fallback policy for host")
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
   const profile = registry.worker_profiles[`${profileHost}|${model}`]
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
@@ -116,10 +101,6 @@ export const resolveSelection = (input, overrides = {}) => {
   if (profile.unsupported_reason) throw new Error(`BLOCKED_ENVIRONMENT: unsupported worker profile: ${input.host}|${model}: ${profile.unsupported_reason}`)
   if (input.actors && (!input.actors.worker.used || input.actors.worker.resolved_model !== model)) {
     throw new Error("observed worker model must match the selected worker model")
-  }
-  if (fallback && input.actors && (input.actors.worker.requested_model !== fallback.requested_model ||
-      input.actors.worker.fallback_reason !== fallback.reason)) {
-    throw new Error("observed fallback provenance must match the confirmed primary failure")
   }
   const policy = effectivePolicy(input, { playbook })
   if (input.lessons !== undefined && (!input.prerequisites || typeof input.prerequisites !== "object" || Array.isArray(input.prerequisites) ||
@@ -155,7 +136,7 @@ export const resolveSelection = (input, overrides = {}) => {
     model,
     model_capability: modelCapability(model),
     model_provider: profile.binding.model_provider,
-    ...(fallback ? { requested_model: fallback.requested_model, fallback_reason: fallback.reason } : {}),
+    ...(profile.binding.reasoning_effort ? { reasoning_effort: profile.binding.reasoning_effort } : {}),
     native_agent: profile.binding[["fix", "implement", "computer-use"].includes(input.route) ? "write_agent" : "read_agent"],
     effective_policy: policy,
     budget: {

@@ -1,13 +1,13 @@
 ---
 name: aw
-description: AW v6 for Luna-first execution, focused teacher help, outcome-based acceptance and reversible learning from real usage. Use for multi-step implementation, diagnosis or review that benefits from scoped orchestration.
+description: AW v6 for Terra-low execution, focused teacher help, outcome-based acceptance and reversible learning from real usage. Use for multi-step implementation, diagnosis or review that benefits from scoped orchestration.
 ---
 
 # AW v6 · Operating learning
 
 State this heading and the selected route once on activation. Main owns routing,
 integration and acceptance. Resolve models and complete native bindings from
-`prompts/profiles.json`; code workers default to Luna. Keep the current main
+`prompts/profiles.json`; code workers default to Terra with low reasoning. Keep the current main
 model and explicit user model choices. Host instructions govern dispatch.
 
 Optimize accepted outcomes and total cost. Cheap-model token share is measured,

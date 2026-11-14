@@ -12,9 +12,9 @@ test("native agents exist and enforce provider, effort and recursion boundaries"
     const codex = read(`agents/codex/${name}.toml`)
     assert.match(codex, new RegExp(`name = "${name}"`))
     const rendered = read(`agents/generated/codex/${name}.toml`)
-    assert.match(rendered, /model_provider = "codex-router"/)
-    assert.match(rendered, /model = "venice-responses\/deepseek-v4-1-flash-1017"/)
-    assert.match(codex, /model_reasoning_effort = "high"/)
+    assert.match(rendered, /model_provider = "openai"/)
+    assert.match(rendered, /model = "gpt-6\.1-terra"/)
+    assert.match(rendered, /model_reasoning_effort = "low"/)
     assert.match(codex, /\[agents\]\nenabled = false/)
     assert.match(codex, /\[skills\]\ninclude_instructions = false/)
   }
@@ -34,13 +34,14 @@ test("native agents exist and enforce provider, effort and recursion boundaries"
 })
 
 test("active recipe uses one output contract and bounded context", () => {
-  const recipe = read("playbooks/recipes/bounded-v3.md")
-  assert.match(recipe, /1600/)
-  assert.match(recipe, /125 tool steps/)
-  assert.match(recipe, /300 words/)
-  assert.match(recipe, /contracts\/worker.md/)
+  const defaults = JSON.parse(read("playbooks/current.json")).defaults
+  const recipe = read(`playbooks/recipes/${defaults.recipe_id}.md`)
+  assert.match(recipe, /resolved context budget/)
+  assert.match(recipe, /125 is the installed worker ceiling/)
+  assert.match(recipe, /Return the worker contract concisely/)
+  assert.match(recipe, /unfinished item/)
   assert.doesNotMatch(recipe, /STATUS \| CHANGED/)
   const runtime = read("references/runtimes-opencode.md")
   assert.doesNotMatch(runtime, /codex exec/)
-  assert.match(runtime, /once per.*session/is)
+  assert.match(runtime, /first actual worker execution per unchanged session/is)
 })

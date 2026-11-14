@@ -101,9 +101,9 @@ The authoritative table and load paths are in
 | Role | Purpose | Model |
 | --- | --- | --- |
 | Main agent | Owns the objective, integration, and acceptance | Host default |
-| Worker / Reviewer on Codex | Bounded implementation or read-only investigation | Native Luna |
-| Worker / Reviewer on OpenCode | Bounded implementation or read-only investigation | Luna |
-| Computer-use on Codex / OpenCode | Bounded GUI operation | DeepSeek 1017 |
+| Worker / Reviewer on Codex | Bounded implementation or read-only investigation | Native Terra (low) |
+| Worker / Reviewer on OpenCode | Bounded implementation or read-only investigation | Terra (low) |
+| Computer-use on Codex / OpenCode | Bounded GUI operation | Terra (low) / DeepSeek 1017 |
 | Teacher | Advisory decision support, no tools | Opus 5.5 |
 
 Poteto supplies the default compatible style. Relevant Hstack skills are selected
