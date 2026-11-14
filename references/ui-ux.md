@@ -26,10 +26,42 @@ relevant persistence or side effects. Check the frequent task with realistic,
 consistent data and the changed loading, empty, success and error states.
 
 Check keyboard access, visible focus, accessible names, readable contrast and
-layout at the relevant viewport sizes. Capture the rendered states; for a restyle
-compare before and after. Main inspects the screenshots and fixes material visual
-or usability defects. A passing style inspector alone is insufficient evidence of
+layout at the relevant viewport sizes. Use the screenshot checkpoints below for
+rendered evidence. A passing style inspector alone is insufficient evidence of
 the user task; missing live or visual evidence stays UNKNOWN.
+
+## Screenshot checkpoints
+
+For every user-visible UI change, use screenshots during implementation and at
+acceptance. Main includes the affected screens, states and viewport sizes in
+SUCCESS and any worker brief. Capture through the project's existing harness or
+host-supported browser/device tools, within their permissions and restrictions.
+
+1. Before editing an existing UI, capture and inspect the affected starting state.
+   For a new screen, record that no prior rendered state exists. If the baseline
+   is unavailable, name the gap; never reconstruct a supposed before image.
+2. After each meaningful visual change, capture and inspect the affected rendered
+   state. Use the images to find clipping, overflow, spacing, hierarchy, contrast
+   and interaction feedback problems, fix material defects and capture again.
+   Check at semantic state changes rather than after every click or code edit.
+3. At acceptance, capture the final affected screens and changed loading, empty,
+   success and error states that apply to the task. Show the visible result of
+   changed interactions. For responsive web UI, include a representative wide
+   and narrow viewport; use the relevant target sizes for native or fixed-size UI.
+   Compare before and after at matching states and sizes when a baseline exists.
+4. Save screenshots with the existing task artifacts. Identify each image's
+   screen/state, viewport and source revision or capture point. Workers return
+   these paths with their evidence. Main opens and inspects the final images and
+   checks their coverage against SUCCESS before accepting the UI work.
+5. Link the most useful final screenshots in the handback, including a before/after
+   pair when it explains the change. State which screens, states and sizes were
+   inspected and which remain unverified. Tool output saying an image was saved
+   is not evidence that anyone inspected it.
+
+Scale captures to distinct affected states, not a screenshot quota. Reuse images
+only while the rendered state, viewport and relevant implementation are unchanged;
+refresh affected captures after further changes. If capture tools or the live UI
+are unavailable, report the concrete blocker and keep visual acceptance UNKNOWN.
 
 Reuse existing `verify-*` skills first. Invoke `create-verification-skill` only
 when the user requests a reusable project verification setup; invoke

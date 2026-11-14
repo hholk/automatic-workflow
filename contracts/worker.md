@@ -24,6 +24,9 @@ Main integrates and verifies the full outcome before accepting it.
 
 ## Interactive UI work
 
+For UI changes, follow the [screenshot checkpoints](../references/ui-ux.md#screenshot-checkpoints)
+and return the inspected image paths, states and viewport sizes in EVIDENCE.
+
 For GUI or computer-use tasks, plan the next state transitions before acting.
 Batch deterministic actions and inspect at semantic state changes or when an
 action is uncertain; do not spend a screenshot/tool call after every click.

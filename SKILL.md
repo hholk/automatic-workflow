@@ -38,7 +38,8 @@ Use `assurance: direct` by default. Use `reviewed` for material risk, unresolved
 acceptance uncertainty or explicitly requested independent review. Task size
 alone does not require review fanout. Long or resumed work checkpoints through
 [mission lifecycle](references/mission-lifecycle.md), including direct work.
-UI work also uses [UI/UX acceptance](references/ui-ux.md).
+For UI changes, load [UI/UX acceptance](references/ui-ux.md) before implementation
+and include its screenshot checkpoints in SUCCESS and any worker brief.
 
 ## Execute
 
