@@ -13,6 +13,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
 const defaultRegistry = readJson(join(root, "prompts/profiles.json"))
 const defaultPlaybook = readJson(join(root, "playbooks/current.json"))
+const own = (object, key) => object && Object.hasOwn(object, key) ? object[key] : undefined
 const workerRoutes = new Set(["explore", "diagnose", "fix", "implement", "review", "computer-use"])
 
 const assertComponents = (components) => {
@@ -23,9 +24,9 @@ const assertComponents = (components) => {
 
 const resolvePromptProfile = (input, registry, playbook, nativeProfile) => {
   const id = input.promptProfileID || playbook.defaults?.prompt_profile_id
-  const profile = registry.prompt_profiles?.[id]
+  const profile = own(registry.prompt_profiles, id)
   if (!profile) throw new Error(`unknown prompt profile: ${id}`)
-  const overlay = profile.overlays?.[nativeProfile.id] || null
+  const overlay = own(profile.overlays, nativeProfile.id) || null
   if (id !== "model-bound-v1" && !overlay) {
     throw new Error(`prompt profile ${id} is not applicable to ${nativeProfile.id}`)
   }
@@ -46,14 +47,14 @@ export const resolveSelection = (input, overrides = {}) => {
 
   if (input.role === "teacher") {
     if (input.route !== "teacher") throw new Error(`unknown route for teacher: ${input.route}`)
-    const binding = registry.teacher_bindings?.[profileHost]
+    const binding = own(registry.teacher_bindings, profileHost)
     if (!binding) throw new Error(`unsupported teacher host: ${input.host}`)
     if (input.model && ![registry.teacher_default, binding.model].includes(input.model)) {
       throw new Error(`unsupported teacher model: ${input.model}`)
     }
     const model = registry.teacher_default
     const profile = Object.values(registry.teacher_profiles || {}).find((item) => item.id === binding.profile_id)
-    if (!profile || registry.teacher_profiles[model]?.id !== profile.id) throw new Error(`inconsistent teacher binding: ${profileHost}`)
+    if (!profile || own(registry.teacher_profiles, model)?.id !== profile.id) throw new Error(`inconsistent teacher binding: ${profileHost}`)
     const policy = effectivePolicy(input, { playbook })
     const promptProfile = resolvePromptProfile({ ...input, promptProfileID: policy.prompt_profile_id }, registry, playbook, profile)
     const components = [profile.core, profile.contract, profile.model_delta, promptProfile.overlay,
@@ -87,14 +88,14 @@ export const resolveSelection = (input, overrides = {}) => {
   }
 
   if (!workerRoutes.has(input.route)) throw new Error(`unknown route: ${input.route}`)
-  const routeModel = registry.worker_route_models?.[input.route]?.[profileHost]
+  const routeModel = own(own(registry.worker_route_models, input.route), profileHost)
   if (routeModel && input.model && input.model !== routeModel) {
     throw new Error(`route ${input.route} requires worker model: ${routeModel}`)
   }
-  const model = routeModel || input.model || registry.worker_defaults?.[profileHost]
+  const model = routeModel || input.model || own(registry.worker_defaults, profileHost)
   if (input.primaryFailure !== undefined) throw new Error("fallback blocked: no fallback policy for host")
   if (!model) throw new Error(`missing default worker model: ${input.host}`)
-  const profile = registry.worker_profiles[`${profileHost}|${model}`]
+  const profile = own(registry.worker_profiles, `${profileHost}|${model}`)
   if (!profile) throw new Error(`unknown worker profile: ${input.host}|${model}`)
   if (!profile.binding?.model_provider || !profile.binding.write_agent || !profile.binding.read_agent) throw new Error("incomplete worker binding")
   if (profile.retired) throw new Error(`retired worker profile: ${input.host}|${model}`)

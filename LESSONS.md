@@ -10,6 +10,30 @@ See `references/lessons.md` for measurement and retention rules.
 
  <!-- lessons -->
 
+## 2026-11-16 — Installation and registry selection share explicit boundaries
+
+- Failure: the installer accepted an unsupported Copilot host even though setup
+  and selection refused it; inherited registry entries could select defaults,
+  profiles, route overrides or prompt overlays not owned by the registry.
+- Cause: installation omitted the registry availability check; resolver lookup
+  used ordinary property access rather than own-property membership.
+- Prevention: preflight every selected host before installation writes; resolve
+  registry maps through own properties only. Keep check-only inspection available.
+- Evidence: both targeted regression tests failed before the fixes and passed
+  after them. The related installer, resolver/CLI, rendering, policy, receipt and
+  native-routing suites passed 53/53; model consistency and diff checks passed.
+  Review also exposed missing/retired/incomplete installer bindings; a new fixture
+  failed before fail-closed preflight and passed for all six invalid cases.
+- Verify: `node --test scripts/resolve-profile.test.mjs scripts/resolve-profile-cli.test.mjs scripts/install-agents.test.mjs scripts/render-agents.test.mjs scripts/effective-policy.test.mjs scripts/selection-receipt.test.mjs scripts/native-routing.test.mjs && node scripts/check-models.mjs && git diff --check`.
+- Operating evidence: existing sanitized diagnostics contained 318 distinct runs,
+  29 complete-usage runs and 164 excluded invalid records. Current v6 groups had
+  0 accepted, 1 failed and 51 unknown outcomes. No budget/model trial or efficiency
+  claim follows from these observations. No raw sessions or live provider calls.
+- Status: validated locally for correctness in an isolated worktree; integration,
+  installation and independent review pending. These tests belong to the explicitly
+  assigned bug-fix task, not to an operating-learning experiment.
+
+
 ## 2026-11-10 — Luna-first operation with reversible learning
 
 - Change: native Luna code default on Codex; complete profile bindings; bounded-v4

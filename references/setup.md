@@ -16,7 +16,9 @@ spawn fails with "agent type is currently not available".
 The Copilot CLI discovers user custom agents in `~/.copilot/agents/`. Its
 DeepSeek 1017 binding is currently UNSUPPORTED and the generated profile is
 disabled. Do not install or execute it until an exact native Copilot binding
-is confirmed. A Venice model slug alone does not configure a Copilot provider.
+is confirmed. The installer refuses `--apply` for an unsupported host before
+writing any selected host, including mixed-host requests. Check-only inspection
+remains available. A Venice model slug alone does not configure a Copilot provider.
 
 For Codex Router, use the exact host-specific model declared in
 `prompts/profiles.json`: the Codex teacher uses

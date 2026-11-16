@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
+const profiles = JSON.parse(readFileSync(join(root, "prompts/profiles.json"), "utf8"))
 const names = ["aw-worker", "aw-reviewer", "aw-teacher"]
 const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex")
 // The marker line is added by this installer; strip it so a file installed
@@ -43,6 +44,25 @@ export function installAgents({ home = homedir(), apply = false, host, hosts } =
   const selected = new Set(requested.map((name) => name === "github-copilot" ? "copilot" : name))
   for (const name of selected) {
     if (!["codex", "opencode", "copilot"].includes(name)) throw new Error(`unsupported install host: ${name}`)
+  }
+  // Installation must respect the same availability boundary as selection.
+  // Preflight every requested host before creating any directories or files.
+  if (apply) {
+    for (const name of selected) {
+      const profileHost = name === "copilot" ? "github-copilot" : name
+      const model = Object.hasOwn(profiles.worker_defaults || {}, profileHost)
+        ? profiles.worker_defaults[profileHost] : undefined
+      const key = `${profileHost}|${model}`
+      const profile = Object.hasOwn(profiles.worker_profiles || {}, key)
+        ? profiles.worker_profiles[key] : undefined
+      if (!model || !profile || profile.retired || !profile.binding?.model_provider ||
+          !profile.binding.write_agent || !profile.binding.read_agent) {
+        throw new Error(`BLOCKED_ENVIRONMENT: invalid install binding: ${profileHost}`)
+      }
+      if (profile.unsupported_reason) {
+        throw new Error(`BLOCKED_ENVIRONMENT: unsupported install host: ${profileHost}: ${profile.unsupported_reason}`)
+      }
+    }
   }
   const manifestPath = join(home, ".local/state/aw/installed-agents.json")
   assertDirectories(manifestPath, home)

@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { mkdtempSync, mkdirSync, lstatSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { spawnSync } from "node:child_process"
 import { installAgents } from "./install-agents.mjs"
 
@@ -26,21 +26,17 @@ const fixture = () => {
   mkdirSync(join(home, ".codex/agents"), { recursive: true })
   return home
 }
-test("installs regular Codex/Copilot agents and keeps OpenCode native symlinks", () => {
+test("installs regular Codex agents and keeps OpenCode native symlinks", () => {
   const home = fixture()
   try {
     const target = join(home, ".codex/agents/aw-reviewer.toml")
     symlinkSync(fileURLToPath(new URL("../agents/codex/aw-reviewer.toml", import.meta.url)), target)
-    installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true })
+    installAgents({ home, hosts: ["codex", "opencode"], apply: true })
     assert.equal(lstatSync(target).isSymbolicLink(), false)
     assert.equal(lstatSync(target).mode & 0o777, 0o600)
     assert.match(readFileSync(target, "utf8"), /model_provider = "openai"/)
     assert.equal(lstatSync(join(home, ".config/opencode/agents/aw-reviewer.md")).isSymbolicLink(), true)
-    const copilot = join(home, ".copilot/agents/aw-worker.agent.md")
-    assert.equal(lstatSync(copilot).isSymbolicLink(), false)
-    assert.match(readFileSync(copilot, "utf8"), /model: venice\/deepseek-v4-1-flash-1017/)
-    assert.match(readFileSync(copilot, "utf8"), /model-policy: required/)
-    assert.ok(installAgents({ home }).every((entry) => entry.status === "current"))
+    assert.ok(installAgents({ home, hosts: ["codex", "opencode"] }).every((entry) => entry.status === "current"))
   } finally { rmSync(home, { recursive: true }) }
 })
 test("an unrelated agent blocks the whole installation before any writes", () => {
@@ -48,22 +44,10 @@ test("an unrelated agent blocks the whole installation before any writes", () =>
   try {
     const target = join(home, ".codex/agents/aw-teacher.toml")
     writeFileSync(target, "user content")
-    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
+    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode"], apply: true }), /Refusing unrelated destination/)
     assert.equal(readFileSync(target, "utf8"), "user content")
     assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
     assert.throws(() => lstatSync(join(home, ".copilot")), /ENOENT/)
-  } finally { rmSync(home, { recursive: true }) }
-})
-
-test("an unrelated Copilot agent blocks the installation before any writes", () => {
-  const home = fixture()
-  try {
-    const target = join(home, ".copilot/agents/aw-worker.agent.md")
-    mkdirSync(join(home, ".copilot/agents"), { recursive: true })
-    writeFileSync(target, "user content")
-    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
-    assert.equal(readFileSync(target, "utf8"), "user content")
-    assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
   } finally { rmSync(home, { recursive: true }) }
 })
 
@@ -89,7 +73,7 @@ test("an unrelated dangling symlink blocks every selected host before writes", (
   try {
     const target = join(home, ".codex/agents/aw-teacher.toml")
     symlinkSync(join(home, "unrelated-missing.toml"), target)
-    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing unrelated destination/)
+    assert.throws(() => installAgents({ home, hosts: ["codex", "opencode"], apply: true }), /Refusing unrelated destination/)
     assert.equal(lstatSync(target).isSymbolicLink(), true)
     assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
     assert.throws(() => lstatSync(join(home, ".local")), /ENOENT/)
@@ -118,7 +102,7 @@ test("a symlink ancestor or manifest is rejected before agent writes", () => {
         writeFileSync(join(external, "manifest.json"), "{}")
         symlinkSync(join(external, "manifest.json"), join(home, ".local/state/aw/installed-agents.json"))
       }
-      assert.throws(() => installAgents({ home, hosts: ["codex", "opencode", "github-copilot"], apply: true }), /Refusing/)
+      assert.throws(() => installAgents({ home, hosts: ["codex", "opencode"], apply: true }), /Refusing/)
       assert.throws(() => lstatSync(join(home, ".config/opencode/agents/aw-worker.md")), /ENOENT/)
       assert.throws(() => lstatSync(join(external, "agents")), /ENOENT/)
     } finally { rmSync(home, { recursive: true }); rmSync(external, { recursive: true }) }
@@ -135,4 +119,61 @@ test("apply without explicit host scope refuses before any write", () => {
     assert.throws(() => lstatSync(join(home, ".copilot")), /ENOENT/)
     assert.throws(() => lstatSync(join(home, ".local")), /ENOENT/)
   } finally { rmSync(home, { recursive: true }) }
+})
+
+test("unsupported Copilot installation refuses all writes, including mixed host requests", () => {
+  for (const hosts of [["github-copilot"], ["codex", "opencode", "github-copilot"]]) {
+    const home = mkdtempSync(join(tmpdir(), "aw-install-unsupported-"))
+    try {
+      assert.throws(() => installAgents({ home, hosts, apply: true }), /BLOCKED_ENVIRONMENT.*COPILOT_NATIVE_DEEPSEEK_BINDING_UNAVAILABLE/)
+      for (const directory of [".codex", ".config", ".copilot", ".local"]) {
+        assert.throws(() => lstatSync(join(home, directory)), /ENOENT/)
+      }
+    } finally { rmSync(home, { recursive: true }) }
+  }
+})
+
+test("unsupported Copilot preflight preserves existing unrelated files and check-only inspection", () => {
+  const home = mkdtempSync(join(tmpdir(), "aw-install-copilot-existing-"))
+  try {
+    const target = join(home, ".copilot/agents/aw-worker.agent.md")
+    assert.equal(installAgents({ home, host: "github-copilot" })[0].status, "missing")
+    assert.throws(() => lstatSync(join(home, ".copilot")), /ENOENT/)
+    mkdirSync(join(home, ".copilot/agents"), { recursive: true })
+    writeFileSync(target, "user content")
+    assert.throws(() => installAgents({ home, host: "github-copilot", apply: true }), /BLOCKED_ENVIRONMENT/)
+    assert.equal(readFileSync(target, "utf8"), "user content")
+    assert.throws(() => lstatSync(join(home, ".local")), /ENOENT/)
+  } finally { rmSync(home, { recursive: true }) }
+})
+
+test("invalid selected-host registries fail closed before any mixed-host writes", async () => {
+  const mutations = [
+    (registry) => { delete registry.worker_defaults.codex },
+    (registry) => { delete registry.worker_profiles[`codex|${registry.worker_defaults.codex}`] },
+    (registry) => { registry.worker_profiles[`codex|${registry.worker_defaults.codex}`].retired = true },
+    ...["model_provider", "write_agent", "read_agent"].map((key) => (registry) => {
+      delete registry.worker_profiles[`codex|${registry.worker_defaults.codex}`].binding[key]
+    }),
+  ]
+  for (const mutate of mutations) {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "aw-install-registry-"))
+    const home = join(fixtureRoot, "home")
+    try {
+      mkdirSync(home)
+      mkdirSync(join(fixtureRoot, "scripts"))
+      mkdirSync(join(fixtureRoot, "prompts"))
+      const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
+      mutate(registry)
+      writeFileSync(join(fixtureRoot, "prompts/profiles.json"), JSON.stringify(registry))
+      writeFileSync(join(fixtureRoot, "scripts/install-agents.mjs"), readFileSync(new URL("./install-agents.mjs", import.meta.url)))
+      symlinkSync(fileURLToPath(new URL("../agents", import.meta.url)), join(fixtureRoot, "agents"), "dir")
+      const { installAgents: installFixture } = await import(pathToFileURL(join(fixtureRoot, "scripts/install-agents.mjs")))
+      assert.ok(installFixture({ home, hosts: ["opencode", "codex"] }).every((entry) => entry.status === "missing"))
+      assert.throws(() => installFixture({ home, hosts: ["opencode", "codex"], apply: true }), /BLOCKED_ENVIRONMENT/)
+      for (const directory of [".codex", ".config", ".copilot", ".local"]) {
+        assert.throws(() => lstatSync(join(home, directory)), /ENOENT/)
+      }
+    } finally { rmSync(fixtureRoot, { recursive: true }) }
+  }
 })
