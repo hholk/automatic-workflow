@@ -7,8 +7,11 @@ manual-only flags; do not modify global skill discovery or activate other stacks
 
 ## Load and select
 
-Resolve `poteto-mode` from the current session catalog or the configured Hstack
-source. Read its SKILL.md once per session, then use only relevant sections.
+Resolve `poteto-mode` from the same Hstack installation as AW, using the sibling
+`../../poteto-mode/SKILL.md` from this reference. Read it on every AW activation
+(once per session is sufficient) and keep its compatible instructions active
+through completion and resumed turns. This is the user's explicit standing
+invocation of Poteto within AW; preserve its manual-only flag outside AW.
 Use its clear prose, candid judgment, simple implementation and outcome ownership.
 Apply this compatibility filter before following any nested trigger.
 
@@ -37,6 +40,40 @@ manual-only skills require explicit invocation. Resolve names against the instal
 catalog rather than assuming a fixed machine path or downloading missing skills.
 If a nonessential reference is unavailable, use the AW contract and disclose the
 missing reference only when it materially affects the result.
+
+## Curated Animatic
+
+Use the sibling `../../animatic/SKILL.md` for requested animatics, narrated
+explainers and AW's completion animatic. This is the optimized Hstack package,
+including `MEDIA.md` and `scripts/build-media.mjs`. Read its toolchain config
+before building. Use screenshots for static UI, real recordings for interactions,
+and deterministic animated infographics for sourced relationships. Follow its
+mixed-media verification and hand over the resulting video. A missing optimized
+package is a blocker for the animatic; report it rather than silently selecting
+an older still-frame implementation. It does not invalidate separately verified
+engineering work.
+
+## Task-specific access
+
+Load only the skill needed for the current branch; availability is not activation.
+
+| Task | Hstack skill |
+|---|---|
+| Diagnose a broken behavior | `diagnosing-bugs` |
+| TypeScript implementation | `typescript-best-practices` |
+| Existing cheap regression target or requested test-first work | `tdd` |
+| Frontend visual direction and implementation | `design-taste-frontend` |
+| Explain a subsystem to the user | `teach-code` |
+| Requested research deliverable | `research` |
+| PR description | `pr` |
+| Requested review of a change | `h-code-review` |
+
+Names must exist in the active installation before use. Skills absent from Hstack
+remain optional external tools, not bundled dependencies. Recommend substantial
+additions such as `blast-radius`, `create-verification-skill`, `statechart` or
+`reverse-engineer-anything` when the task warrants them; preserve their invocation
+and delegation gates. `arena`, `swarm`, `interrogate`, `reflect`, setup commands
+and global changes require the user's explicit request or existing authorization.
 
 ## Resolve conflicts before acting
 

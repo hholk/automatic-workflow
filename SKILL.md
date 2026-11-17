@@ -16,9 +16,10 @@ quality remain unverified until observed; configuration proves neither.
 
 ## Hstack defaults
 
-Use `poteto-mode` as the default style and judgment reference, subject to the
+Always load `poteto-mode` when AW starts and keep it active for the AW task as
+the style and judgment reference, subject to the
 [Hstack compatibility rules](references/hstack.md). Resolve its installed source
-from the active catalog and read it once per session. Automatically select useful
+from the same installed Hstack bundle and read it once per session. Automatically select useful
 Hstack skills for the actual task through the same rules. Load only relevant
 references; AW retains orchestration, model selection and operating learning.
 
@@ -98,7 +99,8 @@ explicit assignment and the project's deployment instructions.
 
 ## Completion animatic
 
-After completing and verifying the requested work, run `animatic` to make a
+After completing and verifying the requested work, run Hstack's curated `animatic`
+(with `MEDIA.md` and `scripts/build-media.mjs`) to make a
 short narrated explainer of the outcome and its evidence. Use the completed
 work as the source; for a pull request follow the skill's PR guidance. Hand the
 video to the user with the final result. If the skill or its required tools are

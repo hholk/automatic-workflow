@@ -106,7 +106,9 @@ The authoritative table and load paths are in
 | Computer-use on Codex / OpenCode | Bounded GUI operation | Terra (low) / DeepSeek 1017 |
 | Teacher | Advisory decision support, no tools | Opus 5.5 |
 
-Poteto supplies the default compatible style. Relevant Hstack skills are selected
+AW always loads the bundled Poteto mode for compatible style and working methods.
+Install AW through Hstack with its sibling Poteto and curated mixed-media Animatic
+packages; this repository remains the AW development source. Relevant Hstack skills are selected
 through [Hstack compatibility rules](references/hstack.md). Cheap-model token
 share is measured, never a quota.
 
