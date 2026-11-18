@@ -41,6 +41,20 @@ catalog rather than assuming a fixed machine path or downloading missing skills.
 If a nonessential reference is unavailable, use the AW contract and disclose the
 missing reference only when it materially affects the result.
 
+## Worker handoff
+
+While preparing CONTEXT, identify a specific mistake the worker could make on
+this task. If an authorized skill supplies a useful way to catch it, translate
+one relevant step into a short instruction and tie it to an existing numbered
+SUCCESS criterion. Leave the implementation choice to the worker. Omit the
+hint when the brief or selected workflow already gives that step, or when no
+skill adds one. Include a source section only if the worker needs more detail.
+
+For a retried import whose SUCCESS 1 requires exactly one stored row per import
+ID, the idempotency skill suggests this CONTEXT sentence: “Trigger the timeout
+after the first write commits, retry with the same import ID, then count its
+stored rows for SUCCESS 1.” The existing VERIFY command checks that count.
+
 ## Curated Animatic
 
 Use the sibling `../../animatic/SKILL.md` for requested animatics, narrated
@@ -86,8 +100,8 @@ Poteto and supporting skills contribute only compatible task methods and style.
   do not replace them.
 - Main alone orchestrates under AW's dispatch rules. Poteto-agent roles,
   automatic background tasks, fresh-agent mandates and nested skill fanout do
-  not create additional delegation. Give workers only the selected reference
-  paths, relevant sections and this scope; preserve their no-delegation contract.
+  not create additional delegation. Keep each handoff within the assigned scope
+  and preserve the worker's no-delegation contract.
 - Heavy workflows such as architect/arena/swarm/interrogate/reflect, automatic
   independent review, mandatory prototypes and PR creation remain opt-in or
   justified by the task's risk under the user's existing rules. A Poteto trigger
@@ -113,7 +127,23 @@ Name selected skills once when first applying them. Reuse already loaded materia
 Do not recursively load every skill a reference mentions. Workers receive only
 references needed for their assigned outcome, not the complete Hstack catalog.
 
-At the normal operating-learning checkpoint, record a skill choice only when it
-helped a decision, prevented a repeated error or introduced observable overhead.
+Start observing handoffs with delegated retry tasks. At the normal
+operating-learning checkpoint, use the Evidence line of the existing
+[local observation](lessons.md#entry-format) for each eligible handoff, including
+failures and cases with no added hint. Record the run and task IDs, skill used for the added hint
+or `none`, whether the first worker result met every original SUCCESS criterion,
+and whether another worker attempt or a substantive main correction was needed.
+Record each outcome as yes, no or unknown from the actual verification and
+handoff history. For example: `hint=principle-make-operations-idempotent first_pass=no rework=yes`.
+Keep separate handoffs distinct within a run. Use total cost
+through acceptance only when observed for all participating actors.
+
+Compare like task classes, harnesses and actual model profiles. Selection by main
+can favor harder cases; these observations can guide the next change. A causal
+claim needs a separately authorized controlled comparison. A trial may randomly omit an optional hint on eligible real tasks while
+keeping scope, required guidance and checks fixed.
+
+For other tasks, record a skill choice when it informed a decision, prevented a
+repeated error or introduced observable overhead.
 Treat the effect as provisional. Adjust future selection from real evidence;
 never turn the number of loaded skills into a quality or efficiency target.

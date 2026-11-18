@@ -31,7 +31,9 @@ result, independent evidence, a required capability, or useful parallelism.
 
 Give each worker one complete, observable outcome: OBJECTIVE, numbered SUCCESS,
 CONTEXT, PATHS, NON_GOALS and VERIFY. Include the relevant requirement sources,
-decisive evidence, dependencies and stop conditions. Freeze a v2 brief through
+decisive evidence, dependencies and stop conditions. When a supporting skill can
+prevent a concrete mistake, [put its useful step in CONTEXT](references/hstack.md#worker-handoff).
+Freeze a v2 brief through
 [execution gates](references/execution-v5.md). Derive acceptance from the user's
 requirements and independent evidence, rather than only the builder's tests.
 
