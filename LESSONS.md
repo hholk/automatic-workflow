@@ -10,6 +10,32 @@ See `references/lessons.md` for measurement and retention rules.
 
  <!-- lessons -->
 
+## 2026-11-21 — AW v7 Hstack integration, structured learning and context guardrails
+
+- Context: Local AW contract checks and a mirrored Hstack bundle with curated
+  Poteto core. The offline benchmark resolves profiles without native dispatch.
+- Evidence: The AW contract suite passed 10/10; the offline benchmark covered
+  routing and profiles 11/11 each. The entry point measured 797 words and
+  1,597 estimated tokens. AW, its Hstack reference and curated Poteto core
+  totaled 4,372 estimated tokens using the benchmark's character-based estimate.
+- Hypothesis: Task-scoped references, criterion-linked hints and an Animatic
+  threshold reduce unnecessary context and handback work while preserving
+  verification coverage.
+- Baseline / Candidate: `acceptance-routing-v6` / `acceptance-routing-v7`.
+  The candidate adds route rollups, an active trial slot and Hstack escalation.
+  Scoped subagents handle non-trivial discovery, diagnosis, implementation and
+  independent checks by default. Main owns routing, integration and acceptance,
+  and handles tiny single-location work directly.
+- Rollback: Restore the prior selection or scoped instruction if verified work
+  repeatedly loses required evidence. Retain observations and unrelated changes.
+- Status: observation
+- Outcome: Local documentation and static routing checks passed. No observed
+  run outcomes, rework rates or complete usage totals are attributable to v7 yet.
+- Verify: `node --test scripts/aw-v4-contract.test.mjs`, `wc -w -c SKILL.md`
+  and `node scripts/benchmark.mjs --skill <mirrored-aw-path>`.
+- Limitations: The benchmark estimates context and exercises static paths.
+  Live provider behavior, Animatic rendering, cost and output quality are unmeasured.
+
 ## 2026-11-16 — Installation and registry selection share explicit boundaries
 
 - Failure: the installer accepted an unsupported Copilot host even though setup

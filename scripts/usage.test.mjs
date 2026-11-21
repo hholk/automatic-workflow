@@ -1,10 +1,11 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
-import { compareRecipes, normalizeRun, readRuns } from "./evidence.mjs"
+import { appendAttestation, appendRun, compareRecipes, normalizeRun, readRuns } from "./evidence.mjs"
+import { operatingReport } from "./operating-report.mjs"
 
 const usageScript = new URL("./usage.mjs", import.meta.url).pathname
 
@@ -217,4 +218,106 @@ test("worker shares are diagnostic, not a promotion objective", () => {
   }
   assert.equal(compareRecipes(runs, "base", "cheaper", 5).verdict, "eligible-to-promote")
   assert.equal(compareRecipes(runs, "base", "share-only", 5).verdict, "no-change")
+})
+
+test("host attestations update outcomes and carry bounded, sanitized skill observations", (t) => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-attest-hints-"))
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  const invoke = (...args) => spawnSync(process.execPath, [usageScript, ...args], {
+    encoding: "utf8", env: { ...process.env, AW_STATE_DIR: stateDir },
+  })
+  const item = run({ runID: "hint-run", recipe: "acceptance-routing-v7", taskID: "task" })
+  const initial = appendRun({ ...item, outcome: "PARTIAL_WITH_UNKNOWN",
+    skill_hints: [{ skill: " initial-hint ", first_pass: null, rework: true, extra: "discarded text" }] }, stateDir)
+  assert.deepEqual(initial.skill_hints, [{ skill: "initial-hint", first_pass: null, rework: true }])
+  assert.equal(readRuns(stateDir)[0].outcome, "PARTIAL_WITH_UNKNOWN")
+  assert.throws(() => appendRun({ ...item, skill_hints: Array(17).fill(initial.skill_hints[0]) }, stateDir), /at most 16/)
+  assert.throws(() => appendRun({ ...item, skill_hints: [{ skill: "raw prompt text" }] }, stateDir), /skill identifier/)
+  assert.throws(() => appendAttestation({ run_id: item.run_id, verify_id: "test", skill_hints: [{ skill: "hstack", first_pass: "yes" }] }, stateDir), /must be boolean/)
+  assert.throws(() => appendAttestation({ run_id: item.run_id, verify_id: "test", outcome: "invented" }, stateDir), /invalid outcome/)
+
+  const flags = ["attest", "--run-id", item.run_id, "--verify-id", "test", "--verify-exit-code", "0", "--semantic-success", "true",
+    "--scope-covered", "1", "--scope-total", "1", "--review-pass", "true", "--forbidden-changes", "0",
+    "--accepted-worker-actions", "1", "--parent-rework", "0"]
+  const rejected = invoke(...flags, "--skill-hint", "hstack:maybe:no")
+  assert.equal(rejected.status, 1)
+  assert.match(rejected.stderr, /--skill-hint requires/)
+  const attested = invoke(...flags, "--outcome", "VERIFIED", "--skill-hint", "principle-make-operations-idempotent:yes:no",
+    "--skill-hint", "hstack:review:unknown:yes")
+  assert.equal(attested.status, 0, attested.stderr)
+  const expected = [{ skill: "principle-make-operations-idempotent", first_pass: true, rework: false },
+    { skill: "hstack:review", first_pass: null, rework: true }]
+  assert.deepEqual(JSON.parse(attested.stdout).skill_hints, expected)
+  const [merged] = readRuns(stateDir)
+  assert.deepEqual(merged.skill_hints, expected)
+  assert.equal(merged.outcome, "VERIFIED")
+  assert.equal(merged.quality.eligible, true)
+
+  const payload = join(stateDir, "attestation.json")
+  writeFileSync(payload, JSON.stringify({ run_id: item.run_id, verify_id: "second-check", parent_rework: null }))
+  const fromFile = invoke("attest", "--file", payload)
+  assert.equal(fromFile.status, 0, fromFile.stderr)
+  const [updated] = readRuns(stateDir)
+  assert.equal(updated.quality.verify_id, "second-check")
+  assert.equal(updated.work.parent_rework, null)
+  assert.equal(updated.outcome, "VERIFIED")
+  assert.deepEqual(updated.skill_hints, expected)
+})
+
+test("operating reports roll up fragmented cells and evaluate dated trials", () => {
+  const recipe = "acceptance-routing-v7"
+  const base = (runID, taskClass) => run({ runID, recipe, taskID: runID, taskClass })
+  const accepted = { ...base("accepted", "known-bug"), at: "2026-11-03T00:00:00Z",
+    skill_hints: [{ skill: "review", first_pass: true, rework: false }] }
+  const failed = { ...base("failed", "diagnosed-bug"), at: "2026-11-04T00:00:00Z", outcome: "FAILED_VERIFICATION",
+    duration_ms: null, work: { parent_rework: null }, skill_hints: [{ skill: "review", first_pass: false, rework: true }] }
+  const unknown = { ...base("unknown", "usage-diagnosis"), at: "2026-11-05T00:00:00Z", outcome: "PARTIAL_WITH_UNKNOWN",
+    skill_hints: [{ skill: "review", first_pass: null, rework: null }] }
+  const prior = { ...accepted, run_id: "prior", at: "2026-11-01T00:00:00Z", skill_hints: [] }
+  const v6 = { ...accepted, run_id: "v6", playbook_version: "acceptance-routing-v6", skill_hints: [] }
+  const otherRoute = { ...accepted, run_id: "other", route: "diagnose", skill_hints: [] }
+  const records = [accepted, accepted, failed, unknown, prior, v6, otherRoute]
+  const rollupKey = `${recipe}|codex|implement|worker`
+  const activeTrial = { id: "trial-a", status: "active", started_at: "2026-11-03T00:00:00Z",
+    playbook_version: recipe, target_route: rollupKey, trial_run_limit: 10 }
+  const report = operatingReport(records, [], { minimumObservedRuns: 4, activeTrial })
+  assert.equal(report.duplicate_records, 1)
+  assert.equal(report.groups.length, 4)
+  assert.deepEqual(report.route_rollups[rollupKey], { runs: 4, accepted: 2, failed: 1, unknown: 1, teacher_runs: 0,
+    parent_rework: 0, parent_rework_observed_runs: 3, duration_ms: 300, duration_observed_runs: 3, meets_min_runs: true })
+  assert.equal(report.route_rollups[`${recipe}|codex|diagnose|worker`].meets_min_runs, false)
+  assert.deepEqual(report.skill_hints, [{ skill: "review", observations: 3, first_pass_yes: 1, first_pass_no: 1,
+    first_pass_unknown: 1, rework_yes: 1, rework_no: 1, rework_unknown: 1 }])
+  assert.deepEqual(report.active_trial, { id: "trial-a", status: "active", target_cell: null,
+    started_at: activeTrial.started_at, observed_runs: 3, trial_run_limit: 10, accepted: 1, failed: 1, unknown: 1, decision_due: true })
+  const cellTrial = { ...activeTrial, target_cell: unknown.cell_id, target_route: undefined, trial_run_limit: 1 }
+  assert.equal(operatingReport(records, [], { activeTrial: cellTrial }).active_trial.decision_due, true)
+  assert.equal(operatingReport(records, [], { activeTrial: { ...cellTrial, trial_run_limit: 2 } }).active_trial.decision_due, false)
+  assert.equal(operatingReport(records, []).active_trial, null)
+})
+
+test("doctor reports store exclusions and coverage without echoing payloads or changing evidence", (t) => {
+  const stateDir = mkdtempSync(join(tmpdir(), "aw-usage-doctor-"))
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  appendRun(run({ runID: "v6", recipe: "acceptance-routing-v6", taskID: "v6" }), stateDir)
+  const v7 = run({ runID: "v7", recipe: "acceptance-routing-v7", taskID: "v7" })
+  appendRun({ ...v7, actors: { ...v7.actors, worker: { ...v7.actors.worker, token_source: "unknown", tokens: null } } }, stateDir)
+  appendAttestation({ run_id: "v7", verify_id: "unprinted-evidence" }, stateDir)
+  const runsPath = join(stateDir, "runs.jsonl")
+  const attestationsPath = join(stateDir, "attestations.jsonl")
+  appendFileSync(runsPath, '{unprinted-evidence\n{"schema_version":3,"kind":"run"}\n{"kind":"MONITOR_CHECK"}\n{"schema_version":4,"kind":"other"}\n{"schema_version":5,"kind":"run"}\n{"schema_version":4,"kind":"run"}\n')
+  appendFileSync(attestationsPath, '{unprinted-evidence\n{"schema_version":4,"kind":"attestation"}\n{"schema_version":3,"kind":"attestation"}\n')
+  const original = [runsPath, attestationsPath].map((path) => readFileSync(path, "utf8"))
+  const result = spawnSync(process.execPath, [usageScript, "doctor"], { encoding: "utf8", env: { ...process.env, AW_STATE_DIR: stateDir } })
+  assert.equal(result.status, 0, result.stderr)
+  assert.doesNotMatch(result.stdout + result.stderr, /unprinted-evidence/)
+  const report = JSON.parse(result.stdout)
+  assert.equal(report.valid_runs, 2)
+  assert.deepEqual(report.files["runs.jsonl"], { valid: 2, excluded: { "invalid-json": 1, "legacy-schema": 1,
+    "foreign-monitor": 1, "foreign-kind": 1, "unsupported-schema": 1, "invalid-run": 1 } })
+  assert.deepEqual(report.files["attestations.jsonl"], { valid: 1, excluded: { "invalid-json": 1, "invalid-attestation": 1, "legacy-schema": 1 } })
+  assert.deepEqual(report.attestation_coverage, { v6: { runs: 1, attested: 0 }, v7: { runs: 1, attested: 1 } })
+  assert.deepEqual(report.token_coverage, { runs: 2, any_observed: 2, complete: 1, main: 2, worker: 1, teacher: 0 })
+  assert.equal(report.active_trial, null)
+  assert.deepEqual([runsPath, attestationsPath].map((path) => readFileSync(path, "utf8")), original)
 })

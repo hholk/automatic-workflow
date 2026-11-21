@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { buildCellID } from "./evidence.mjs"
 import { resolveSelection } from "./resolve-profile.mjs"
+import { normalizeTaskClass, TASK_CLASSES } from "./run-identity.mjs"
 
 test("selects the native OpenCode Terra low worker components", () => {
   const value = resolveSelection({
@@ -163,7 +164,7 @@ test("rejects unknown models, routes, and old playbooks", () => {
     host: "codex",
     role: "worker",
     route: "fix",
-  }, { playbook: { schema_version: 3 } }), /playbook schema_version 4 or 5/)
+  }, { playbook: { schema_version: 3 } }), /playbook schema_version 4, 5 or 6/)
 })
 
 test("resolves cell budgets and recipe through the effective policy", () => {
@@ -308,4 +309,45 @@ test("registry selections ignore inherited defaults, routes, profiles and overla
   registry = fresh()
   registry.teacher_bindings = Object.create(registry.teacher_bindings)
   assert.throws(() => resolveSelection({ host: "codex", role: "teacher", route: "teacher" }, { registry }), /unsupported teacher host/)
+})
+
+
+test("reports canonical classes without changing the stated task class", () => {
+  assert.deepEqual(TASK_CLASSES, [
+    "bugfix", "feature", "refactor", "diagnosis", "review", "research", "ui", "release", "ops", "docs", "architecture", "unknown",
+  ])
+  for (const value of TASK_CLASSES) assert.equal(normalizeTaskClass(value), value)
+  const aliases = {
+    bugfix: ["known-bug", "diagnosed-bug", "bug", "fix"],
+    feature: ["known-change", "implement", "implementation"],
+    diagnosis: ["unknown-bug", "debugging", "usage-diagnosis", "account-usage"],
+    research: ["read-only-map", "explore"],
+    ui: ["ui-ux", "frontend"],
+    refactor: ["repo-cleanup"],
+    architecture: ["technical-decision"],
+  }
+  for (const [canonical, values] of Object.entries(aliases)) {
+    for (const value of values) assert.equal(normalizeTaskClass(value), canonical)
+  }
+  assert.equal(normalizeTaskClass(" Known_Bug "), "bugfix")
+  for (const value of [undefined, null, 4, "toString", "Custom/Import"]) assert.equal(normalizeTaskClass(value), "unknown")
+  const input = { host: "opencode", role: "worker", route: "fix", complexity: "small" }
+  for (const [raw, canonical] of [["bug", "bugfix"], ["Custom/Import", "unknown"]]) {
+    const selection = resolveSelection({ ...input, taskClass: raw })
+    assert.equal(selection.task_class, raw)
+    assert.equal(selection.canonical_task_class, canonical)
+  }
+  assert.equal(resolveSelection(input).canonical_task_class, "unknown")
+})
+
+test("recommends skills deterministically from route, class and explicit signals", () => {
+  const input = { host: "opencode", role: "worker", route: "review", taskClass: "frontend" }
+  const signals = ["retry", "typescript", "pr", "repeat-error", "repeat-hypothesis", "ui", "typescript", "other"]
+  const selected = resolveSelection({ ...input, signals })
+  assert.deepEqual(selected.recommended_hstack_skills.map(({ name }) => name), [
+    "h-code-review", "design-taste-frontend", "typescript-best-practices", "pr", "correct",
+    "principle-make-operations-idempotent", "principle-attack-the-premise",
+  ])
+  assert.deepEqual(selected.recommended_hstack_skills, resolveSelection({ ...input, signals: [...signals].reverse() }).recommended_hstack_skills)
+  assert.deepEqual(selected.components, resolveSelection(input).components)
 })

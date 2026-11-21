@@ -1,7 +1,7 @@
 interface:
-  display_name: "AW v6 · Operating learning"
-  short_description: "Terra-low execution, focused advice and learning from real usage"
-  default_prompt: "Use $aw with compatible Poteto style and useful Hstack skills. Delegate bounded work to Terra with low reasoning, verify authorized acceptance, and learn from actual outcomes."
+  display_name: "AW v7 · Hstack-coupled operating learning"
+  short_description: "Delegation-first Terra-low execution, verified acceptance and Hstack operating learning"
+  default_prompt: "Use $aw with compatible Poteto style and Hstack skills. Delegate non-trivial work to scoped Terra-low workers or reviewers by default. Main owns routing, integration and verified acceptance."
 
 policy:
   allow_implicit_invocation: true

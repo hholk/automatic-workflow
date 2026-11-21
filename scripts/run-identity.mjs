@@ -1,3 +1,23 @@
+export const TASK_CLASSES = Object.freeze([
+  "bugfix", "feature", "refactor", "diagnosis", "review", "research", "ui", "release", "ops", "docs", "architecture", "unknown",
+])
+
+const taskClassAliases = new Map([
+  ["known-bug", "bugfix"], ["diagnosed-bug", "bugfix"], ["bug", "bugfix"], ["fix", "bugfix"],
+  ["known-change", "feature"], ["implement", "feature"], ["implementation", "feature"],
+  ["unknown-bug", "diagnosis"], ["diagnose", "diagnosis"], ["debugging", "diagnosis"],
+  ["usage-diagnosis", "diagnosis"], ["account-usage", "diagnosis"],
+  ["read-only-map", "research"], ["explore", "research"],
+  ["ui-ux", "ui"], ["frontend", "ui"], ["repo-cleanup", "refactor"],
+  ["technical-decision", "architecture"], ["documentation", "docs"],
+])
+
+export const normalizeTaskClass = (value) => {
+  if (typeof value !== "string") return "unknown"
+  const key = value.trim().toLowerCase().replace(/[\s_]+/g, "-")
+  return TASK_CLASSES.includes(key) ? key : taskClassAliases.get(key) ?? "unknown"
+}
+
 const nativeHosts = new Set(["codex", "opencode", "github-copilot"])
 const identifier = (value) => typeof value === "string" &&
   /^[a-zA-Z0-9][a-zA-Z0-9_.:/-]{0,299}$/.test(value) && value !== "unknown"

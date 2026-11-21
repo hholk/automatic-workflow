@@ -206,13 +206,67 @@ const readState = (file) => {
   } finally { closeSync(fd) }
 }
 
-export const readMission = (request) => {
+const readMissionState = (request) => {
   const target = location(request)
   const state = readState(target.file)
   requireValue(state.brief.task_id === request.task_id && state.workspace === target.workspace, "FOREIGN_MISSION_STATE")
+  return state
+}
+
+export const readMission = (request) => {
+  const state = readMissionState(request)
   requireValue(text(request.snapshot_id), "OBSERVED_SNAPSHOT_REQUIRED")
   const matches = state.brief.snapshot_id === request.snapshot_id
   return { state, can_resume: matches, action: matches ? "RECONCILE_ACTIVE_TASKS" : "REVALIDATE_SNAPSHOT" }
+}
+
+const describeEvent = {
+  init: () => ["Start the mission"],
+  contract_review: (event) => ["Record the contract review", null, event.review?.report_ref, event.review?.status],
+  completion_review: (event) => ["Record the completion review", null, event.review?.report_ref, event.review?.status],
+  dispatch: (event) => ["Reserve worker tasks", event.purpose],
+  attach: (event) => ["Record the host task", null, event.host_task_id],
+  collect: (event) => ["Collect the worker outcome", null, event.evidence_ref, event.outcome],
+  evidence: (event) => ["Record verification evidence", null, event.evidence.map((item) => item.evidence_ref).join(", ")],
+  replan: (event) => ["Replan after a diagnosed issue", event.diagnosis.earliest_invalid_artifact, event.diagnosis.evidence_ref],
+  resolve: (event) => ["Resolve the diagnosed issue", null, event.evidence_ref],
+  revise: (event) => ["Revise the task brief", null, event.evidence_ref],
+  snapshot: (event) => ["Record the integrated snapshot", null, event.evidence_ref],
+  checkpoint: () => ["Save progress"],
+  accept: (event) => ["Accept the verified mission", null, event.main_confirmation.evidence_ref, "accepted"],
+}
+
+const tsvCell = (value) => {
+  const sanitized = (typeof value === "string" || typeof value === "number" ? String(value) : "").replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ").trim()
+  return /^[=+@-]/.test(sanitized) ? "'" + sanitized : sanitized
+}
+
+export const exportMissionTsv = (request) => {
+  const state = readMissionState(request)
+  const header = "timestamp\tsequence\tevent_id\ttype\tdecision\treason\tevidence_ref\tresult"
+  const rows = state.history.map((event, sequence) => {
+    const [decision, reason, evidence, result = "recorded"] = describeEvent[event.type](event)
+    const eventId = event.event_id ?? (sequence === state.sequence ? state.last_event_id : null)
+    return [event.timestamp, sequence, eventId, event.type, decision, reason, evidence, result]
+      .map(tsvCell).join("\t")
+  })
+  return { allowed: true, tsv: [header, ...rows].join("\n") + "\n" }
+}
+
+const missionWriteResult = (state, event) => {
+  if (state.status !== "done" || event?.type !== "accept") return state
+  const confirmation = state.main_confirmation
+  return { ...state, attestation_payload: {
+    verify_id: confirmation.verify.result_ref,
+    verify_exit_code: confirmation.verify.exit_code,
+    semantic_success: true,
+    scope_covered: confirmation.criterion_ids.length,
+    scope_total: state.brief.success.length,
+    review_pass: state.brief.assurance === "reviewed" ? true : null,
+    forbidden_changes: null,
+    accepted_worker_actions: null,
+    parent_rework: null,
+  } }
 }
 
 export const writeMission = (request) => {
@@ -234,7 +288,7 @@ export const writeMission = (request) => {
     const digest = hash({ brief: request.brief, event: request.event, next_action: request.next_action, snapshot_id: request.snapshot_id })
     if (previous?.last_event_id === request.event_id) {
       requireValue(previous.last_event_digest === digest, "EVENT_ID_REUSED_WITH_DIFFERENT_INPUT")
-      return previous
+      return missionWriteResult(previous, request.event)
     }
     requireValue((previous?.sequence ?? -1) === request.expected_sequence, "STALE_CHECKPOINT_REVISION")
     if (previous) requireValue(previous.workspace === target.workspace && previous.brief.task_id === request.task_id, "FOREIGN_MISSION_STATE")
@@ -246,6 +300,9 @@ export const writeMission = (request) => {
     state.sequence = (previous?.sequence ?? -1) + 1
     state.last_event_id = request.event_id
     state.last_event_digest = digest
+    const entry = state.history.at(-1)
+    entry.event_id = request.event_id
+    entry.timestamp = new Date().toISOString()
     const serialized = `${JSON.stringify(state)}\n`
     requireValue(Buffer.byteLength(serialized) <= maxBytes, "MISSION_STATE_TOO_LARGE")
     const fd = openSync(temporary, "wx", 0o600)
@@ -253,7 +310,7 @@ export const writeMission = (request) => {
     renameSync(temporary, target.file)
     const dirFD = openSync(target.directory, "r")
     try { fsyncSync(dirFD) } finally { closeSync(dirFD) }
-    return state
+    return missionWriteResult(state, request.event)
   } finally {
     try { unlinkSync(temporary) } catch (error) { if (error.code !== "ENOENT") throw error }
     closeSync(lockFD)

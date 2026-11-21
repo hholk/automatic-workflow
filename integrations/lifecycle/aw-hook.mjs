@@ -12,16 +12,20 @@ const modulePath = fileURLToPath(import.meta.url)
 const defaultPlaybookPath = fileURLToPath(new URL("../../playbooks/current.json", import.meta.url))
 const supportedHosts = new Set(["codex", "github-copilot"])
 const actionTools = new Set(["bash", "shell", "edit", "write", "apply_patch", "create", "Bash", "Edit", "Write"])
+const delegationTools = new Set(["spawn_agent", "delegate_task", "agent", "task"])
 const eventName = (event) => event.hook_event_name || event.hookEventName || event.eventName
 const sessionID = (event) => event.session_id || event.sessionId
 const timestamp = (event) => {
   const value = event.timestamp
-  if (Number.isFinite(value)) return new Date(value).toISOString()
+  if (Number.isFinite(value) && Math.abs(value) <= 8.64e15) return new Date(value).toISOString()
   if (typeof value === "string" && !Number.isNaN(Date.parse(value))) return new Date(value).toISOString()
   return new Date().toISOString()
 }
 const promptOf = (event) => event.prompt || event.initial_prompt || event.initialPrompt || ""
-const isAwPrompt = (event) => /(?:^|\s)(?:\$|\/)aw(?:\s|$)/i.test(promptOf(event))
+const isAwPrompt = (event) => {
+  const prompt = promptOf(event)
+  return typeof prompt === "string" && /^\s*(?:\$|\/)aw(?:\s|$)/i.test(prompt)
+}
 const safeSession = (host, id) => createHash("sha256").update(`${host}\0${id}`).digest("hex")
 const safeSignature = (event) => createHash("sha256")
   .update(`${event.tool_name || event.toolName || "tool"}\0${JSON.stringify(event.tool_input ?? event.toolInput ?? event.toolArgs ?? {})}`)
@@ -47,15 +51,71 @@ const mixedModel = (values) => {
   const models = [...new Set(values.filter(Boolean))]
   return models.length === 1 ? models[0] : models.length > 1 ? `mixed:${models.join(",")}` : null
 }
-const actor = ({ used, requested, resolved, fallbackReason = null }) => ({
+const tokenCount = (value) => Number.isSafeInteger(value) && value >= 0 ? value : null
+const nativeUsage = (event) => {
+  for (const usage of [event?.usage, event?.token_usage, event?.tokenUsage, event?.tokens]) {
+    const input = tokenCount(usage?.input_tokens ?? usage?.inputTokens)
+    const output = tokenCount(usage?.output_tokens ?? usage?.outputTokens)
+    const total = tokenCount(usage?.total_tokens ?? usage?.totalTokens ?? usage)
+      ?? (input !== null && output !== null ? tokenCount(input + output) : null)
+    if (total !== null) return { total, input, output }
+  }
+  return null
+}
+const actor = ({ used, requested, resolved, tokens = null, fallbackReason = null }) => ({
   used,
   requested_model: requested || null,
   resolved_model: resolved || null,
   fallback_reason: requested && resolved && requested !== resolved ? fallbackReason || "unapproved-runtime-mismatch" : null,
   model_source: resolved ? "native" : "unknown",
-  token_source: "unknown",
-  tokens: null,
+  token_source: tokens === null ? "unknown" : "native",
+  tokens,
 })
+const childRef = (value) => {
+  const id = value?.agent_id || value?.agentId || value?.child_id || value?.childId || value?.threadId || value?.taskId
+  return typeof id === "string" && id ? createHash("sha256").update(id).digest("hex") : null
+}
+const childRole = (value) => {
+  const role = value?.agent_type || value?.agentType || value?.agent_name || value?.agentName || value?.role || value?.subagent_type
+  return /teacher/i.test(typeof role === "string" ? role : "") ? "teacher" : "worker"
+}
+const childEvent = (event, atMs, phase) => {
+  const result = phase === "tool"
+    ? event.tool_response ?? event.tool_result ?? event.toolResult ?? event.toolResponse
+    : event
+  const input = event.tool_input ?? event.toolInput ?? event.toolArgs
+  if (phase === "tool" && (result?.error || result?.resultType === "failure" || result?.result_type === "failure")) return null
+  const model = cleanModel(result?.model)
+  return {
+    type: childRole(result) === "teacher" || childRole(input) === "teacher" || /gpt-5\.6-sol$/.test(model || "") ? "teacher" : "worker",
+    child_phase: phase,
+    child_ref: childRef(result) || childRef(event),
+    at_ms: atMs,
+    model,
+    usage: nativeUsage(result),
+  }
+}
+const collectChildren = (events) => {
+  const children = []
+  for (const event of events.filter((item) => item.type === "worker" || item.type === "teacher")) {
+    const exact = event.child_ref && children.find((child) => child.child_ref === event.child_ref)
+    const candidates = children.filter((child) => child.type === event.type && !child.phases.has(event.child_phase) &&
+      (!child.child_ref || !event.child_ref) && (!child.model || !event.model || child.model === event.model))
+    const child = exact || (candidates.length === 1 ? candidates[0] : null)
+    if (!child) {
+      children.push({ ...event, phases: new Set([event.child_phase]) })
+      continue
+    }
+    child.phases.add(event.child_phase)
+    child.child_ref ||= event.child_ref
+    child.model = event.model || child.model
+    if (event.type === "teacher") child.type = "teacher"
+    if (event.usage && (event.child_phase === "stop" || !child.usage || !child.phases.has("stop"))) child.usage = event.usage
+  }
+  return children
+}
+const childTokens = (children) => children.length && children.every((child) => child.usage)
+  ? tokenCount(children.reduce((sum, child) => sum + child.usage.total, 0)) : null
 const blankQuality = {
   verify_id: null,
   verify_exit_code: null,
@@ -68,8 +128,9 @@ const blankQuality = {
 
 export const handleHook = (host, event, options = {}) => {
   if (!supportedHosts.has(host)) throw new Error(`unsupported hook host: ${host}`)
+  if (!event || typeof event !== "object") return { run: null }
   const id = sessionID(event)
-  if (!id) return { run: null }
+  if (typeof id !== "string" || !id) return { run: null }
   const stateDir = options.stateDir || process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
   const playbookPath = options.playbookPath || process.env.AW_PLAYBOOK_PATH || defaultPlaybookPath
   const turnID = host === "codex" && typeof event.turn_id === "string" && event.turn_id.length > 0 && event.turn_id.length <= 300
@@ -78,7 +139,8 @@ export const handleHook = (host, event, options = {}) => {
   const path = hookPath(stateDir, host, scopeID)
   const name = eventName(event)
 
-  if ((name === "UserPromptSubmit" || name === "userPromptSubmitted" || name === "SessionStart" || name === "sessionStart") && isAwPrompt(event)) {
+  const promptSubmitted = name === "UserPromptSubmit" || name === "userPromptSubmitted"
+  if ((promptSubmitted || name === "SessionStart" || name === "sessionStart") && isAwPrompt(event)) {
     const existing = turnID ? readLines(path) : []
     if (existing.some((item) => item.type === "closed")) return { run: null }
     const active = existing.findLast((item) => item.type === "activate")
@@ -107,42 +169,47 @@ export const handleHook = (host, event, options = {}) => {
   const activation = prior.findLast((item) => item.type === "activate")
   if (!activation) return { run: null }
   if (turnID && activation.scope_ref !== safeSession(host, scopeID)) return { run: null }
+  if (promptSubmitted && !turnID) {
+    unlinkSync(path)
+    return { run: null }
+  }
   if (name === "Interrupt") {
     if (activation.run_context_token) closeRunContext({ token: activation.run_context_token, stateDir })
     writeFileSync(path, `${JSON.stringify({ type: "closed", run_id: activation.run_id })}\n`)
     return { run: null }
   }
 
+  const atMs = Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at))
+  const toolName = event.tool_name || event.toolName
   if (name === "PostToolUse" || name === "postToolUse") {
     appendEvent(path, {
       type: "tool",
-      at_ms: Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at)),
-      action: actionTools.has(event.tool_name || event.toolName) ? 1 : 0,
+      at_ms: atMs,
+      action: actionTools.has(toolName) ? 1 : 0,
       route: routeFromEvent(event),
       tool_category: `${event.tool_name || event.toolName || "unknown"}`.toLowerCase(),
       signature: safeSignature(event),
     })
+    if (typeof toolName === "string" && delegationTools.has(toolName.toLowerCase().split("__").at(-1))) {
+      const child = childEvent(event, atMs, "tool")
+      if (child) appendEvent(path, child)
+    }
     return { run: null, run_id: activation.run_id }
   }
-  if (name === "SubagentStart" || name === "subagentStart") {
-    const model = cleanModel(event.model)
-    const agent = `${event.agent_type || event.agentType || event.agent_name || event.agentName || ""}`
-    appendEvent(path, {
-      type: /teacher/i.test(agent) || /gpt-5\.6-sol$/.test(model || "") ? "teacher" : "worker",
-      at_ms: Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at)),
-      model,
-    })
+  if (["SubagentStart", "subagentStart", "SubagentStop", "subagentStop"].includes(name)) {
+    appendEvent(path, childEvent(event, atMs, name.toLowerCase().endsWith("stop") ? "stop" : "start"))
     return { run: null, run_id: activation.run_id }
   }
   if (name === "ErrorOccurred" || name === "errorOccurred") {
-    appendEvent(path, { type: "error", at_ms: Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at)) })
+    appendEvent(path, { type: "error", at_ms: atMs })
     return { run: null, run_id: activation.run_id }
   }
   if (!["Stop", "agentStop", "SessionEnd", "sessionEnd"].includes(name)) return { run: null, run_id: activation.run_id }
 
   const events = prior.slice(prior.findLastIndex((item) => item.type === "activate"))
-  const workers = events.filter((item) => item.type === "worker")
-  const teachers = events.filter((item) => item.type === "teacher")
+  const children = collectChildren(events)
+  const workers = children.filter((item) => item.type === "worker")
+  const teachers = children.filter((item) => item.type === "teacher")
   const routes = events.map((item) => item.route).filter(Boolean)
   const mainModel = activation.main_model || cleanModel(event.model)
   const workerModel = mixedModel(workers.map((item) => item.model))
@@ -151,14 +218,15 @@ export const handleHook = (host, event, options = {}) => {
   const selected = policy.receipt
   if (activation.run_context_token) closeRunContext({ token: activation.run_context_token, stateDir })
   const route = selected?.route || routes.at(-1) || (teachers.length ? "teacher" : workers.length ? "unknown" : "direct")
-  const timeline = events.filter((item) => ["tool", "worker", "teacher", "error"].includes(item.type)).map((item) => ({
+  const timeline = [...events.filter((item) => item.type === "tool" || item.type === "error"), ...children]
+    .sort((left, right) => left.at_ms - right.at_ms).map((item) => ({
     at_ms: item.at_ms ?? null,
     actor: item.type === "worker" ? "worker" : item.type === "teacher" ? "teacher" : "main",
     phase: item.route || route,
     event: item.type === "tool" ? (item.tool_category === "read" ? "read" : "tool") : item.type,
     duration_ms: null,
-    input_tokens: null,
-    output_tokens: null,
+    input_tokens: item.usage?.input ?? null,
+    output_tokens: item.usage?.output ?? null,
     tool_category: item.tool_category || null,
     result_code: item.type === "error" ? "error" : null,
     signature: item.signature || null,
@@ -189,9 +257,9 @@ export const handleHook = (host, event, options = {}) => {
       duplicate_context_tokens: null,
     },
     actors: {
-      main: actor({ used: true, requested: mainModel, resolved: mainModel }),
-      worker: actor({ used: workers.length > 0, requested: selected?.requested_worker_model || null, resolved: workerModel }),
-      teacher: actor({ used: teachers.length > 0, requested: teacherModel, resolved: teacherModel }),
+      main: actor({ used: true, requested: mainModel, resolved: mainModel, tokens: nativeUsage(event)?.total ?? null }),
+      worker: actor({ used: workers.length > 0, requested: selected?.requested_worker_model || null, resolved: workerModel, tokens: childTokens(workers) }),
+      teacher: actor({ used: teachers.length > 0, requested: teacherModel, resolved: teacherModel, tokens: childTokens(teachers) }),
     },
     quality: { ...blankQuality, policy_provenance_complete: policy.complete },
     work: {
@@ -221,7 +289,7 @@ export const handleHook = (host, event, options = {}) => {
       main_repair: null,
     })),
     outcome: events.some((item) => item.type === "error") ? "BLOCKED_ENVIRONMENT" : "PARTIAL_WITH_UNKNOWN",
-    duration_ms: Math.max(0, Date.parse(timestamp(event)) - Date.parse(activation.at)),
+    duration_ms: atMs,
   }, stateDir)
   if (turnID) writeFileSync(path, `${JSON.stringify({ type: "closed", run_id: activation.run_id })}\n`)
   else unlinkSync(path)
@@ -232,7 +300,7 @@ export const handleHook = (host, event, options = {}) => {
 // Codex delivers this structured output as developer context for this exact
 // submitted turn. It is a correlation locator, never an approval or tool grant.
 export const codexHookOutput = (event, result, stateDir) => {
-  if (event.hook_event_name !== "UserPromptSubmit" || !event.turn_id || !result.run_context_token) return {}
+  if (event?.hook_event_name !== "UserPromptSubmit" || !event.turn_id || !result.run_context_token) return {}
   try {
     const context = readRunContext({ token: result.run_context_token, profileHost: "codex",
       playbookVersion: result.playbook_version, ...(stateDir ? { stateDir } : {}) })

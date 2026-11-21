@@ -2,6 +2,11 @@
 
 Use only after the root cause is evidenced.
 
+Before freezing the v2 brief, check for a project-local `verify-*` skill for
+the affected behavior. Use its relevant probe to set `verify.command` and
+`verify.expected` for each criterion. When none applies, identify the narrowest
+existing behavior check and its expected result.
+
 Dispatch the resolved native worker for the smallest writable slice. When
 observable behavior changes at a known public seam, use:
 

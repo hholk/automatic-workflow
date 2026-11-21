@@ -13,10 +13,27 @@ scope and the configured bounds. No tests, synthetic tasks or benchmarks are
 required for these provisional trials. Keep unknown acceptance and missing usage
 visible. Quality requirements remain unchanged.
 
-Read current relevant observations and run `usage.mjs operating`, `waste` and
-`teacher` as needed. Reconcile the one active trial before creating another.
+Read relevant observations and inspect `usage.mjs operating` for
+`route_rollups`, `skill_hints` and `active_trial`. Use `usage.mjs doctor` to
+check evidence coverage and trial status. Use `waste` and `teacher` as needed.
+Reconcile `operating_learning.active_trial` in `playbooks/current.json` before
+creating another.
 Preserve the old selection, evidence IDs, hypothesis and rollback condition.
 Fix missing evidence for future runs before making performance claims.
+
+Recurring budget, routing or rework drift stays in operating learning.
+Escalate repeated repo mistakes to `correct` with
+`principle-encode-lessons-in-structure`, repo navigation or standards friction
+to `h-retro`, and fundamental skill or judgment gaps to `reflect` on explicit
+user request. Follow the [Hstack invocation rules](hstack.md#resolve-conflicts-before-acting).
+
+## Empirical principles
+
+- Config proves intent. Runtime identity requires observed host metadata.
+- Missing evidence stays UNKNOWN.
+- Diagnostic tolerance keeps observations usable. Strict comparison gates
+  require every applicable fact before admitting a run.
+- Repeated signals require evidence of unchanged state to prove redundancy.
 
 ## Entry format
 
@@ -45,8 +62,10 @@ promotion, use [learning and review](learning-v5.md) and
 independent review and trusted host authorization. A provisional operating trial
 is not a promotion through that API and must not be labelled as one.
 
-The structured lesson loader remains independently reviewed and tightly scoped.
-Exact project/revision/policy prerequisites and expiry are enforced there. Ordinary
-operating observations are not passed to that loader as if reviewed. A general
-invariant belongs in executable structure when authorized; an advisory recipe
-trial stays explicitly provisional until its real outcome is known.
+The resolver loads reviewed project lessons from `.aw/lessons.json` with
+`--workspace <dir>`, or from an explicitly supplied `--project-lessons <file>`.
+Pass `--project-id <id>`, `--project-version <revision>` and
+`--prerequisites <facts.json>` in either case. `selectReviewedLessons` enforces
+independent review, exact project, revision and policy applicability, prerequisite
+facts and expiry. Keep ordinary observations in the log until independently
+reviewed. Encode supported invariants in executable structure where authorized.

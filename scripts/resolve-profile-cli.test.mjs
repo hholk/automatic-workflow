@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -183,4 +183,74 @@ test("resolver transports exact contexts without run-ID arguments and rejects st
     closeRunContext({ stateDir: dir, token })
     assert.equal(invoke(token).status, 1)
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+
+test("project lessons require explicit discovery context and an explicit file takes precedence", (t) => {
+  const dir = fixture()
+  t.after(() => rmSync(dir, { recursive: true }))
+  const workspace = join(dir, "workspace")
+  mkdirSync(join(workspace, ".aw"), { recursive: true })
+  const discovered = join(workspace, ".aw", "lessons.json")
+  const explicit = json(join(dir, "lessons.json"), [lesson("explicit")])
+  const prerequisites = json(join(dir, "prerequisites.json"), { runtime: "node22" })
+  const context = ["--project-id", "project-a", "--project-version", "rev-a", "--prerequisites", prerequisites]
+  const select = (args) => {
+    const result = run(args)
+    assert.equal(result.status, 0, result.stderr)
+    return JSON.parse(result.stdout).lessons.map(({ id }) => id)
+  }
+  assert.deepEqual(select(["--workspace", workspace, ...context]), [])
+  json(discovered, [lesson("discovered"), lesson("unmatched", { prerequisites: { retrySafe: true } })])
+  assert.deepEqual(select(["--workspace", workspace, ...context]), ["discovered"])
+  assert.deepEqual(select(["--project-lessons", explicit, ...context]), ["explicit"])
+  writeFileSync(discovered, "invalid JSON")
+  assert.deepEqual(select(["--workspace", workspace, "--project-lessons", explicit, ...context]), ["explicit"])
+  for (let index = 0; index < context.length; index += 2) {
+    assert.deepEqual(select(["--workspace", workspace, ...context.filter((_, i) => i !== index && i !== index + 1)]), [])
+  }
+  assert.deepEqual(select(context), [])
+  assert.deepEqual(select(["--workspace", workspace, "--project", "project-a", ...context.slice(2)]), [])
+  assert.match(run(["--project-lessons", explicit, "--project-id", "project-a"]).stderr, /requires --project-id/)
+  assert.match(run(["--project-lessons", explicit, "--lessons", explicit, ...context]).stderr, /provide only one/)
+  assert.equal(run(["--workspace", workspace, ...context]).status, 1)
+})
+
+test("skill references report installed sibling files and degrade gracefully outside hstack", (t) => {
+  const dir = realpathSync(fixture())
+  t.after(() => rmSync(dir, { recursive: true }))
+  const aw = join(dir, "aw")
+  mkdirSync(aw)
+  cpSync(join(root, "scripts"), join(aw, "scripts"), { recursive: true })
+  for (const directory of ["prompts", "contracts", "workflows", "playbooks"]) {
+    symlinkSync(join(root, directory), join(aw, directory), "dir")
+  }
+  const select = () => {
+    const result = spawnSync(process.execPath, [join(aw, "scripts/resolve-profile.mjs"), ...base,
+      "--signals", "retry, typescript"], { encoding: "utf8", timeout: 5000, env: { ...process.env, AW_RUN_ID: "", AW_RUN_CONTEXT: "" } })
+    assert.equal(result.status, 0, result.stderr)
+    return JSON.parse(result.stdout)
+  }
+  const style = join(dir, "poteto-mode")
+  const full = join(style, "SKILL.md")
+  const core = join(style, "poteto-core.md")
+  const typescript = join(dir, "typescript-best-practices", "SKILL.md")
+  const missing = select()
+  assert.equal(missing.canonical_task_class, "bugfix")
+  assert.deepEqual(missing.poteto_style_reference, { path: full, mode: "missing", exists: false })
+  assert.deepEqual(missing.recommended_hstack_skills.map(({ name, exists }) => [name, exists]), [
+    ["typescript-best-practices", false], ["tdd", false], ["principle-make-operations-idempotent", false],
+  ])
+  mkdirSync(style)
+  mkdirSync(dirname(typescript))
+  writeFileSync(full, "Poteto full skill")
+  writeFileSync(typescript, "TypeScript skill")
+  const installed = select()
+  assert.deepEqual(installed.poteto_style_reference, { path: full, mode: "full", exists: true })
+  const recommended = installed.recommended_hstack_skills[0]
+  assert.equal(recommended.path, typescript)
+  assert.equal(recommended.exists, true)
+  assert.ok(recommended.reason)
+  writeFileSync(core, "Poteto style reference")
+  assert.deepEqual(select().poteto_style_reference, { path: core, mode: "core", exists: true })
 })

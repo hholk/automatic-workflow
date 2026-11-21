@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { buildCellID } from "./evidence.mjs"
-import { hostCell, resolveHostIdentity } from "./run-identity.mjs"
+import { hostCell, normalizeTaskClass, resolveHostIdentity } from "./run-identity.mjs"
 
 const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8"))
 const defaultPlaybook = read("../playbooks/current.json")
@@ -30,15 +30,15 @@ const assertFields = (policy, playbook) => {
   for (const field of ["recipe_id", "prompt_profile_id"]) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(policy[field] || "")) throw new Error(`${field} must be a lowercase immutable ID`)
   }
-  if ((playbook.schema_version === 5 || /-v[56](?:-|$)/.test(playbook.version || "")) && policy.teacher_after_failed_hypotheses !== 2) {
-    throw new Error("v5 teacher handback threshold is fixed at two attempts")
+  if ((playbook.schema_version >= 5 || /-v[567](?:-|$)/.test(playbook.version || "")) && policy.teacher_after_failed_hypotheses !== 2) {
+    throw new Error("teacher handback threshold is fixed at two attempts")
   }
 }
 
 // Validation has no host selection or dispatch effect. Promotion validates all
 // cells without pretending that their actor provenance has been observed.
 export const validatePolicy = (playbook) => {
-  if (![4, 5].includes(playbook.schema_version)) throw new Error("playbook schema_version 4 or 5 is required")
+  if (![4, 5, 6].includes(playbook.schema_version)) throw new Error("playbook schema_version 4, 5 or 6 is required")
   assertFields(playbook.defaults || {}, playbook)
   if (!playbook.cells || typeof playbook.cells !== "object" || Array.isArray(playbook.cells)) throw new Error("policy cells must be an object")
   for (const cell of Object.values(playbook.cells)) {
@@ -56,22 +56,22 @@ export const effectivePolicy = (input, { playbook = defaultPlaybook } = {}) => {
   const capabilities = hostCapabilities(input.host, input.providerHost)
   const taskClass = input.taskClass ?? input.task?.class
   const complexity = input.complexity ?? input.task?.complexity
+  const classes = taskClass && complexity ? [...new Set([taskClass, normalizeTaskClass(taskClass)])] : []
+  const host = { host: input.host, providerHost: capabilities.provider_host }
   // Only supplied execution provenance can activate a full model/fallback cell.
-  const cellID = input.actors && input.route && taskClass && complexity ? buildCellID({
-    host: input.host,
-    providerHost: capabilities.provider_host,
+  const modelCells = input.actors && input.route ? classes.map((taskClass) => buildCellID({
+    ...host,
     actors: input.actors,
     route: input.route,
     task: { class: taskClass, complexity },
     promptProfileID: input.promptProfileID || playbook.defaults?.prompt_profile_id,
-  }) : null
-  const taskCell = taskClass && complexity ? [hostCell({ host: input.host, providerHost: capabilities.provider_host }), taskClass, complexity].join("|") : null
-  const matched = cellID && Object.hasOwn(playbook.cells, cellID) ? cellID
-    : taskCell && Object.hasOwn(playbook.cells, taskCell) ? taskCell : null
+  })) : []
+  const taskCells = classes.map((taskClass) => [hostCell(host), taskClass, complexity].join("|"))
+  const matched = [...modelCells, ...taskCells].find((id) => Object.hasOwn(playbook.cells, id)) ?? null
   const policy = { ...playbook.defaults, ...(matched ? playbook.cells[matched] : {}) }
   if (input.promptProfileID) policy.prompt_profile_id = input.promptProfileID
   assertFields(policy, playbook)
-  return { ...policy, playbook_version: playbook.version, cell_id: cellID || taskCell, policy_cell_id: matched, capabilities }
+  return { ...policy, playbook_version: playbook.version, cell_id: modelCells[0] ?? taskCells[0] ?? null, policy_cell_id: matched, capabilities }
 }
 
 // Resolver input is explicit caller-supplied metadata, not host authentication.
