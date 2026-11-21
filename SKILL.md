@@ -1,33 +1,34 @@
 ---
 name: aw
-description: AW v6 for Terra-low execution, focused teacher help, outcome-based acceptance and reversible learning from real usage. Use for multi-step implementation, diagnosis or review that benefits from scoped orchestration.
+description: AW v7 delegates non-trivial discovery, diagnosis, implementation and review to scoped subagents, with focused teacher help, verified acceptance and Hstack operating learning.
 ---
 
-# AW v6 · Operating learning
+# AW v7 · Hstack-coupled operating learning
 
 State this heading and the selected route once on activation. Main owns routing,
 integration and acceptance. Resolve models and complete native bindings from
 `prompts/profiles.json`; code workers default to Terra with low reasoning. Keep the current main
 model and explicit user model choices. Host instructions govern dispatch.
 
-Optimize accepted outcomes and total cost. Cheap-model token share is measured,
-never a quota or a reason to withhold useful Astra/Opus help. Availability and
-quality remain unverified until observed; configuration proves neither.
+Optimize accepted outcomes and total cost. Measure cheap-model token share without quotas. Confirm
+availability and quality from actual runs.
 
 ## Hstack defaults
 
-Always load `poteto-mode` when AW starts and keep it active for the AW task as
-the style and judgment reference, subject to the
-[Hstack compatibility rules](references/hstack.md). Resolve its installed source
-from the same installed Hstack bundle and read it once per session. Automatically select useful
-Hstack skills for the actual task through the same rules. Load only relevant
-references; AW retains orchestration, model selection and operating learning.
+Load curated `../../poteto-mode/poteto-core.md` once per session when present
+in the Hstack bundle. Otherwise load `../../poteto-mode/SKILL.md`. These paths
+are relative to the Hstack reference. Apply
+[Hstack compatibility rules](references/hstack.md) to Poteto and
+`recommended_hstack_skills` from the resolver. Include reviewed project lessons
+from `.aw/lessons.json` when the resolver selects them.
 
 ## Route and scope
 
-Use [routing](references/routing.md) at meaningful decision points. Finish direct
-work when delegation costs more than it contributes. Delegate for a separable
-result, independent evidence, a required capability, or useful parallelism.
+Use [routing](references/routing.md). Delegate by default for multi-file discovery,
+diagnosis, non-trivial implementation, independent verification or review, and
+two or more useful parallel slices. Reserve `direct` for a tiny single-location
+edit or immediate read/check that fully satisfies the request in one verified
+step and plainly costs less than a handoff.
 
 Give each worker one complete, observable outcome: OBJECTIVE, numbered SUCCESS,
 CONTEXT, PATHS, NON_GOALS and VERIFY. Include the relevant requirement sources,
@@ -35,11 +36,11 @@ decisive evidence, dependencies and stop conditions. When a supporting skill can
 prevent a concrete mistake, [put its useful step in CONTEXT](references/hstack.md#worker-handoff).
 Freeze a v2 brief through
 [execution gates](references/execution-v5.md). Derive acceptance from the user's
-requirements and independent evidence, rather than only the builder's tests.
+requirements and independent evidence.
 
-Use `assurance: direct` by default. Use `reviewed` for material risk, unresolved
-acceptance uncertainty or explicitly requested independent review. Task size
-alone does not require review fanout. Long or resumed work checkpoints through
+Use `assurance: direct` by default on any route. Use `reviewed` for material risk,
+unresolved acceptance uncertainty or requested independent review.
+Long or resumed work checkpoints through
 [mission lifecycle](references/mission-lifecycle.md), including direct work.
 For UI changes, load [UI/UX acceptance](references/ui-ux.md) before implementation
 and include its screenshot checkpoints in SUCCESS and any worker brief.
@@ -51,11 +52,12 @@ and include its screenshot checkpoints in SUCCESS and any worker brief.
    Run `node scripts/resolve-profile.mjs` with host, role, route, task class and
    complexity. Supply the exact run context when available. Load only returned
    components and decision-relevant references. Use the complete returned binding.
-2. Main alone dispatches. At most two independent workers run concurrently.
-   A prerequisite is ready only when its output or interface is settled; different
-   files alone do not imply independence. Use unique write ownership and host-managed
-   isolated worktrees for parallel writes. Reserve IDs before dispatch, reconcile
-   ambiguous starts, and close/cancel finished or replaced agents through the host.
+2. Main alone dispatches scoped `aw-worker` or `aw-reviewer` subagents under the
+   resolved binding. Default to up to two ready independent workers concurrently.
+   Honor explicit concurrency requests up to the host cap. Settle prerequisites
+   and interfaces first. Give each writer unique file ownership and use host-managed
+   isolated worktrees for parallel writes. Reserve IDs, reconcile ambiguous starts,
+   and close or cancel finished or replaced agents through the host.
 3. Supply focused context, not inherited histories. Use the resolved context
    budget as a briefing target; retain necessary evidence or split the task.
    Resume with deltas and remaining cumulative budget. Model switches, teacher
@@ -77,34 +79,27 @@ and include its screenshot checkpoints in SUCCESS and any worker brief.
    assesses the integrated result and original requirements. Unknown remains
    unknown. If the user forbids tests or checks, honor that instruction, report
    skipped verification and leave acceptance unverified; do not manufacture PASS.
-7. Record prompt-free usage and actual acceptance through the existing
+7. Close runs with `usage.mjs attest`. Use the `mission-state-cli.mjs` accept
+   attestation payload when available. Record main repair, failed attempts and teacher work through
    [run context](references/run-context.md) and [telemetry](references/telemetry.md).
-   Include main repair, failed attempts and teacher work when observed. Missing
-   token, cost, model or quality data stays unknown.
+   Missing usage or acceptance evidence stays unknown.
 
 ## Improve from operation
 
-Operating learning is enabled by `playbooks/current.json`. After a completed task
-with new useful evidence, main follows [operating learning](references/operating-learning.md).
-It may make one small, reversible local adaptation within the configured envelope
-without asking again. Keep real outcomes, trial state and rollback evidence;
-ordinary use supplies the next observations. No synthetic tasks or benchmark
-runs are required for a provisional operational trial.
-
-Research-backed performance claims remain a separate opt-in path:
-[`$aw research`](references/autoresearch.md). `$aw learn` follows the operating
-loop unless the user explicitly asks for a controlled experiment. Runtime
-adaptation never changes user requirements, acceptance standards, permissions,
-provider authorization, mandatory independence or frozen safety boundaries.
+At completion with new evidence, use [operating learning](references/operating-learning.md)
+and inspect `skill_hints` and `active_trial` with `usage.mjs operating` and
+`usage.mjs doctor`. Main can make one bounded reversible local adaptation
+from real outcomes. Retain trial and rollback evidence. Preserve user requirements,
+acceptance, permissions, provider authorization and frozen safety boundaries.
+Use [`$aw research`](references/autoresearch.md) for opt-in controlled comparison.
 Workers cannot recursively delegate or change AW. Release actions require an
 explicit assignment and the project's deployment instructions.
 
 ## Completion animatic
 
-After completing and verifying the requested work, run Hstack's curated `animatic`
-(with `MEDIA.md` and `scripts/build-media.mjs`) to make a
-short narrated explainer of the outcome and its evidence. Use the completed
-work as the source; for a pull request follow the skill's PR guidance. Hand the
-video to the user with the final result. If the skill or its required tools are
-unavailable, report the blocker and leave the animatic unverified. Post the
-video externally only when the user asks.
+After verification, run curated Hstack `animatic` for `assurance: "reviewed"`,
+user-visible UI changes, pull-request deliverables, or explicit user requests.
+Use the completed work as evidence and follow the PR guidance when applicable.
+Report missing media tools as an animatic blocker. Post only when authorized.
+For short direct non-UI work, hand back concise `ketchup`-style outcome and
+verification evidence.

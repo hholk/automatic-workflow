@@ -22,6 +22,18 @@ export const validateTaskBrief = (brief = {}) => {
       ![criterion.verify.check_id, criterion.verify.check_version, criterion.verify.command, criterion.verify.expected].every(text))) {
     return decision(false, "NUMBERED_FALSIFIABLE_CRITERIA_REQUIRED")
   }
+  if (brief.skill_hints !== undefined) {
+    if (!Array.isArray(brief.skill_hints) || brief.skill_hints.length > 8) return decision(false, "INVALID_SKILL_HINTS")
+    const fields = ["skill", "criterion_id", "instruction"]
+    for (const hint of brief.skill_hints) {
+      if (!hint || typeof hint !== "object" || Array.isArray(hint) ||
+          Object.keys(hint).length !== fields.length || !fields.every((field) => Object.hasOwn(hint, field)) ||
+          !text(hint.skill) || hint.skill.length > 80 || !text(hint.instruction) || hint.instruction.length > 240 ||
+          !Number.isSafeInteger(hint.criterion_id) || !brief.success.some((criterion) => criterion.id === hint.criterion_id)) {
+        return decision(false, "INVALID_SKILL_HINTS")
+      }
+    }
+  }
   if (brief.assurance === "reviewed") {
     const sources = brief.sources
     const requirements = brief.requirements
@@ -49,7 +61,12 @@ const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value
   ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value
 // A contract survives implementation changes, but not changes to intent or checks.
 export const contractDigest = (brief) => {
-  const { snapshot_id, ...contract } = brief
+  const { snapshot_id, skill_hints, ...contract } = brief
+  if (skill_hints !== undefined) {
+    contract.skill_hints = skill_hints.map(({ skill, criterion_id, instruction }) => ({
+      skill: skill.trim(), criterion_id, instruction: instruction.trim(),
+    }))
+  }
   return createHash("sha256").update(JSON.stringify(canonical(contract))).digest("hex")
 }
 const exactIDs = (actual, expected) => Array.isArray(actual) && unique(actual) && actual.length === expected.length && expected.every((id) => actual.includes(id))

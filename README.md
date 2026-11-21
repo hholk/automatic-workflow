@@ -1,15 +1,16 @@
-# AW v6 · Operating learning
+# AW v7 · Hstack-coupled operating learning
 
-The native skill picker displays this version through `agents/openai.yaml`;
-`$aw` and `/aw` retain the `aw` identity. UI changes use the shared
-[UI/UX acceptance reference](references/ui-ux.md), with design guidance loaded only
-for the affected surface and Main-owned visual evidence.
+AW is a native subagent supervision skill for Codex and OpenCode, including
+T3 provider delegation backed by either host. Invoke it with `$aw` or `/aw`.
+AW delegates non-trivial discovery, diagnosis, implementation and independent
+verification to scoped workers or reviewers by default. The main agent owns
+routing, integration and verified acceptance.
 
-AW is a native subagent supervision skill for Codex and OpenCode, including T3
-provider delegation backed by either host. The main agent keeps ownership of the
-task, routes the work to a bounded worker, and verifies the final artifact.
-Delegation is used when it reduces the total cost to an accepted result, not as
-a reflex.
+AW v7 selects Hstack references by task, prefers curated Poteto core, and
+supports reviewed project lessons and structured skill hints. Operating learning
+uses route rollups, recorded hint outcomes and one reversible active trial.
+Use [Hstack guidance](references/hstack.md) for selection and
+[operating learning](references/operating-learning.md) for evidence and trials.
 
 ## Requirements
 
@@ -85,7 +86,7 @@ The first matching route wins:
 | --- | --- |
 | Authorization or a material user choice is missing | `human` |
 | Live GUI or device interaction is required | `computer-use` |
-| Main can finish and verify safely without a handoff | `direct` |
+| Tiny single-location edit or immediate read/check main can finish and verify in one quick step | `direct` |
 | A decisive technical question remains after a useful probe | `teacher` |
 | A completed change needs independent evidence | `review` |
 | Root cause is proven | `fix` |
@@ -106,18 +107,19 @@ The authoritative table and load paths are in
 | Computer-use on Codex / OpenCode | Bounded GUI operation | Terra (low) / DeepSeek 1017 |
 | Teacher | Advisory decision support, no tools | Opus 5.5 |
 
-AW always loads the bundled Poteto mode for compatible style and working methods.
-Install AW through Hstack with its sibling Poteto and curated mixed-media Animatic
-packages; this repository remains the AW development source. Relevant Hstack skills are selected
-through [Hstack compatibility rules](references/hstack.md). Cheap-model token
-share is measured, never a quota.
+Install through Hstack for Poteto and curated Animatic. AW uses Animatic for
+reviewed work, user-visible UI changes, PR deliverables and explicit requests.
+Short direct non-UI work gets a concise outcome and verification summary.
+For UI work, use the [UI/UX acceptance reference](references/ui-ux.md).
+Cheap-model token share is descriptive.
 
 Exact host bindings and confirmed-failure fallback rules are defined in
 `prompts/profiles.json` and the corresponding runtime reference.
 
-Workers have unique write ownership. Parallel writers need isolated worktrees
-and a separate integration check. Only the main agent may dispatch or resume
-agents.
+Main alone dispatches or resumes agents. The default is up to two independent
+workers at once. Explicit concurrency requests can go up to the host cap.
+Writers have unique file ownership. Parallel writers use isolated worktrees and
+a separate integration check.
 
 Resolve a profile from the absolute skill directory:
 
@@ -126,12 +128,13 @@ node scripts/resolve-profile.mjs \
   --host codex \
   --role worker \
   --route implement \
-  --task-class known-change \
+  --task-class feature \
   --complexity small
 ```
 
 Use `--host opencode` for OpenCode. The resolver returns the prompt components,
-model binding, budgets, and effective policy for the exact task cell.
+model binding, budgets, effective policy and Hstack recommendations for the task.
+Use `usage.mjs operating` and `usage.mjs doctor` to inspect sanitized evidence.
 
 ## Verification
 

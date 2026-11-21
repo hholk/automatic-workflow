@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { spawnSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -98,6 +98,80 @@ test("ignores non-AW sessions", () => {
   handleHook("codex", { hook_event_name: "UserPromptSubmit", session_id: "ordinary", model: "venice/mimo-2.6-flash", prompt: "normal task" }, options)
   const result = handleHook("codex", { hook_event_name: "Stop", session_id: "ordinary", model: "venice/mimo-2.6-flash" }, options)
   assert.equal(result.run, null)
+})
+
+test("Codex records native counts for main, worker and teacher without counting a child twice", (t) => {
+  const { stateDir, playbookPath } = fixture()
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  const dispatch = (name, fields = {}) => handleHook("codex", {
+    hook_event_name: name, session_id: "codex-session", turn_id: "aw-turn", ...fields,
+  }, { stateDir, playbookPath })
+  dispatch("UserPromptSubmit", { prompt: "$aw implement", model: "main" })
+  dispatch("SubagentStart", { agent_id: "worker-id", agent_type: "aw-worker", model: "worker" })
+  dispatch("PostToolUse", { tool_name: "spawn_agent", model: "main", tool_input: { agent_type: "aw-worker", prompt: "private prompt" },
+    tool_response: { agent_id: "worker-id", model: "worker", usage: { total_tokens: 3 } } })
+  dispatch("SubagentStop", { agent_id: "worker-id", token_usage: { input_tokens: 8, output_tokens: 2 } })
+  dispatch("PostToolUse", { tool_name: "mcp__t3_code_direct__delegate_task", model: "main", tool_input: { role: "aw-teacher" },
+    tool_response: { taskId: "teacher-id", model: "teacher", tokens: { total_tokens: 5 } } })
+  const { run } = dispatch("Stop", { usage: { total_tokens: 40, input_tokens: 25, output_tokens: 10 } })
+  assert.equal(run.actors.main.tokens, 40)
+  assert.equal(run.actors.worker.resolved_model, "worker")
+  assert.equal(run.actors.worker.tokens, 10)
+  assert.equal(run.actors.teacher.resolved_model, "teacher")
+  assert.equal(run.actors.teacher.tokens, 5)
+  for (const actor of Object.values(run.actors)) assert.equal(actor.token_source, "native")
+  assert.equal(run.friction.followups, 0)
+  assert.equal(run.friction.teacher_turns, 1)
+  assert.equal(run.tokens.operational_total, 55)
+  const workerEvents = run.timeline.filter((item) => item.actor === "worker")
+  assert.equal(workerEvents.length, 1)
+  assert.equal(workerEvents[0].input_tokens, 8)
+  assert.equal(workerEvents[0].output_tokens, 2)
+  assert.doesNotMatch(readFileSync(join(stateDir, "runs.jsonl"), "utf8"), /private prompt|codex-session|worker-id|teacher-id/)
+  assert.equal(dispatch("SessionEnd").run, null)
+})
+
+test("Copilot detects delegation fallbacks and partial child usage stays unknown", (t) => {
+  const { stateDir, playbookPath } = fixture()
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  const dispatch = (name, fields = {}) => handleHook("github-copilot", {
+    eventName: name, sessionId: "session", ...fields,
+  }, { stateDir, playbookPath })
+  dispatch("userPromptSubmitted", { prompt: "/aw fix" })
+  dispatch("postToolUse", { toolName: "Task", toolArgs: { model: "requested-worker" },
+    toolResult: { agentId: "worker-a", model: "observed-worker", usage: { total_tokens: 6 } } })
+  dispatch("postToolUse", { toolName: "Agent", toolResult: { agentId: "worker-b", usage: { total_tokens: "7", input_tokens: 3 } } })
+  dispatch("postToolUse", { toolName: "Agent", toolArgs: { agent_type: "aw-teacher" }, toolResult: { resultType: "failure" } })
+  dispatch("subagentStop", { agentId: "teacher-a", agentType: "aw-teacher", model: "teacher", tokenUsage: { inputTokens: 0, outputTokens: 0 } })
+  const { run } = dispatch("agentStop", { model: "main", token_usage: { total_tokens: -1 }, tokens: { input_tokens: 2, output_tokens: 4 } })
+  assert.equal(run.actors.main.tokens, 6)
+  assert.equal(run.actors.worker.used, true)
+  assert.equal(run.actors.worker.resolved_model, "observed-worker")
+  assert.equal(run.actors.worker.tokens, null)
+  assert.equal(run.actors.worker.token_source, "unknown")
+  assert.equal(run.actors.teacher.tokens, 0)
+  assert.equal(run.actors.teacher.token_source, "native")
+  assert.equal(run.tokens.operational_total, null)
+  assert.equal(run.friction.followups, 1)
+  assert.equal(run.friction.teacher_turns, 1)
+})
+
+test("foreign turns never start or finish an AW run, including unscoped prompt changes", (t) => {
+  const { stateDir, playbookPath } = fixture()
+  t.after(() => rmSync(stateDir, { recursive: true, force: true }))
+  const dispatch = (name, fields = {}) => handleHook("codex", {
+    hook_event_name: name, session_id: "shared-session", ...fields,
+  }, { stateDir, playbookPath })
+  dispatch("UserPromptSubmit", { prompt: "$aw unfinished" })
+  dispatch("UserPromptSubmit", { prompt: "Explain $aw in this unrelated prompt" })
+  dispatch("PostToolUse", { tool_name: "spawn_agent", tool_response: { usage: { total_tokens: 10 } } })
+  assert.equal(dispatch("Stop", { usage: { total_tokens: 180 } }).run, null)
+  dispatch("UserPromptSubmit", { prompt: "$aw scoped", turn_id: "aw" })
+  assert.equal(dispatch("Stop", { turn_id: "other" }).run, null)
+  assert.equal(dispatch("Stop", { session_id: {}, turn_id: "aw" }).run, null)
+  assert.equal(existsSync(join(stateDir, "runs.jsonl")), false)
+  assert.equal(dispatch("Stop", { turn_id: "aw", usage: { total_tokens: "invalid" } }).run.actors.main.token_source, "unknown")
+  assert.equal(readRuns(stateDir).length, 1)
 })
 
 

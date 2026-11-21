@@ -1,14 +1,33 @@
 {
-  "version": "v4",
+  "version": "v5",
+  "playbook_version": "acceptance-routing-v7",
   "entrypoint": {
     "files": [
       "SKILL.md"
     ],
-    "words": 357,
-    "characters": 2672,
-    "estimated_tokens": 668
+    "words": 797,
+    "characters": 6387,
+    "estimated_tokens": 1597
   },
-  "average_route_estimated_tokens": 1532,
+  "hstack_startup": {
+    "files": [
+      "SKILL.md",
+      "references/hstack.md",
+      "../poteto-mode/poteto-core.md"
+    ],
+    "words": 2302,
+    "characters": 17486,
+    "estimated_tokens": 4372,
+    "poteto_mode": "core"
+  },
+  "average_route_estimated_tokens": 3494,
+  "budgets": {
+    "entrypoint_max_tokens": 1850,
+    "average_route_max_tokens": 3800,
+    "hstack_core_startup_max_tokens": 4600,
+    "hstack_core_startup": "pass",
+    "pass": true
+  },
   "route_contexts": [
     {
       "id": "tiny_local",
@@ -23,229 +42,229 @@
       "files": [
         "SKILL.md"
       ],
-      "words": 357,
-      "characters": 2672,
-      "estimated_tokens": 668
+      "words": 797,
+      "characters": 6387,
+      "estimated_tokens": 1597
     },
     {
       "id": "read_only_map",
       "route": "explore",
       "host": "opencode",
-      "profile_id": "opencode-glm-worker-v1",
+      "profile_id": "opencode-gpt61-terra-worker-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opencode-glm-worker-v1",
+      "expected_profile_id": "opencode-gpt61-terra-worker-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/explore.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-opencode.md",
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/explore.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 994,
-      "characters": 7230,
-      "estimated_tokens": 1808
+      "words": 2362,
+      "characters": 17777,
+      "estimated_tokens": 4445
     },
     {
       "id": "unknown_bug",
       "route": "diagnose",
       "host": "opencode",
-      "profile_id": "opencode-glm-worker-v1",
+      "profile_id": "opencode-gpt61-terra-worker-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opencode-glm-worker-v1",
+      "expected_profile_id": "opencode-gpt61-terra-worker-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/diagnose.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-opencode.md",
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/diagnose.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 995,
-      "characters": 7274,
-      "estimated_tokens": 1819
+      "words": 2446,
+      "characters": 18350,
+      "estimated_tokens": 4588
     },
     {
       "id": "diagnosed_bug",
       "route": "fix",
       "host": "opencode",
-      "profile_id": "opencode-glm-worker-v1",
+      "profile_id": "opencode-gpt61-terra-worker-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opencode-glm-worker-v1",
+      "expected_profile_id": "opencode-gpt61-terra-worker-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/fix.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-opencode.md",
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/fix.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 1017,
-      "characters": 7420,
-      "estimated_tokens": 1855
+      "words": 2482,
+      "characters": 18565,
+      "estimated_tokens": 4642
     },
     {
       "id": "known_change",
       "route": "implement",
       "host": "opencode",
-      "profile_id": "opencode-glm-worker-v1",
+      "profile_id": "opencode-gpt61-terra-worker-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opencode-glm-worker-v1",
+      "expected_profile_id": "opencode-gpt61-terra-worker-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/implement.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-opencode.md",
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/implement.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 1022,
-      "characters": 7494,
-      "estimated_tokens": 1874
+      "words": 2475,
+      "characters": 18559,
+      "estimated_tokens": 4640
     },
     {
       "id": "architecture",
       "route": "teacher",
       "host": "codex",
-      "profile_id": "sol-teacher-v1",
+      "profile_id": "opus-teacher-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "sol-teacher-v1",
+      "expected_profile_id": "opus-teacher-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-5.6-sol.md"
+        "prompts/models/opus-5.5.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-codex.md",
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-5.6-sol.md"
+        "prompts/models/opus-5.5.md"
       ],
-      "words": 867,
-      "characters": 6280,
-      "estimated_tokens": 1570
+      "words": 1854,
+      "characters": 14074,
+      "estimated_tokens": 3519
     },
     {
-      "id": "architecture_astra",
+      "id": "architecture_opus",
       "route": "teacher",
       "host": "codex",
-      "profile_id": "astra-teacher-v1",
+      "profile_id": "opus-teacher-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "astra-teacher-v1",
+      "expected_profile_id": "opus-teacher-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-6-astra.md"
+        "prompts/models/opus-5.5.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-codex.md",
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-6-astra.md"
+        "prompts/models/opus-5.5.md"
       ],
-      "words": 873,
-      "characters": 6338,
-      "estimated_tokens": 1585
+      "words": 1854,
+      "characters": 14074,
+      "estimated_tokens": 3519
     },
     {
       "id": "hard_fix",
       "route": "teacher",
       "host": "codex",
-      "profile_id": "sol-teacher-v1",
+      "profile_id": "opus-teacher-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "sol-teacher-v1",
+      "expected_profile_id": "opus-teacher-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-5.6-sol.md"
+        "prompts/models/opus-5.5.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-codex.md",
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/gpt-5.6-sol.md"
+        "prompts/models/opus-5.5.md"
       ],
-      "words": 867,
-      "characters": 6280,
-      "estimated_tokens": 1570
+      "words": 1854,
+      "characters": 14074,
+      "estimated_tokens": 3519
     },
     {
       "id": "completed_change",
       "route": "review",
       "host": "opencode",
-      "profile_id": "opencode-glm-worker-v1",
+      "profile_id": "opencode-gpt61-terra-worker-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opencode-glm-worker-v1",
+      "expected_profile_id": "opencode-gpt61-terra-worker-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/review.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-opencode.md",
         "prompts/core/worker.md",
         "contracts/worker.md",
-        "prompts/models/glm-5.3-flash.md",
+        "prompts/models/gpt-6.1-terra.md",
         "workflows/review.md",
-        "playbooks/recipes/base-v1.md"
+        "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 1043,
-      "characters": 7624,
-      "estimated_tokens": 1906
+      "words": 2534,
+      "characters": 19092,
+      "estimated_tokens": 4773
     },
     {
       "id": "irreversible",
@@ -260,14 +279,31 @@
       "files": [
         "SKILL.md"
       ],
-      "words": 357,
-      "characters": 2672,
-      "estimated_tokens": 668
+      "words": 797,
+      "characters": 6387,
+      "estimated_tokens": 1597
+    },
+    {
+      "id": "tiny_read_only",
+      "route": "direct",
+      "host": "codex",
+      "profile_id": null,
+      "prompt_profile_id": null,
+      "expected_profile_id": null,
+      "profile_pass": true,
+      "prompt_profile_pass": true,
+      "component_ids": [],
+      "files": [
+        "SKILL.md"
+      ],
+      "words": 797,
+      "characters": 6387,
+      "estimated_tokens": 1597
     }
   ],
   "routing": {
-    "passed": 10,
-    "total": 10,
+    "passed": 11,
+    "total": 11,
     "cases": [
       {
         "id": "tiny_local",
@@ -300,7 +336,7 @@
         "pass": true
       },
       {
-        "id": "architecture_astra",
+        "id": "architecture_opus",
         "expected_route": "teacher",
         "pass": true
       },
@@ -318,12 +354,17 @@
         "id": "irreversible",
         "expected_route": "human",
         "pass": true
+      },
+      {
+        "id": "tiny_read_only",
+        "expected_route": "direct",
+        "pass": true
       }
     ]
   },
   "profiles": {
-    "passed": 10,
-    "total": 10,
+    "passed": 11,
+    "total": 11,
     "cases": [
       {
         "id": "tiny_local",
@@ -333,54 +374,60 @@
       },
       {
         "id": "read_only_map",
-        "profile_id": "opencode-glm-worker-v1",
-        "expected_profile_id": "opencode-glm-worker-v1",
+        "profile_id": "opencode-gpt61-terra-worker-v1",
+        "expected_profile_id": "opencode-gpt61-terra-worker-v1",
         "pass": true
       },
       {
         "id": "unknown_bug",
-        "profile_id": "opencode-glm-worker-v1",
-        "expected_profile_id": "opencode-glm-worker-v1",
+        "profile_id": "opencode-gpt61-terra-worker-v1",
+        "expected_profile_id": "opencode-gpt61-terra-worker-v1",
         "pass": true
       },
       {
         "id": "diagnosed_bug",
-        "profile_id": "opencode-glm-worker-v1",
-        "expected_profile_id": "opencode-glm-worker-v1",
+        "profile_id": "opencode-gpt61-terra-worker-v1",
+        "expected_profile_id": "opencode-gpt61-terra-worker-v1",
         "pass": true
       },
       {
         "id": "known_change",
-        "profile_id": "opencode-glm-worker-v1",
-        "expected_profile_id": "opencode-glm-worker-v1",
+        "profile_id": "opencode-gpt61-terra-worker-v1",
+        "expected_profile_id": "opencode-gpt61-terra-worker-v1",
         "pass": true
       },
       {
         "id": "architecture",
-        "profile_id": "sol-teacher-v1",
-        "expected_profile_id": "sol-teacher-v1",
+        "profile_id": "opus-teacher-v1",
+        "expected_profile_id": "opus-teacher-v1",
         "pass": true
       },
       {
-        "id": "architecture_astra",
-        "profile_id": "astra-teacher-v1",
-        "expected_profile_id": "astra-teacher-v1",
+        "id": "architecture_opus",
+        "profile_id": "opus-teacher-v1",
+        "expected_profile_id": "opus-teacher-v1",
         "pass": true
       },
       {
         "id": "hard_fix",
-        "profile_id": "sol-teacher-v1",
-        "expected_profile_id": "sol-teacher-v1",
+        "profile_id": "opus-teacher-v1",
+        "expected_profile_id": "opus-teacher-v1",
         "pass": true
       },
       {
         "id": "completed_change",
-        "profile_id": "opencode-glm-worker-v1",
-        "expected_profile_id": "opencode-glm-worker-v1",
+        "profile_id": "opencode-gpt61-terra-worker-v1",
+        "expected_profile_id": "opencode-gpt61-terra-worker-v1",
         "pass": true
       },
       {
         "id": "irreversible",
+        "profile_id": null,
+        "expected_profile_id": null,
+        "pass": true
+      },
+      {
+        "id": "tiny_read_only",
         "profile_id": null,
         "expected_profile_id": null,
         "pass": true
@@ -388,8 +435,8 @@
     ]
   },
   "prompt_profiles": {
-    "passed": 10,
-    "total": 10,
+    "passed": 11,
+    "total": 11,
     "cases": [
       {
         "id": "tiny_local",
@@ -422,7 +469,7 @@
         "pass": true
       },
       {
-        "id": "architecture_astra",
+        "id": "architecture_opus",
         "prompt_profile_id": "model-bound-v1",
         "pass": true
       },
@@ -438,93 +485,29 @@
       },
       {
         "id": "irreversible",
+        "prompt_profile_id": null,
+        "pass": true
+      },
+      {
+        "id": "tiny_read_only",
         "prompt_profile_id": null,
         "pass": true
       }
     ]
   },
   "invariants": {
-    "codex_glm": true,
-    "opencode_glm": true,
-    "codex_sol_teacher": true,
+    "codex_default_worker": true,
+    "opencode_default_worker": true,
+    "copilot_model_unsupported": true,
+    "native_worker_budgets": true,
+    "codex_opus_teacher": true,
+    "opencode_opus_teacher": true,
     "no_venice_sol": true,
-    "teacher_five_turn_cap": true,
+    "teacher_frozen_limits": true,
+    "teacher_ask_cap": true,
+    "teacher_turns_per_ask_cap": true,
+    "teacher_handback_threshold": true,
     "custom_runtime_removed": true
   },
-  "obsolete": [],
-  "live": {
-    "engine": "opencode --pure",
-    "model": "venice/z-ai-glm-5-3-flash",
-    "instruction_characters": 4698,
-    "passed": 9,
-    "total": 9,
-    "cases": [
-      {
-        "id": "tiny_local",
-        "expected": "direct",
-        "actual": "direct",
-        "pass": true
-      },
-      {
-        "id": "read_only_map",
-        "expected": "explore",
-        "actual": "explore",
-        "pass": true
-      },
-      {
-        "id": "unknown_bug",
-        "expected": "diagnose",
-        "actual": "diagnose",
-        "pass": true
-      },
-      {
-        "id": "diagnosed_bug",
-        "expected": "fix",
-        "actual": "fix",
-        "pass": true
-      },
-      {
-        "id": "known_change",
-        "expected": "implement",
-        "actual": "implement",
-        "pass": true
-      },
-      {
-        "id": "architecture",
-        "expected": "teacher",
-        "actual": "teacher",
-        "pass": true
-      },
-      {
-        "id": "hard_fix",
-        "expected": "teacher",
-        "actual": "teacher",
-        "pass": true
-      },
-      {
-        "id": "completed_change",
-        "expected": "review",
-        "actual": "review",
-        "pass": true
-      },
-      {
-        "id": "irreversible",
-        "expected": "human",
-        "actual": "human",
-        "pass": true
-      }
-    ],
-    "tokens": {
-      "total": 14365,
-      "input": 13991,
-      "output": 147,
-      "reasoning": 227,
-      "cache": {
-        "write": 0,
-        "read": 0
-      }
-    },
-    "cost": 0.00228565,
-    "status": "historical-not-current"
-  }
+  "obsolete": []
 }

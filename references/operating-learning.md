@@ -8,18 +8,32 @@ and host instructions take precedence over this authorization.
 
 ## Observe before changing
 
-Run `node scripts/usage.mjs operating`, plus `waste` or `teacher` for the relevant
-signal. These inspect existing sanitized records; they do not run tests or models.
-Record through the existing telemetry/attestation path first. Include failures,
-unknown outcomes, main repair and teacher costs. Missing data is an instrumentation
-gap, not evidence of success. Diagnose the missing receipt or attestation for new
-runs instead of inventing historical values. Never inspect raw sessions for learning.
+Record the final run attestation with `usage.mjs attest`. The accepted mission
+write returns an `attestation_payload`. Add the observed `run_id` and any
+available quality facts, then submit the JSON with
+`node scripts/usage.mjs attest --file <path>`. Use `--outcome` for an observed
+final outcome and repeat `--skill-hint` for hint observations. Include known
+failures, main repair and teacher costs in the run record.
+Run `node scripts/usage.mjs operating` for two views of sanitized evidence:
 
-Keep observations separated by host, actual models, route and task class. Distinguish
-accepted, rejected and unknown outcomes. A run may support an operational observation
-without qualifying for paired research; neither authorizes a quality-parity claim.
-Cheap-model share is descriptive only and its complete-usage cohort is reported.
-Provider bills, wall time and human interventions remain unknown when not recorded.
+- `route_rollups` group by `playbook_version`, `host`, `route` and `worker_model`.
+  Compare the same task classes within those cohorts and retain accepted, failed
+  and unknown outcomes. Cheap-model share describes the complete-usage cohort.
+- `skill_hints` summarizes recorded hint use, first-pass outcomes and rework.
+  Hints capture associations from real work. Causal claims need a controlled
+  comparison that accounts for task selection.
+
+Use `usage.mjs doctor` for excluded records, attestation and token coverage, and
+active trial status. Use `waste` or `teacher` for their specific signals. Repair
+missing receipts or attestations for new runs. Keep unavailable provider costs,
+wall time, human interventions and outcomes unknown. Inspect sanitized records
+only. An operational observation may fall outside the paired research cohort.
+Track unnecessary handoffs and under-delegation. Repeated medium or large slices
+handled by main are an actionable signal when they drive context cost or rework.
+
+See [Hstack escalation](hstack.md#escalate-repeated-problems) for recurring
+issues that call for `correct`, `h-retro` or explicitly requested `reflect`.
+Apply reviewed advisory lessons through [structured lesson loading](lessons.md#controlled-research-and-structured-lessons).
 
 ## Select one adaptation
 
@@ -41,7 +55,8 @@ Within this authorization main may adjust:
   the baseline component and use the registry's existing overlay mechanism.
 - Advisory timing and direct/delegated strategy within existing execution gates:
   prefer an earlier focused teacher question when repeated downstream repair shows
-  a missed decision, or omit a redundant handoff when main can finish directly.
+  a missed decision, omit redundant handoffs for tiny local work, or delegate a
+  recurring slice that repeatedly drives main context cost or rework.
 
 Main may not automatically change model/provider authorization, permissions,
 acceptance rules, mandatory reviews, tool access, recovery/inspection thresholds,
@@ -51,12 +66,16 @@ A measured token share never drives a mutation by itself.
 
 ## Apply and follow through
 
-1. Keep at most one open operating trial. Inspect the active trial in LESSONS.md
-   before another change. Preserve unrelated edits.
+1. Keep at most one open operating trial in `playbooks/current.json` under
+   `operating_learning.active_trial`. Use `null` when no trial is active.
+   Read the current selection and its history in `LESSONS.md` before changing it.
+   Preserve unrelated edits.
 2. Before editing, append a sanitized trial entry: context, supporting run IDs,
    hypothesis, exact old/new cell or immutable component IDs, baseline policy
    version, expected observable change and rollback condition. Label `trial`.
-3. Apply one local change, assign a new policy version, and note it in the task
+3. Apply one local change and assign a new policy version. Record the trial's
+   `id`, `status`, `started_at`, candidate `playbook_version`, `trial_run_limit`
+   and `target_cell` or `target_route` in `active_trial`. Note the trial in the task
    handback. Do not commit, push, install profiles or release without the applicable
    authorization. A trial changes future selections; active tasks retain their
    original binding and spent budget. Main-only local edits are not background work.
@@ -68,7 +87,9 @@ A measured token share never drives a mutation by itself.
    host behavior, or inconclusive trial at the limit. Preserve intervening unrelated
    changes; if the same field was independently edited, reconcile before overwriting.
    Rollback retains the observation history and gets its own policy version.
-6. A kept trial is `provisional`, with observational evidence and unresolved limits.
+6. Close a resolved trial by clearing `active_trial` and preserving its disposition
+   in `LESSONS.md`. A kept trial is `provisional`, with observational evidence and
+   unresolved limits.
    It does not establish causal savings, broad quality parity or research promotion.
    A later change starts from that recorded baseline, with a new bounded trial.
 

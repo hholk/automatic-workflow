@@ -2,6 +2,11 @@
 
 Use when desired behavior, scope, and verification are known.
 
+Before freezing the v2 brief, check for a project-local `verify-*` skill for
+the affected behavior. Use its relevant probe to set `verify.command` and
+`verify.expected` for each criterion. When none applies, identify the narrowest
+existing behavior check and its expected result.
+
 Dispatch the resolved native worker with exact file ownership. Implement the
 smallest complete vertical slice using existing dependencies and patterns.
 When observable behavior changes at a known public seam, use:

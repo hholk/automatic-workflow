@@ -74,6 +74,23 @@ const records = (value, name) => {
   }
   return value
 }
+const normalizeSkillHints = (value) => {
+  if (!Array.isArray(value) || value.length > 16) throw new Error("skill_hints must be an array of at most 16 items")
+  return records(value, "skill_hints").map((hint) => {
+    const skill = typeof hint.skill === "string" ? hint.skill.trim() : ""
+    if (!/^[a-z0-9][a-z0-9_.:-]{0,127}$/i.test(skill)) throw new Error("skill_hints.skill must be a skill identifier")
+    return {
+      skill,
+      first_pass: booleanOrNull(hint.first_pass, "skill_hints.first_pass"),
+      rework: booleanOrNull(hint.rework, "skill_hints.rework"),
+    }
+  })
+}
+const normalizeOutcome = (value) => {
+  const outcome = requiredString(value, "outcome")
+  if (!outcomes.has(outcome)) throw new Error("invalid outcome")
+  return outcome
+}
 const assertPromptFree = (value, location = "run") => {
   if (!value || typeof value !== "object") return
   for (const [key, child] of Object.entries(value)) {
@@ -318,8 +335,10 @@ export const normalizeRun = (input, attestation = null) => {
   const evidenceReceived = asks.filter((item) => item.evidence_received === true).length
   const decisionTurns = teacher.filter((item) => item.decision_changed !== null)
   const estimatedWaste = wasteEvents.reduce((sum, item) => sum + (item.estimated_wasted_tokens || 0), 0)
-  const outcome = requiredString(input.outcome, "outcome")
-  if (!outcomes.has(outcome)) throw new Error(`invalid outcome: ${outcome}`)
+  const recordedOutcome = normalizeOutcome(input.outcome)
+  const outcome = attestation?.outcome === undefined ? recordedOutcome : normalizeOutcome(attestation.outcome)
+  const skillHints = input.skill_hints === undefined ? undefined : normalizeSkillHints(input.skill_hints)
+  const attestedHints = attestation?.skill_hints === undefined ? skillHints : normalizeSkillHints(attestation.skill_hints)
   const cellID = buildCellID({ host: input.host, providerHost: identity.provider_host, frontendHost: identity.frontend_host,
     actors, route, task, promptProfileID: prompt.profile_id })
   return {
@@ -367,6 +386,7 @@ export const normalizeRun = (input, attestation = null) => {
       teacher_human_redirects: teacher.filter((item) => item.human_redirect === true).length,
     },
     outcome,
+    ...(attestedHints === undefined ? {} : { skill_hints: attestedHints }),
     duration_ms: finiteOrNull(input.duration_ms, "duration_ms"),
   }
 }
@@ -395,13 +415,16 @@ export const appendRun = (input, stateDir) => {
   return run
 }
 
-export const appendAttestation = (input, stateDir) => {
-  const attestation = {
+const normalizeAttestation = (input) => {
+  assertPromptFree(input, "attestation")
+  const at = input.at || new Date().toISOString()
+  if (Number.isNaN(Date.parse(at))) throw new Error("at must be an ISO timestamp")
+  return {
     schema_version: 4,
     kind: "attestation",
     source: "host",
     run_id: requiredString(input.run_id, "run_id"),
-    at: input.at || new Date().toISOString(),
+    at,
     verify_id: requiredString(input.verify_id, "verify_id"),
     verify_exit_code: integerOrNull(input.verify_exit_code, "verify_exit_code"),
     semantic_success: booleanOrNull(input.semantic_success, "semantic_success"),
@@ -411,24 +434,66 @@ export const appendAttestation = (input, stateDir) => {
     forbidden_changes: integerOrNull(input.forbidden_changes, "forbidden_changes"),
     accepted_worker_actions: integerOrNull(input.accepted_worker_actions, "accepted_worker_actions"),
     parent_rework: integerOrNull(input.parent_rework, "parent_rework"),
+    ...(input.outcome === undefined ? {} : { outcome: normalizeOutcome(input.outcome) }),
+    ...(input.skill_hints === undefined ? {} : { skill_hints: normalizeSkillHints(input.skill_hints) }),
   }
+}
+
+export const appendAttestation = (input, stateDir) => {
+  const attestation = normalizeAttestation(input)
   mkdirSync(stateDir, { recursive: true })
   appendFileSync(join(stateDir, "attestations.jsonl"), `${JSON.stringify(attestation)}\n`)
   return attestation
 }
 
-export const readRuns = (stateDir, { onInvalid } = {}) => {
-  const attestations = new Map(readJsonLines(join(stateDir, "attestations.jsonl"), onInvalid)
-    .filter(({ value }) => value?.schema_version === 4)
-    .map(({ value }) => [value.run_id, value]))
-  const path = join(stateDir, "runs.jsonl")
-  return readJsonLines(path, onInvalid).flatMap(({ value, line }) => {
-    if (value?.schema_version !== 4 || value.kind !== "run") return []
-    try { return [normalizeRun(value, attestations.get(value.run_id))] } catch {
-      invalidRecord(path, line, "invalid-run", onInvalid)
+const isMonitorRecord = (value) => {
+  const markers = [value?.kind, value?.type, value?.event, value?.status, value?.outcome, value?.result, value?.route]
+  return markers.includes("MONITOR_CHECK") || (Number.isInteger(value?.supervisor_pid) && !value.run_id)
+}
+const exclusionReason = (value) => {
+  if ((Number.isInteger(value?.schema_version) && value.schema_version < 4) ||
+    (value?.schema_version === undefined && value?.run_id && value?.version !== undefined)) return "legacy-schema"
+  return value?.schema_version === 4 ? "foreign-kind" : "unsupported-schema"
+}
+
+const readRecords = (path, kind, normalize, onInvalid, onExcluded) => readJsonLines(path, onInvalid)
+  .flatMap(({ value, line }) => {
+    if (isMonitorRecord(value)) {
+      if (onExcluded) invalidRecord(path, line, "foreign-monitor", onExcluded)
+      return []
+    }
+    if (value?.schema_version !== 4 || value.kind !== kind) {
+      if (onExcluded) invalidRecord(path, line, exclusionReason(value), onExcluded)
+      return []
+    }
+    try { return [normalize(value)] } catch {
+      invalidRecord(path, line, `invalid-${kind}`, onInvalid)
       return []
     }
   })
+
+const readEvidence = (stateDir, { onInvalid, onExcluded } = {}) => {
+  const attestations = readRecords(join(stateDir, "attestations.jsonl"), "attestation", normalizeAttestation, onInvalid, onExcluded)
+  const byRun = new Map()
+  for (const attestation of attestations) {
+    byRun.set(attestation.run_id, { ...byRun.get(attestation.run_id), ...attestation })
+  }
+  const runs = readRecords(join(stateDir, "runs.jsonl"), "run", (run) => normalizeRun(run, byRun.get(run.run_id)), onInvalid, onExcluded)
+  return { runs, attestations }
+}
+
+export const readRuns = (stateDir, options) => readEvidence(stateDir, options).runs
+
+export const inspectStore = (stateDir, summarizeRuns = () => ({})) => {
+  const files = { "runs.jsonl": { valid: 0, excluded: {} }, "attestations.jsonl": { valid: 0, excluded: {} } }
+  const countExcluded = ({ file, reason }) => {
+    const counts = files[file].excluded
+    counts[reason] = (counts[reason] || 0) + 1
+  }
+  const { runs, attestations } = readEvidence(stateDir, { onInvalid: countExcluded, onExcluded: countExcluded })
+  files["runs.jsonl"].valid = runs.length
+  files["attestations.jsonl"].valid = attestations.length
+  return { ...summarizeRuns(runs), files }
 }
 
 const median = (values) => {

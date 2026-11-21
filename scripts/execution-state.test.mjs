@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { validateTaskBrief, assessEvidenceReuse, assessAcceptance, routeMilestone, assessRecovery, resolveAuthority, assessDispatch } from "./execution-state.mjs"
+import { contractDigest, validateTaskBrief, assessEvidenceReuse, assessAcceptance, routeMilestone, assessRecovery, resolveAuthority, assessDispatch } from "./execution-state.mjs"
 
 const scope = { task_id: "task-a", objective_revision: "objective-2", snapshot_id: "tree-3" }
 const verify = { check_id: "behavior", check_version: "1", command: "npm test", expected: "No failing behavior tests" }
@@ -135,4 +135,26 @@ test("parallel dispatch requires independent unique owners and prepared isolated
   assert.equal(dispatch({ integration: undefined }).reason, "INTEGRATION_PLAN_REQUIRED")
   assert.equal(dispatch({ active_workers: [worker("c", "src/c")] }).reason, "AT_MOST_TWO_UNIQUE_WORKERS")
   assert.equal(dispatch({ workers: [worker("b", "src/b")], active_workers: [worker("a", "src/a")], dispatched_ids: ["a"] }).allowed, true)
+})
+
+
+test("optional skill hints are bounded, cite a criterion and contribute to contract identity", () => {
+  const hint = { skill: "tdd", criterion_id: 1, instruction: "Verify the title after saving." }
+  const hinted = { ...brief, skill_hints: [hint] }
+  assert.equal(validateTaskBrief(hinted).allowed, true)
+  assert.equal(validateTaskBrief({ ...brief, skill_hints: [] }).allowed, true)
+  assert.equal(validateTaskBrief({ ...brief, skill_hints: Array(8).fill(hint) }).allowed, true)
+  assert.equal(validateTaskBrief({ ...brief, skill_hints: [{ ...hint, skill: "x".repeat(80), instruction: "x".repeat(240) }] }).allowed, true)
+  for (const skill_hints of [null, hint, Array(9).fill(hint), Array(1), [null], ["tdd"], [{ ...hint, extra: true }],
+    [{ ...hint, skill: " " }], [{ ...hint, skill: "x".repeat(81) }], [{ ...hint, instruction: "" }],
+    [{ ...hint, instruction: "x".repeat(241) }], [{ ...hint, criterion_id: 2 }], [{ ...hint, criterion_id: "1" }],
+    [{ skill: "tdd", criterion_id: 1 }]]) {
+    assert.deepEqual(validateTaskBrief({ ...brief, skill_hints }), { allowed: false, reason: "INVALID_SKILL_HINTS" })
+  }
+  assert.equal(contractDigest(brief), contractDigest({ ...brief, skill_hints: undefined }))
+  assert.notEqual(contractDigest(hinted), contractDigest(brief))
+  assert.notEqual(contractDigest(hinted), contractDigest({ ...brief, skill_hints: [{ ...hint, instruction: "Verify the title after reloading." }] }))
+  assert.equal(contractDigest(hinted), contractDigest({ ...brief, snapshot_id: "later-tree", skill_hints: [
+    { instruction: `  ${hint.instruction} `, criterion_id: 1, skill: " tdd " },
+  ] }))
 })

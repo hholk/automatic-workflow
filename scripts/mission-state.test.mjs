@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, readdirSync, readFileSync, writeFileSync, statSync
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
-import { createMission, applyMissionEvent, writeMission, readMission, recoverMissionLock } from "./mission-state.mjs"
+import { createMission, applyMissionEvent, writeMission, readMission, recoverMissionLock, exportMissionTsv } from "./mission-state.mjs"
 import { fixture } from "./test-fixtures/mission.mjs"
 
 const setup = (t) => {
@@ -191,4 +191,40 @@ test("direct tasks can checkpoint without independent-review overhead", (t) => {
   state = applyMissionEvent(state, { type: "evidence", evidence: [f.evidence], next_action: "Accept the checked result" })
   state = applyMissionEvent(state, { type: "accept", main_confirmation: f.confirmation, next_action: "Report completion" })
   assert.equal(state.status, "done")
+})
+
+
+test("audit export records persisted event identity and only decision trail fields", (t) => {
+  const f = setup(t)
+  f.apply({ type: "replan", diagnosis: {
+    issue_id: "fix-title", earliest_invalid_artifact: "implementation", reason: "Untrusted free text",
+    evidence_ref: "@browser:tab\tedit\r\nreload\u0085done\u2028again", affected_criteria: [1], next_action: "Private instructions",
+  } }, { event_id: "event\u0000one" })
+  const result = exportMissionTsv({ ...f.context, snapshot_id: undefined })
+  assert.equal(result.allowed, true)
+  const rows = result.tsv.trimEnd().split("\n").map((line) => line.split("\t"))
+  assert.deepEqual(rows[0], ["timestamp", "sequence", "event_id", "type", "decision", "reason", "evidence_ref", "result"])
+  assert.deepEqual(rows[1].slice(1, 4), ["0", "init", "init"])
+  assert.deepEqual(rows[2].slice(1), ["1", "event one", "replan", "Replan after a diagnosed issue",
+    "implementation", "'@browser:tab edit  reload done again", "recorded"])
+  for (const row of rows.slice(1)) assert.equal(new Date(row[0]).toISOString(), row[0])
+  assert.doesNotMatch(result.tsv, /preserve it after reload|Untrusted free text|Private instructions|Continue the mission/)
+})
+
+test("accept returns the observed attestation payload without persisting it", (t) => {
+  const f = setup(t)
+  f.apply({ type: "contract_review", review: f.review })
+  f.apply({ type: "evidence", evidence: [f.evidence] })
+  const last = f.apply({ type: "completion_review", review: f.completion })
+  const event = { type: "accept", main_confirmation: f.confirmation, next_action: "Report" }
+  const request = { ...f.context, expected_sequence: last.sequence, event_id: "accepted", event }
+  const accepted = writeMission(request)
+  assert.deepEqual(accepted.attestation_payload, {
+    verify_id: f.confirmation.verify.result_ref, verify_exit_code: 0, semantic_success: true,
+    scope_covered: 1, scope_total: 1, review_pass: true,
+    forbidden_changes: null, accepted_worker_actions: null, parent_rework: null,
+  })
+  assert.deepEqual(writeMission(request), accepted)
+  assert.equal(Object.hasOwn(readMission(f.context).state, "attestation_payload"), false)
+  assert.deepEqual(readdirSync(f.context.stateDir), ["missions"])
 })

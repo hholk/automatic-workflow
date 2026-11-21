@@ -8,10 +8,19 @@ Keep prior mission criteria, plans, worker reports, validation reports and closu
 claims out of this context. Main attaches the contract digest after review; the
 reviewer derives its own requirement map from the authoritative sources.
 
-Inspect the actual artifact and exercise the requested behavior. Check user-visible
-flows, persistence, setup and relevant edge cases. Every finding must trace to the
-user request or accepted constraints. Code inference alone leaves runnable behavior
-unknown when execution is needed. Respect access limits and hidden holdouts.
+Inspect the actual artifact under two lenses from `h-code-review`:
+
+- **Standards** checks documented repository rules and accepted constraints.
+- **Spec** checks the user's requested behavior and later accepted decisions,
+  including relevant flows, persistence, setup and edge cases.
+
+Trace each finding to its source. Apply the counterprobe from `blast-radius`
+when a changed seam can affect a caller or side effect. Identify the assumption
+that keeps that path safe and run the smallest authorized check that could
+falsify it. Record the command and observed result. Keep missing executable
+evidence unknown and respect access limits and hidden holdouts. One read-only
+reviewer performs both passes and runs any counterprobe within its scope.
+Recursive delegation is prohibited.
 For changed interfaces, apply [UI/UX acceptance](../references/ui-ux.md) to the
 affected task and rendered states; Main owns visual judgment when the reviewer
 has only textual observations.

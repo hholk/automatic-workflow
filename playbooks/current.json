@@ -1,7 +1,7 @@
 {
   "schema_version": 4,
-  "version": "acceptance-routing-v6",
-  "generated_at": "2026-11-10T00:00:00.000Z",
+  "version": "acceptance-routing-v7",
+  "generated_at": "2026-11-21T00:00:00.000Z",
   "frozen": {
     "evaluator": "quality-v2",
     "telemetry": "run-v4",
@@ -25,6 +25,8 @@
     "enabled": true,
     "minimum_observed_runs": 3,
     "one_change_at_a_time": true,
+    "active_trial": null,
+    "rollup_dimensions": ["playbook_version", "host", "route", "worker_model"],
     "trial_run_limit": 10,
     "max_relative_budget_change": 0.25,
     "context_budget_range": [

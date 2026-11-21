@@ -72,7 +72,26 @@ const routeContexts = cases.map((item) => {
   }
 })
 const entrypoint = metric(["SKILL.md"])
+const potetoCore = "../poteto-mode/poteto-core.md"
+const potetoFull = "../poteto-mode/SKILL.md"
+const potetoPath = [potetoCore, potetoFull].find((path) => existsSync(join(root, path)))
+const hstackStartup = {
+  ...metric(["SKILL.md", "references/hstack.md", ...(potetoPath ? [potetoPath] : [])]),
+  poteto_mode: potetoPath === potetoCore ? "core" : potetoPath === potetoFull ? "full" : "absent",
+}
 const averageRouteTokens = Math.round(routeContexts.reduce((sum, item) => sum + item.estimated_tokens, 0) / routeContexts.length)
+const budgets = {
+  entrypoint_max_tokens: 1850,
+  average_route_max_tokens: 3800,
+  hstack_core_startup_max_tokens: 4600,
+}
+const hstackCoreFits = hstackStartup.estimated_tokens <= budgets.hstack_core_startup_max_tokens
+budgets.hstack_core_startup = hstackStartup.poteto_mode === "core" ? (hstackCoreFits ? "pass" : "fail")
+  : hstackStartup.poteto_mode === "full" ? "skipped_full_poteto" : "skipped_absent_poteto"
+budgets.pass = entrypoint.estimated_tokens <= budgets.entrypoint_max_tokens
+  && averageRouteTokens <= budgets.average_route_max_tokens
+  && budgets.hstack_core_startup !== "fail"
+
 const obsolete = ["bin.mjs", "bin.mjs.map", "plugin", "supervisor", "quality", "expert-skills", "scripts/aw-v2-contract.test.mjs"].filter((path) => existsSync(join(root, path)))
 const runtime = [
   read("references/runtimes-opencode.md"),
@@ -127,7 +146,9 @@ const result = {
   version: "v5",
   playbook_version: playbook.version,
   entrypoint,
+  hstack_startup: hstackStartup,
   average_route_estimated_tokens: averageRouteTokens,
+  budgets,
   route_contexts: routeContexts,
   routing: {
     passed: routeCoverage.filter((item) => item.pass).length,
@@ -200,12 +221,10 @@ if (live) {
   }
 }
 
-if (write && !live && existsSync(join(root, "benchmarks/latest.json"))) {
-  result.live = { ...JSON.parse(read("benchmarks/latest.json")).live, status: "historical-not-current" }
-}
 if (write) writeFileSync(join(root, "benchmarks/latest.json"), `${JSON.stringify(result, null, 2)}\n`)
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-if (result.routing.passed !== result.routing.total
+if (!result.budgets.pass
+  || result.routing.passed !== result.routing.total
   || result.profiles.passed !== result.profiles.total
   || result.prompt_profiles.passed !== result.prompt_profiles.total
   || !Object.values(result.invariants).every(Boolean)) {

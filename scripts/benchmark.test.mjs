@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -8,11 +8,12 @@ import { spawnSync } from "node:child_process"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const readJson = (path) => JSON.parse(readFileSync(join(root, path), "utf8"))
-const offline = (skill = root) => spawnSync(process.execPath, [join(root, "scripts/benchmark.mjs"), "--skill", skill], {
+const offline = (skill = root, ...args) => spawnSync(process.execPath, [join(root, "scripts/benchmark.mjs"), "--skill", skill, ...args], {
   encoding: "utf8", maxBuffer: 2 * 1024 * 1024,
 })
 const fixture = () => {
-  const skill = mkdtempSync(join(tmpdir(), "aw-offline-benchmark-"))
+  const skill = join(mkdtempSync(join(tmpdir(), "aw-offline-benchmark-")), "aw")
+  mkdirSync(skill)
   for (const path of ["SKILL.md", "benchmarks", "playbooks", "prompts", "contracts", "references", "workflows", "agents"]) {
     cpSync(join(root, path), join(skill, path), { recursive: true })
   }
@@ -60,7 +61,7 @@ test("offline benchmark fails when a generated worker drifts from the current mo
     const value = JSON.parse(run.stdout)
     assert.equal(value.invariants.opencode_default_worker, false)
     assert.equal(value.profiles.passed, value.profiles.total)
-  } finally { rmSync(skill, { recursive: true }) }
+  } finally { rmSync(dirname(skill), { recursive: true }) }
 })
 
 test("offline benchmark rejects changed frozen teacher limits", () => {
@@ -75,7 +76,7 @@ test("offline benchmark rejects changed frozen teacher limits", () => {
     const value = JSON.parse(run.stdout)
     assert.equal(value.invariants.teacher_frozen_limits, false)
     assert.equal(value.invariants.teacher_turns_per_ask_cap, false)
-  } finally { rmSync(skill, { recursive: true }) }
+  } finally { rmSync(dirname(skill), { recursive: true }) }
 })
 
 test("offline benchmark rejects an enabled Copilot profile without native model support", () => {
@@ -86,5 +87,79 @@ test("offline benchmark rejects an enabled Copilot profile without native model 
     const run = offline(skill)
     assert.equal(run.status, 1, run.stderr)
     assert.equal(JSON.parse(run.stdout).invariants.copilot_model_unsupported, false)
-  } finally { rmSync(skill, { recursive: true }) }
+  } finally { rmSync(dirname(skill), { recursive: true }) }
+})
+
+
+test("startup context counts actual files and only gates the core Poteto build", () => {
+  const skill = fixture()
+  try {
+    const poteto = join(dirname(skill), "poteto-mode")
+    let value = JSON.parse(offline(skill).stdout)
+    assert.equal(value.hstack_startup.poteto_mode, "absent")
+    assert.equal(value.budgets.hstack_core_startup, "skipped_absent_poteto")
+    assert.deepEqual(value.hstack_startup.files, ["SKILL.md", "references/hstack.md"])
+    mkdirSync(poteto)
+    writeFileSync(join(poteto, "SKILL.md"), "x".repeat(20000))
+    let run = offline(skill)
+    assert.equal(run.status, 0, run.stderr)
+    value = JSON.parse(run.stdout)
+    assert.equal(value.hstack_startup.poteto_mode, "full")
+    assert.equal(value.budgets.hstack_core_startup, "skipped_full_poteto")
+    assert.ok(value.hstack_startup.estimated_tokens > value.budgets.hstack_core_startup_max_tokens)
+    assert.equal(value.budgets.pass, true)
+
+    const core = join(poteto, "poteto-core.md")
+    writeFileSync(core, "Compact style guide.")
+    run = offline(skill)
+    assert.equal(run.status, 0, run.stderr)
+    value = JSON.parse(run.stdout)
+    assert.equal(value.hstack_startup.poteto_mode, "core")
+    assert.deepEqual(value.hstack_startup.files, ["SKILL.md", "references/hstack.md", "../poteto-mode/poteto-core.md"])
+    const context = value.hstack_startup.files.map((path) => readFileSync(join(skill, path), "utf8")).join("\n")
+    assert.equal(value.hstack_startup.estimated_tokens, Math.ceil(context.length / 4))
+    assert.equal(value.budgets.hstack_core_startup, "pass")
+
+    appendFileSync(core, "x".repeat(20000))
+    run = offline(skill)
+    assert.equal(run.status, 1, run.stderr)
+    value = JSON.parse(run.stdout)
+    assert.equal(value.budgets.hstack_core_startup, "fail")
+    assert.equal(value.budgets.pass, false)
+  } finally { rmSync(dirname(skill), { recursive: true }) }
+})
+
+test("benchmark reports entrypoint and average route budget failures", () => {
+  const skill = fixture()
+  try {
+    const entrypoint = join(skill, "SKILL.md")
+    const original = readFileSync(entrypoint, "utf8")
+    appendFileSync(entrypoint, "x".repeat(4 * 1850 + 1 - original.length))
+    let run = offline(skill)
+    assert.equal(run.status, 1, run.stderr)
+    let value = JSON.parse(run.stdout)
+    assert.equal(value.entrypoint.estimated_tokens, 1851)
+    assert.equal(value.budgets.pass, false)
+
+    writeFileSync(entrypoint, original)
+    appendFileSync(join(skill, "references/runtimes-codex.md"), "x".repeat(20000))
+    run = offline(skill)
+    assert.equal(run.status, 1, run.stderr)
+    value = JSON.parse(run.stdout)
+    assert.ok(value.entrypoint.estimated_tokens <= value.budgets.entrypoint_max_tokens)
+    assert.ok(value.average_route_estimated_tokens > value.budgets.average_route_max_tokens)
+    assert.equal(value.budgets.pass, false)
+  } finally { rmSync(dirname(skill), { recursive: true }) }
+})
+
+test("offline --write replaces the snapshot with results from the current benchmark", () => {
+  const skill = fixture()
+  try {
+    const snapshot = join(skill, "benchmarks/latest.json")
+    writeFileSync(snapshot, JSON.stringify({ version: "v4", live: { model: "stale/model" } }))
+    const run = offline(skill, "--write")
+    assert.equal(run.status, 0, run.stderr)
+    assert.equal(readFileSync(snapshot, "utf8"), run.stdout)
+    assert.equal(Object.hasOwn(JSON.parse(run.stdout), "live"), false)
+  } finally { rmSync(dirname(skill), { recursive: true }) }
 })

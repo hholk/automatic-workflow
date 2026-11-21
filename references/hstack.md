@@ -1,23 +1,25 @@
 # Hstack within AW
 
-The user's standing preference enables Poteto as AW's default style and allows
-useful Hstack assistance automatically when compatible with the active task.
-This integration applies within AW. Preserve installed skill frontmatter and
-manual-only flags; do not modify global skill discovery or activate other stacks.
+AW uses Poteto and compatible Hstack skills under the user's standing
+authorization. Preserve installed frontmatter, manual-only flags and global
+skill discovery.
 
 ## Load and select
 
-Resolve `poteto-mode` from the same Hstack installation as AW, using the sibling
-`../../poteto-mode/SKILL.md` from this reference. Read it on every AW activation
-(once per session is sufficient) and keep its compatible instructions active
-through completion and resumed turns. This is the user's explicit standing
-invocation of Poteto within AW; preserve its manual-only flag outside AW.
-Use its clear prose, candid judgment, simple implementation and outcome ownership.
-Apply this compatibility filter before following any nested trigger.
+Resolve `poteto-mode` from the same Hstack installation as AW. Prefer curated
+`../../poteto-mode/poteto-core.md` and use `../../poteto-mode/SKILL.md` if the
+core is absent. These paths are relative to this reference in the bundle.
+`resolve-profile.mjs` reports the selected path and availability in
+`poteto_style_reference` (`mode` is `core`, `full`, or `missing`). Read the
+selected file once per session. Preserve Poteto's manual-only flag outside
+AW and apply the compatibility filter before following nested triggers.
 
-Choose the smallest useful supporting skill for an observed need. Read its source
-before applying it. The following lightweight references are covered by the user's
-standing authorization, including their manual-only invocation when present:
+Use `recommended_hstack_skills` from `resolve-profile.mjs` to shortlist references
+from the canonical task class, route and observed needs. Each entry gives its
+name, path, availability and reason. Pass observed triggers such as
+`--signals retry,typescript` when relevant. Choose the smallest useful installed skill
+and read its source before applying it. Standing authorization covers these
+lightweight references within AW:
 
 | Need | Relevant Hstack reference |
 |---|---|
@@ -34,42 +36,30 @@ standing authorization, including their manual-only invocation when present:
 | Multi-step delivery | `principle-sequence-verifiable-units` |
 | Interpreting measured results | `principle-explain-the-number`, `benchmark-checklist` |
 
-This table is a routing aid, not a checklist. Other active model-invocable Hstack
-skills may be used when their documented trigger and actual benefit match. Other
-manual-only skills require explicit invocation. Resolve names against the installed
-catalog rather than assuming a fixed machine path or downloading missing skills.
-If a nonessential reference is unavailable, use the AW contract and disclose the
-missing reference only when it materially affects the result.
+Use other model-invocable Hstack skills when their documented triggers match.
+Other manual-only skills require explicit invocation. Resolve against the
+installed catalog. If a reference is absent, use the AW contract and disclose
+the gap when it materially affects the result.
 
 ## Worker handoff
 
-While preparing CONTEXT, identify a specific mistake the worker could make on
-this task. If an authorized skill supplies a useful way to catch it, translate
-one relevant step into a short instruction and tie it to an existing numbered
-SUCCESS criterion. Leave the implementation choice to the worker. Omit the
-hint when the brief or selected workflow already gives that step, or when no
-skill adds one. Include a source section only if the worker needs more detail.
+Add a short CONTEXT instruction when an authorized skill prevents a specific
+mistake. Link it to an existing numbered SUCCESS criterion and omit hints that
+repeat the brief. The v2 brief accepts up to eight `skill_hints` records with
+`skill`, `criterion_id` and `instruction`.
 
-For a retried import whose SUCCESS 1 requires exactly one stored row per import
-ID, the idempotency skill suggests this CONTEXT sentence: “Trigger the timeout
-after the first write commits, retry with the same import ID, then count its
-stored rows for SUCCESS 1.” The existing VERIFY command checks that count.
+For a retry safety criterion, ask the worker to reproduce a timeout after the
+first commit, retry with the same import ID and verify one stored row.
 
 ## Curated Animatic
 
-Use the sibling `../../animatic/SKILL.md` for requested animatics, narrated
-explainers and AW's completion animatic. This is the optimized Hstack package,
-including `MEDIA.md` and `scripts/build-media.mjs`. Read its toolchain config
-before building. Use screenshots for static UI, real recordings for interactions,
-and deterministic animated infographics for sourced relationships. Follow its
-mixed-media verification and hand over the resulting video. A missing optimized
-package is a blocker for the animatic; report it rather than silently selecting
-an older still-frame implementation. It does not invalidate separately verified
-engineering work.
+Use `../../animatic/SKILL.md` for requested narrations and the
+[completion threshold](routing.md#task-class-and-completion). Read its toolchain
+config and use the curated `MEDIA.md` and `scripts/build-media.mjs`. Follow its
+mixed-media verification and hand back the video. If the curated package or
+required tools are absent, report the animatic blocker.
 
 ## Task-specific access
-
-Load only the skill needed for the current branch; availability is not activation.
 
 | Task | Hstack skill |
 |---|---|
@@ -81,13 +71,18 @@ Load only the skill needed for the current branch; availability is not activatio
 | Requested research deliverable | `research` |
 | PR description | `pr` |
 | Requested review of a change | `h-code-review` |
+| Resuming a session with missing recent context | `recall` and the current mission snapshot |
+| Reviewable decision trail for a longer mission | `show-me-your-work` |
 
-Names must exist in the active installation before use. Skills absent from Hstack
-remain optional external tools, not bundled dependencies. Recommend substantial
-additions such as `blast-radius`, `create-verification-skill`, `statechart` or
-`reverse-engineer-anything` when the task warrants them; preserve their invocation
-and delegation gates. `arena`, `swarm`, `interrogate`, `reflect`, setup commands
-and global changes require the user's explicit request or existing authorization.
+Use `node scripts/mission-state-cli.mjs export-tsv` to produce the decision
+trail from the existing mission ledger. It reads `{ workspace, task_id, stateDir? }`
+as JSON on stdin and returns the TSV in `tsv`. On resume, use `recall` to
+reconstruct current context from the snapshot, decision trail and live evidence.
+
+Preserve invocation and delegation gates for optional additions such as
+`blast-radius`, `create-verification-skill` and `statechart`. `arena`, `swarm`,
+`interrogate`, `reflect`, setup commands and global changes require an explicit
+user request or existing authorization.
 
 ## Resolve conflicts before acting
 
@@ -121,6 +116,17 @@ explain a conflict when it changes expected behavior. If a material conflict
 cannot be resolved by these priorities, continue independent work and ask one
 focused question. Do not invent missing user authority.
 
+## Escalate repeated problems
+
+| Observed problem | Next path |
+|---|---|
+| Repeated budget, routing or rework drift | [AW operating learning](operating-learning.md), with one `active_trial` in `playbooks/current.json` |
+| The same repository or code mistake on at least two occasions | `correct` and `principle-encode-lessons-in-structure` |
+| Repeated repository navigation, tool economy or coding-standards friction | `h-retro` |
+| Fundamental skill or judgment gap | `reflect`, on explicit user request |
+
+Apply the invocation and delegation rules above when a skill proposes work.
+
 ## Keep selection useful
 
 Name selected skills once when first applying them. Reuse already loaded material.
@@ -128,15 +134,12 @@ Do not recursively load every skill a reference mentions. Workers receive only
 references needed for their assigned outcome, not the complete Hstack catalog.
 
 Start observing handoffs with delegated retry tasks. At the normal
-operating-learning checkpoint, use the Evidence line of the existing
-[local observation](lessons.md#entry-format) for each eligible handoff, including
-failures and cases with no added hint. Record the run and task IDs, skill used for the added hint
-or `none`, whether the first worker result met every original SUCCESS criterion,
-and whether another worker attempt or a substantive main correction was needed.
-Record each outcome as yes, no or unknown from the actual verification and
-handoff history. For example: `hint=principle-make-operations-idempotent first_pass=no rework=yes`.
-Keep separate handoffs distinct within a run. Use total cost
-through acceptance only when observed for all participating actors.
+operating-learning checkpoint, attach each observed hint with repeatable
+`usage.mjs attest --skill-hint <skill>:<first_pass>:<rework>` flags. Express each
+outcome as `yes`, `no` or `unknown` from verification and actual repair history.
+Record comparable no-hint handoffs in the [local observation](lessons.md#entry-format)
+with run and task IDs, first-pass outcome and rework. Keep separate handoffs
+distinct. Use total cost through acceptance only when all actor costs are observed.
 
 Compare like task classes, harnesses and actual model profiles. Selection by main
 can favor harder cases; these observations can guide the next change. A causal

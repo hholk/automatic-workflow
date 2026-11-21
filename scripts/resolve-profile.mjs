@@ -6,7 +6,7 @@ import { effectivePolicy, hostCapabilities, validateActorProvenance } from "./ef
 import { assessTeacherInspection } from "./teacher-state.mjs"
 import { selectReviewedLessons } from "./learning-policy.mjs"
 import { writeSelectionReceipt } from "./selection-receipt.mjs"
-import { resolveTaskIdentity } from "./run-identity.mjs"
+import { normalizeTaskClass, resolveTaskIdentity } from "./run-identity.mjs"
 import { readRunContext } from "./run-context.mjs"
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -15,6 +15,38 @@ const defaultRegistry = readJson(join(root, "prompts/profiles.json"))
 const defaultPlaybook = readJson(join(root, "playbooks/current.json"))
 const own = (object, key) => object && Object.hasOwn(object, key) ? object[key] : undefined
 const workerRoutes = new Set(["explore", "diagnose", "fix", "implement", "review", "computer-use"])
+
+const skillDirectory = dirname(root)
+const potetoStyleReference = () => {
+  const core = join(skillDirectory, "poteto-mode/poteto-core.md")
+  if (existsSync(core)) return { path: core, mode: "core", exists: true }
+  const full = join(skillDirectory, "poteto-mode/SKILL.md")
+  const exists = existsSync(full)
+  return { path: full, mode: exists ? "full" : "missing", exists }
+}
+
+const skillRecommendations = [
+  [["diagnose", "diagnosis"], "diagnosing-bugs", "engineering/diagnosing-bugs", "Trace a symptom to its cause before changing code."],
+  [["review"], "h-code-review", "engineering/h-code-review", "Check the change against repository standards and the request."],
+  [["ui"], "design-taste-frontend", "taste-skill", "Check the design in the browser."],
+  [["typescript"], "typescript-best-practices", "typescript-best-practices", "Apply TypeScript conventions to the affected code."],
+  [["fix", "bugfix", "tdd"], "tdd", "tdd", "Use a focused failing behavior check when one is available."],
+  [["release", "pr"], "pr", "engineering/pr", "Summarize externally visible changes and verification for reviewers."],
+  [["research", "explore"], "research", "engineering/research", "Verify findings against primary sources."],
+  [["architecture", "refactor", "blast-radius"], "blast-radius", "blast-radius", "Verify affected callers and boundaries."],
+  [["repeat-error"], "correct", "correct", "Find a way to prevent the recurring mistake."],
+  [["retry"], "principle-make-operations-idempotent", "principle-make-operations-idempotent", "Check that retries converge after partial work."],
+  [["repeat-hypothesis"], "principle-attack-the-premise", "principle-attack-the-premise", "Test the shared premise before retrying a failed hypothesis."],
+]
+
+const recommendedSkills = ({ route, signals }, taskClass) => {
+  const tags = new Set([route, taskClass, ...(Array.isArray(signals) ? signals : [])])
+  return skillRecommendations.filter(([triggers]) => triggers.some((tag) => tags.has(tag)))
+    .map(([, name, directory, reason]) => {
+      const path = join(skillDirectory, directory, "SKILL.md")
+      return { name, path, exists: existsSync(path), reason }
+    })
+}
 
 const assertComponents = (components) => {
   for (const component of components) {
@@ -36,12 +68,18 @@ const resolvePromptProfile = (input, registry, playbook, nativeProfile) => {
 export const resolveSelection = (input, overrides = {}) => {
   const registry = overrides.registry || defaultRegistry
   const playbook = overrides.playbook || defaultPlaybook
-  if (![4, 5].includes(playbook.schema_version)) throw new Error("playbook schema_version 4 or 5 is required")
   if (registry.schema_version !== 1) throw new Error("profile registry schema_version 1 is required")
   if (input.actors !== undefined) validateActorProvenance(input.actors)
   const capabilities = hostCapabilities(input.host, input.providerHost)
   const profileHost = capabilities.profile_host
   const taskIdentity = resolveTaskIdentity(input)
+  const taskClass = input.taskClass ?? input.task?.class
+  const canonicalTaskClass = normalizeTaskClass(taskClass)
+  const skillReferences = {
+    canonical_task_class: canonicalTaskClass,
+    recommended_hstack_skills: recommendedSkills(input, canonicalTaskClass),
+    poteto_style_reference: potetoStyleReference(),
+  }
   const modelCapability = (model) => ({ status: "unverified", model, provider_host: profileHost, reason: "CONFIGURATION_ONLY" })
   if (!new Set(["worker", "teacher"]).has(input.role)) throw new Error(`unknown role: ${input.role}`)
 
@@ -68,6 +106,7 @@ export const resolveSelection = (input, overrides = {}) => {
       role: input.role,
       route: input.route,
       ...binding,
+      ...skillReferences,
       model_capability: modelCapability(binding.model),
       profile_id: profile.id,
       prompt_profile_id: promptProfile.id,
@@ -131,7 +170,8 @@ export const resolveSelection = (input, overrides = {}) => {
     provider_host: profileHost,
     role: input.role,
     route: input.route,
-    task_class: input.taskClass || null,
+    task_class: taskClass || null,
+    ...skillReferences,
     complexity: input.complexity || null,
     task_identity: taskIdentity,
     model,
@@ -163,8 +203,7 @@ const arg = (name) => {
   return value
 }
 
-// Read only explicitly named bounded regular JSON files. Never discover state,
-// scan sessions or read transcripts to reconstruct actors or lesson evidence.
+// Read bounded regular JSON files supplied by the caller or the opt-in project lesson path.
 const readBoundedJson = (path, maxBytes) => {
   const fd = openSync(resolve(path), constants.O_RDONLY | constants.O_NONBLOCK)
   try {
@@ -184,24 +223,37 @@ const readBoundedJson = (path, maxBytes) => {
 if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const actorsPath = arg("--actors")
-    const lessonsPath = arg("--lessons")
+    const legacyLessonsPath = arg("--lessons")
+    const explicitLessonsPath = arg("--project-lessons")
+    const legacyProject = arg("--project")
+    const projectID = arg("--project-id")
+    const projectVersion = arg("--project-version")
     const prerequisitesPath = arg("--prerequisites")
+    const workspace = arg("--workspace")
+    const role = arg("--role")
     const playbookPath = arg("--playbook")
-    if (lessonsPath && (!arg("--project") || !arg("--project-version") || !prerequisitesPath)) {
-      throw new Error("--lessons requires --project, --project-version and --prerequisites")
+    if (legacyLessonsPath && explicitLessonsPath) throw new Error("provide only one of --project-lessons and --lessons")
+    if (projectID && legacyProject) throw new Error("provide only one of --project-id and --project")
+    const explicitPath = explicitLessonsPath ?? legacyLessonsPath
+    if (explicitPath && (!(projectID ?? legacyProject) || !projectVersion || !prerequisitesPath)) {
+      throw new Error(`${explicitLessonsPath ? "--project-lessons" : "--lessons"} requires --project-id (or --project), --project-version and --prerequisites`)
     }
+    const projectLessonsPath = role === "worker" && workspace && projectID && projectVersion && prerequisitesPath
+      ? resolve(workspace, ".aw/lessons.json") : undefined
+    const lessonsPath = explicitPath ?? (projectLessonsPath && existsSync(projectLessonsPath) ? projectLessonsPath : undefined)
     const value = resolveSelection({
       actors: actorsPath ? readBoundedJson(actorsPath, 16384) : undefined,
       lessons: lessonsPath ? readBoundedJson(lessonsPath, 262144) : undefined,
-      projectID: arg("--project"),
-      projectVersion: arg("--project-version"),
+      projectID: projectID ?? legacyProject,
+      projectVersion,
       prerequisites: prerequisitesPath ? readBoundedJson(prerequisitesPath, 16384) : undefined,
       host: arg("--host"),
       providerHost: arg("--provider-host"),
-      role: arg("--role"),
+      role,
       model: arg("--model"),
       route: arg("--route"),
       taskClass: arg("--task-class"),
+      signals: arg("--signals")?.split(",").map((signal) => signal.trim()),
       complexity: arg("--complexity"),
       taskID: arg("--task-id"),
       snapshotID: arg("--snapshot-id"),

@@ -28,13 +28,44 @@ test("ships frozen worker and teacher contracts", () => {
 
 test("loads one resolved prompt profile under main-agent authority", () => {
   const skill = read("SKILL.md")
-  assert.match(skill, /AW v6/)
+  assert.match(skill, /AW v7/)
   assert.match(skill, /resolve-profile\.mjs/)
   assert.match(skill, /Load only returned\s+components/i)
   assert.match(skill, /Main alone dispatches/i)
   assert.match(skill, /focused teacher help/i)
   assert.match(skill, /DONE.*TEACHER_REQUEST/is)
   assert.doesNotMatch(skill, /HUMAN_REQUEST/)
+})
+
+test("uses AW v7 Hstack defaults and a scoped Animatic threshold", () => {
+  const skill = read("SKILL.md")
+  const hstack = read("references/hstack.md")
+  const completion = skill.split("## Completion animatic")[1]
+  assert.match(skill, /poteto-core\.md.*poteto-mode\/SKILL\.md/s)
+  assert.match(skill, /recommended_hstack_skills/)
+  assert.match(hstack, /poteto_style_reference/)
+  assert.match(completion, /assurance: "reviewed"/)
+  assert.match(completion, /user-visible UI changes/)
+  assert.match(completion, /pull-request deliverables/)
+  assert.match(completion, /explicit user requests/)
+  assert.match(completion, /short direct non-UI work.*ketchup/is)
+})
+
+test("keeps one active operating trial and explicit Hstack escalation", () => {
+  const policy = JSON.parse(read("playbooks/current.json"))
+  assert.equal(policy.schema_version, 4)
+  assert.ok(Object.hasOwn(policy.operating_learning, "active_trial"))
+  assert.deepEqual(policy.operating_learning.rollup_dimensions, [
+    "playbook_version", "host", "route", "worker_model",
+  ])
+
+  const hstack = read("references/hstack.md")
+  assert.match(hstack, /correct.*principle-encode-lessons-in-structure/)
+  assert.match(hstack, /friction.*h-retro/)
+  assert.match(hstack, /reflect.*explicit user request/)
+  const lessons = read("references/lessons.md")
+  assert.match(lessons, /\.aw\/lessons\.json/)
+  assert.match(lessons, /selectReviewedLessons/)
 })
 
 test("routes evidence gaps, human authority, and lean TDD explicitly", () => {
@@ -47,7 +78,10 @@ test("routes evidence gaps, human authority, and lean TDD explicitly", () => {
   assert.match(routing, /Grilling/)
   assert.match(routing, /dependent decision tree/i)
   for (const workflow of ["fix", "implement"]) {
-    assert.match(read(`workflows/${workflow}.md`), /SEAM -> RED -> MINIMAL CHANGE -> GREEN/)
+    const procedure = read(`workflows/${workflow}.md`)
+    assert.match(procedure, /project-local `verify-\*` skill/)
+    assert.match(procedure, /verify\.command.*verify\.expected/s)
+    assert.match(procedure, /SEAM -> RED -> MINIMAL CHANGE -> GREEN/)
   }
   assert.match(teacher, /five.*ASK|5.*ASK/i)
   assert.match(teacher, /seven turns per ASK/i)
@@ -146,11 +180,36 @@ test("benchmarks resolved v4 component sets including explicit Opus", () => {
 })
 
 
-test("direct routing precedes ordinary work and handoffs share one contract", () => {
+test("routing reserves direct for tiny tasks and delegates non-trivial work by default", () => {
   const skill = read("SKILL.md")
   const routing = read("references/routing.md")
   assert.match(skill, /references\/routing\.md/)
-  assert.ok(routing.indexOf("`tiny_local`") < routing.indexOf("`known_change`"))
+  assert.match(skill, /Delegate by default for multi-file discovery,\s+diagnosis, non-trivial implementation, independent verification or review, and\s+two or more useful parallel slices/)
+  assert.match(skill, /Main alone dispatches scoped `aw-worker` or `aw-reviewer` subagents/)
+  assert.match(skill, /up to two ready independent workers concurrently\.\s+Honor explicit concurrency requests up to the host cap/)
+  const rows = routing.split("\n")
+    .filter((line) => line.startsWith("| `"))
+    .map((line) => line.split("|").slice(1, 4).map((cell) => cell.trim()))
+  const direct = rows.filter(([, , route]) => route === "`direct`")
+  assert.equal(direct.length, 1)
+  assert.equal(direct[0][0], "`tiny_local`")
+  assert.match(direct[0][1], /tiny single-location edit or immediate read\/check.*one verified step/)
+  const directIndex = rows.indexOf(direct[0])
+  for (const [id, route] of [
+    ["read_only_map", "explore"],
+    ["unknown_bug", "diagnose"],
+    ["diagnosed_bug", "fix"],
+    ["known_change", "implement"],
+    ["completed_change", "review"],
+  ]) {
+    const index = rows.findIndex(([key]) => key === `\`${id}\``)
+    assert.ok(index > directIndex, id)
+    assert.equal(rows[index][2], `\`${route}\``, id)
+  }
+  assert.match(routing, /Default to delegation for `explore`, `diagnose`, `fix`, `implement`, and\s+`review`/)
+})
+
+test("worker handoffs share one contract", () => {
   const explore = read("workflows/explore.md")
   assert.match(explore, /contracts\/worker\.md/)
   assert.doesNotMatch(explore, /STATUS \| EVIDENCE|native `explore` subagent/)

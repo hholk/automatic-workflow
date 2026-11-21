@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import { operatingReport } from "./operating-report.mjs"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import { appendAttestation, appendRun, compareRecipes, readRuns } from "./evidence.mjs"
+import { appendAttestation, appendRun, compareRecipes, inspectStore, readRuns } from "./evidence.mjs"
 
 const stateDir = process.env.AW_STATE_DIR || join(homedir(), ".local", "state", "aw")
 const command = process.argv[2]
@@ -21,6 +21,16 @@ const booleanArg = (name) => {
   if (value !== "true" && value !== "false") throw new Error(`${name} must be true or false`)
   return value === "true"
 }
+const skillHintArgs = () => {
+  const values = { yes: true, no: false, unknown: null }
+  return process.argv.flatMap((argument, index) => {
+    if (argument !== "--skill-hint") return []
+    const match = /^(.+):(yes|no|unknown):(yes|no|unknown)$/.exec(process.argv[index + 1] || "")
+    if (!match) throw new Error("--skill-hint requires <skill>:<yes|no|unknown>:<yes|no|unknown>")
+    const [, skill, firstPass, rework] = match
+    return [{ skill, first_pass: values[firstPass], rework: values[rework] }]
+  })
+}
 const average = (values) => {
   const finite = values.filter(Number.isFinite)
   return finite.length ? finite.reduce((sum, value) => sum + value, 0) / finite.length : null
@@ -31,13 +41,43 @@ const filteredRuns = (runs) => runs.filter((run) => (
 ))
 const invalidRecords = []
 const diagnosticRuns = () => readRuns(stateDir, { onInvalid: (issue) => invalidRecords.push(issue) })
+const operatingPolicy = () => JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8")).operating_learning
+const operatingOptions = (policy) => ({
+  minimumObservedRuns: policy?.minimum_observed_runs,
+  activeTrial: policy?.active_trial || null,
+})
+
+const doctor = (stateDir) => inspectStore(stateDir, (records) => {
+  const runs = [...new Map(records.map((run) => [run.run_id, run])).values()]
+  const coverage = (version) => {
+    const matching = runs.filter((run) => run.playbook_version === `v${version}` || run.playbook_version.endsWith(`-v${version}`))
+    return { runs: matching.length, attested: matching.filter((run) => run.quality.attested).length }
+  }
+  const tokenObserved = (actor) => actor.used && Number.isFinite(actor.tokens)
+  const report = operatingReport(runs, [], operatingOptions(operatingPolicy()))
+  return {
+    schema_version: 4,
+    valid_runs: records.length,
+    attestation_coverage: { v6: coverage(6), v7: coverage(7) },
+    token_coverage: {
+      runs: runs.length,
+      any_observed: runs.filter((run) => Object.values(run.actors).some(tokenObserved)).length,
+      complete: runs.filter((run) => Number.isFinite(run.tokens.operational_total)).length,
+      main: runs.filter((run) => tokenObserved(run.actors.main)).length,
+      worker: runs.filter((run) => tokenObserved(run.actors.worker)).length,
+      teacher: runs.filter((run) => tokenObserved(run.actors.teacher)).length,
+    },
+    active_trial: report.active_trial,
+  }
+})
 
 try {
   if (command === "record") {
     const input = JSON.parse(readFileSync(requiredArg("--file"), "utf8"))
     process.stdout.write(`${JSON.stringify(appendRun(input, stateDir), null, 2)}\n`)
   } else if (command === "attest") {
-    const attestation = appendAttestation({
+    const skillHints = skillHintArgs()
+    const input = process.argv.includes("--file") ? JSON.parse(readFileSync(requiredArg("--file"), "utf8")) : {
       run_id: requiredArg("--run-id"),
       verify_id: requiredArg("--verify-id"),
       verify_exit_code: Number(requiredArg("--verify-exit-code")),
@@ -48,6 +88,11 @@ try {
       forbidden_changes: Number(requiredArg("--forbidden-changes")),
       accepted_worker_actions: Number(requiredArg("--accepted-worker-actions")),
       parent_rework: Number(requiredArg("--parent-rework")),
+    }
+    const attestation = appendAttestation({
+      ...input,
+      ...(process.argv.includes("--outcome") ? { outcome: requiredArg("--outcome") } : {}),
+      ...(skillHints.length ? { skill_hints: skillHints } : {}),
     }, stateDir)
     process.stdout.write(`${JSON.stringify(attestation, null, 2)}\n`)
   } else if (command === "show") {
@@ -132,10 +177,12 @@ try {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   } else if (command === "operating") {
     const registry = JSON.parse(readFileSync(new URL("../prompts/profiles.json", import.meta.url), "utf8"))
-    const policy = JSON.parse(readFileSync(new URL("../playbooks/current.json", import.meta.url), "utf8"))
-    const report = operatingReport(filteredRuns(diagnosticRuns()), registry.measurement.cheap_models)
+    const policy = operatingPolicy()
+    const report = operatingReport(filteredRuns(diagnosticRuns()), registry.measurement.cheap_models, operatingOptions(policy))
     process.stdout.write(`${JSON.stringify({ ...report, excluded_records: invalidRecords.length,
-      operating_learning: policy.operating_learning }, null, 2)}\n`)
+      operating_learning: policy }, null, 2)}\n`)
+  } else if (command === "doctor") {
+    process.stdout.write(`${JSON.stringify(doctor(stateDir), null, 2)}\n`)
   } else if (command === "summary") {
     const runs = diagnosticRuns()
     process.stdout.write(`${JSON.stringify({
@@ -147,7 +194,7 @@ try {
       teacher_runs: runs.filter((run) => run.actors.teacher.used).length,
     }, null, 2)}\n`)
   } else {
-    throw new Error("usage.mjs: use record, attest, show, latest, waste, teacher, analyze, operating, or summary")
+    throw new Error("usage.mjs: use record, attest, show, latest, waste, teacher, analyze, operating, doctor, or summary")
   }
   if (invalidRecords.length) {
     const examples = invalidRecords.slice(0, 5).map((issue) => `${issue.file}:${issue.line}: ${issue.reason}`).join("; ")
