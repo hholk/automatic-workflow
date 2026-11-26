@@ -1,6 +1,6 @@
 ---
-description: AW Opus 5.5 adviser for decisive evidence gaps; no execution
-model: venice/claude-opus-5-5
+description: AW advisory teacher (openai/gpt-6.2-astra) for decisive evidence gaps; no execution
+model: openai/gpt-6.2-astra
 mode: all
 # OpenCode sends a prefilled assistant turn for a single-step agent.
 steps: 2

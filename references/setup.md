@@ -20,16 +20,17 @@ is confirmed. The installer refuses `--apply` for an unsupported host before
 writing any selected host, including mixed-host requests. Check-only inspection
 remains available. A Venice model slug alone does not configure a Copilot provider.
 
-For Codex Router, use the exact host-specific model declared in
-`prompts/profiles.json`: the Codex teacher uses
-`venice-responses/claude-opus-5-5`, while OpenCode uses the native
-`venice/claude-opus-5-5` binding. Model
+For the teacher, use the exact host-specific model declared in
+`prompts/profiles.json`: Codex defaults to native `gpt-6.2-astra` (`openai`) and OpenCode
+to `openai/gpt-6.2-astra` when Venice has no credits; when Venice credits are available,
+Opus 5.5 (`venice-responses/claude-opus-5-5` via Codex Router / `venice/claude-opus-5-5` on
+OpenCode) is registered as an explicit override. Model
 curation and publication use the installed router's native catalog mechanism;
 never edit generated `router-model-*.toml` files. This skill update does not
 change the router catalog or restart its service.
-Code workers and reviewers use native Terra with low reasoning: Codex binds
-`gpt-6.1-terra` through `openai`; OpenCode binds `openai/gpt-6.1-terra#low`.
-Confirm the model and low variant in each host's local catalog before installation.
+Code workers and reviewers use native Terra with medium reasoning: Codex binds
+`gpt-6.1-terra` through `openai`; OpenCode binds `openai/gpt-6.1-terra#medium`.
+Confirm the model and medium variant in each host's local catalog before installation.
 Preserve the main model and native Ultra configuration.
 
 Restart/reload harnesses after installation; never terminate user sessions.

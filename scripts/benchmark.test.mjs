@@ -39,7 +39,8 @@ test("offline benchmark succeeds with current v5 registry profiles, routes and e
     assert.ok(item.component_ids.includes(`playbooks/recipes/${playbook.defaults.recipe_id}.md`))
   }
   for (const item of value.route_contexts.filter((item) => item.route === "teacher")) {
-    assert.equal(item.profile_id, registry.teacher_bindings[item.host].profile_id)
+    const expected = item.id === "architecture_opus" ? "opus-teacher-v1" : registry.teacher_bindings[item.host].profile_id
+    assert.equal(item.profile_id, expected)
   }
   assert.deepEqual(Object.keys(value.invariants).sort(), [
     "codex_default_worker", "opencode_default_worker", "copilot_model_unsupported", "native_worker_budgets",

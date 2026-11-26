@@ -1,6 +1,6 @@
 ---
-description: AW bounded implementation worker (openai/gpt-6.1-terra#low)
-model: openai/gpt-6.1-terra#low
+description: AW bounded implementation worker (openai/gpt-6.1-terra#medium)
+model: openai/gpt-6.1-terra#medium
 mode: all
 steps: 125
 permission:

@@ -7,8 +7,14 @@ description: AW v7 delegates non-trivial discovery, diagnosis, implementation an
 
 State this heading and the selected route once on activation. Main owns routing,
 integration and acceptance. Resolve models and complete native bindings from
-`prompts/profiles.json`; code workers default to Terra with low reasoning. Keep the current main
-model and explicit user model choices. Host instructions govern dispatch.
+`prompts/profiles.json`; code workers default to Terra with medium reasoning, and
+teachers default to Codex Astra (`gpt-6.2-astra`) when Venice has no credits (Opus 5.5
+via Venice when credits are available). Keep the current main model and explicit user
+model choices. Host instructions govern dispatch. In T3 Code—even when main runs on
+Antigravity (`gemini-4-neon`), Hermes, or OpenCode—resolve with
+`--host t3 --provider-host codex` and dispatch workers via `delegate_task` to
+`codex` / `gpt-6.1-terra` (`reasoningEffort: "medium"`) and teachers to `codex` /
+`gpt-6.2-astra` (`reasoningEffort: "high"`).
 
 Optimize accepted outcomes and total cost. Measure cheap-model token share without quotas. Confirm
 availability and quality from actual runs.

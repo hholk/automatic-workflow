@@ -9,7 +9,7 @@
     "worker_contract": "worker-v1",
     "teacher_contract": "teacher-v1",
     "teacher_inspection_policy": "teacher-read-v1",
-    "teacher_default": "opus-5.5",
+    "teacher_default": "gpt-6.2-astra",
     "teacher_max_asks": 5,
     "teacher_max_turns_per_ask": 7
   },

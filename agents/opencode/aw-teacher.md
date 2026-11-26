@@ -1,5 +1,5 @@
 ---
-description: AW Opus 5.5 adviser for decisive evidence gaps; no execution
+description: AW advisory teacher ({{model}}) for decisive evidence gaps; no execution
 model: {{model}}
 mode: all
 # OpenCode sends a prefilled assistant turn for a single-step agent.

@@ -62,10 +62,10 @@
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "venice-responses/claude-opus-5-5",
+    "teacher_model": "gpt-6.2-astra",
     "task_class": "architecture",
     "complexity": "large",
-    "expected_profile_id": "opus-teacher-v1"
+    "expected_profile_id": "astra-teacher-v1"
   },
   {
     "id": "architecture_opus",
@@ -87,10 +87,10 @@
     "expected_route": "teacher",
     "host": "codex",
     "role": "teacher",
-    "teacher_model": "venice-responses/claude-opus-5-5",
+    "teacher_model": "gpt-6.2-astra",
     "task_class": "hard-fix",
     "complexity": "large",
-    "expected_profile_id": "opus-teacher-v1"
+    "expected_profile_id": "astra-teacher-v1"
   },
   {
     "id": "completed_change",

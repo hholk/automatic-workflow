@@ -5,9 +5,9 @@ Dedicated AW profiles are the default. Native `task` has no model override.
 | Route | subagent_type | Model |
 |---|---|---|
 | GUI/computer-use | `aw-deepseek-worker` | pinned `venice/deepseek-v4-1-flash-1017` |
-| fix, implement | `aw-worker` | `openai/gpt-6.1-terra#low` |
-| explore, diagnose, review, compare | `aw-reviewer` | `openai/gpt-6.1-terra#low` |
-| teacher | `aw-teacher` | `venice/claude-opus-5-5` |
+| fix, implement | `aw-worker` | `openai/gpt-6.1-terra#medium` |
+| explore, diagnose, review, compare | `aw-reviewer` | `openai/gpt-6.1-terra#medium` |
+| teacher | `aw-teacher` | `openai/gpt-6.2-astra` (or `venice/claude-opus-5-5` when Venice has credits) |
 
 Workers deny recursive task calls and explicitly allow both MCP namespaces.
 Teacher denies all tools and uses `steps: 2`; `steps: 1` makes OpenCode send a
@@ -35,16 +35,16 @@ Teacher: `--role teacher --route teacher`. Load returned components once.
 
 Use metadata from the first actual worker execution per unchanged session/profile
 to establish
-`providerID`/`modelID` = `openai`/`gpt-6.1-terra` with variant `low`,
+`providerID`/`modelID` = `openai`/`gpt-6.1-terra` with variant `medium`,
 `venice`/`deepseek-v4-1-flash-1017` for the pinned computer-use worker, or
-`venice`/`claude-opus-5-5`. Config and self-identification are not proof.
+`openai`/`gpt-6.2-astra` (`venice`/`claude-opus-5-5` when Venice has credits). Config and self-identification are not proof.
 On mismatch, missing metadata or missing agent, stop. Never use stale cached
 profiles or substitute general/explore. For installation/reload failures only,
 read [setup](setup.md). Record prompt-free telemetry; no benchmark per task.
 
 Host capabilities and T3 provider delegation are declared in [policy v5](policy-v5.md).
 
-Terra workers select the native OpenAI/Codex provider and the `low` model variant.
-The resolver returns the base model plus `reasoning_effort: low`; generated
-profiles select `openai/gpt-6.1-terra#low`. No Luna fallback remains. On provider
+Terra workers select the native OpenAI/Codex provider and the `medium` model variant.
+The resolver returns the base model plus `reasoning_effort: medium`; generated
+profiles select `openai/gpt-6.1-terra#medium`. No Luna fallback remains. On provider
 failure, report `BLOCKED_ENVIRONMENT` and preserve the requested model.
