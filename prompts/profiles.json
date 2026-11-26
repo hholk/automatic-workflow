@@ -46,7 +46,7 @@
         "model_provider": "openai",
         "write_agent": "aw-worker",
         "read_agent": "aw-reviewer",
-        "reasoning_effort": "low"
+        "reasoning_effort": "medium"
       }
     },
     "opencode|openai/gpt-6.1-terra": {
@@ -58,11 +58,17 @@
         "model_provider": "openai",
         "write_agent": "aw-worker",
         "read_agent": "aw-reviewer",
-        "reasoning_effort": "low"
+        "reasoning_effort": "medium"
       }
     }
   },
   "teacher_profiles": {
+    "gpt-6.2-astra": {
+      "id": "astra-teacher-v1",
+      "core": "prompts/core/teacher.md",
+      "contract": "contracts/teacher.md",
+      "model_delta": "prompts/models/gpt-6.2-astra.md"
+    },
     "opus-5.5": {
       "id": "opus-teacher-v1",
       "core": "prompts/core/teacher.md",
@@ -75,20 +81,42 @@
       "overlays": {}
     }
   },
-  "teacher_default": "opus-5.5",
-  "teacher_explicit_overrides": [],
+  "teacher_default": "gpt-6.2-astra",
+  "teacher_explicit_overrides": [
+    "opus-5.5"
+  ],
   "teacher_bindings": {
     "codex": {
-      "model": "venice-responses/claude-opus-5-5",
-      "model_provider": "codex-router",
+      "model": "gpt-6.2-astra",
+      "model_provider": "openai",
       "native_agent": "aw-teacher",
-      "profile_id": "opus-teacher-v1"
+      "profile_id": "astra-teacher-v1",
+      "reasoning_effort": "high"
     },
     "opencode": {
-      "model": "venice/claude-opus-5-5",
-      "model_provider": "venice",
+      "model": "openai/gpt-6.2-astra",
+      "model_provider": "openai",
       "native_agent": "aw-teacher",
-      "profile_id": "opus-teacher-v1"
+      "profile_id": "astra-teacher-v1",
+      "reasoning_effort": "high"
+    }
+  },
+  "teacher_override_bindings": {
+    "opus-5.5": {
+      "codex": {
+        "model": "venice-responses/claude-opus-5-5",
+        "model_provider": "codex-router",
+        "native_agent": "aw-teacher",
+        "profile_id": "opus-teacher-v1",
+        "reasoning_effort": "high"
+      },
+      "opencode": {
+        "model": "venice/claude-opus-5-5",
+        "model_provider": "venice",
+        "native_agent": "aw-teacher",
+        "profile_id": "opus-teacher-v1",
+        "reasoning_effort": "high"
+      }
     }
   },
   "measurement": {

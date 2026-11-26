@@ -11,8 +11,8 @@ were also absent. `codex --version` reported `codex-cli 0.163.0`, with a sandbox
 warning that PATH aliases could not be created. That warning is not evidence
 of a model, credential or profile failure. No broader retry was attempted.
 
-The current native code-worker binding is Terra with low reasoning: Codex uses
-`openai` / `gpt-6.1-terra`; OpenCode uses `openai/gpt-6.1-terra#low`.
+The current native code-worker binding is Terra with medium reasoning: Codex uses
+`openai` / `gpt-6.1-terra`; OpenCode uses `openai/gpt-6.1-terra#medium`.
 The dated Mini observations above remain historical. Local profiles and CLI
 versions establish intent and installed software, not execution availability.
 Confirm each machine's own model catalog and first real worker metadata.

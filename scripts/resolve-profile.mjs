@@ -85,12 +85,20 @@ export const resolveSelection = (input, overrides = {}) => {
 
   if (input.role === "teacher") {
     if (input.route !== "teacher") throw new Error(`unknown route for teacher: ${input.route}`)
-    const binding = own(registry.teacher_bindings, profileHost)
-    if (!binding) throw new Error(`unsupported teacher host: ${input.host}`)
-    if (input.model && ![registry.teacher_default, binding.model].includes(input.model)) {
-      throw new Error(`unsupported teacher model: ${input.model}`)
+    const defaultBinding = own(registry.teacher_bindings, profileHost)
+    if (!defaultBinding) throw new Error(`unsupported teacher host: ${input.host}`)
+    let model = registry.teacher_default
+    let binding = defaultBinding
+    if (input.model && ![registry.teacher_default, defaultBinding.model].includes(input.model)) {
+      const overrideKey = (registry.teacher_explicit_overrides || []).find((key) => {
+        const candidate = own(own(registry.teacher_override_bindings, key), profileHost)
+        return key === input.model || candidate?.model === input.model
+      })
+      const overrideBinding = overrideKey ? own(own(registry.teacher_override_bindings, overrideKey), profileHost) : undefined
+      if (!overrideKey || !overrideBinding) throw new Error(`unsupported teacher model: ${input.model}`)
+      model = overrideKey
+      binding = overrideBinding
     }
-    const model = registry.teacher_default
     const profile = Object.values(registry.teacher_profiles || {}).find((item) => item.id === binding.profile_id)
     if (!profile || own(registry.teacher_profiles, model)?.id !== profile.id) throw new Error(`inconsistent teacher binding: ${profileHost}`)
     const policy = effectivePolicy(input, { playbook })

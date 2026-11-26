@@ -5,9 +5,9 @@
     "files": [
       "SKILL.md"
     ],
-    "words": 797,
-    "characters": 6387,
-    "estimated_tokens": 1597
+    "words": 853,
+    "characters": 6824,
+    "estimated_tokens": 1706
   },
   "hstack_startup": {
     "files": [
@@ -15,12 +15,12 @@
       "references/hstack.md",
       "../poteto-mode/poteto-core.md"
     ],
-    "words": 2302,
-    "characters": 17486,
-    "estimated_tokens": 4372,
+    "words": 2358,
+    "characters": 17923,
+    "estimated_tokens": 4481,
     "poteto_mode": "core"
   },
-  "average_route_estimated_tokens": 3494,
+  "average_route_estimated_tokens": 3655,
   "budgets": {
     "entrypoint_max_tokens": 1850,
     "average_route_max_tokens": 3800,
@@ -42,9 +42,9 @@
       "files": [
         "SKILL.md"
       ],
-      "words": 797,
-      "characters": 6387,
-      "estimated_tokens": 1597
+      "words": 853,
+      "characters": 6824,
+      "estimated_tokens": 1706
     },
     {
       "id": "read_only_map",
@@ -71,9 +71,9 @@
         "workflows/explore.md",
         "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 2362,
-      "characters": 17777,
-      "estimated_tokens": 4445
+      "words": 2429,
+      "characters": 18335,
+      "estimated_tokens": 4584
     },
     {
       "id": "unknown_bug",
@@ -100,9 +100,9 @@
         "workflows/diagnose.md",
         "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 2446,
-      "characters": 18350,
-      "estimated_tokens": 4588
+      "words": 2513,
+      "characters": 18908,
+      "estimated_tokens": 4727
     },
     {
       "id": "diagnosed_bug",
@@ -129,9 +129,9 @@
         "workflows/fix.md",
         "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 2482,
-      "characters": 18565,
-      "estimated_tokens": 4642
+      "words": 2549,
+      "characters": 19123,
+      "estimated_tokens": 4781
     },
     {
       "id": "known_change",
@@ -158,34 +158,34 @@
         "workflows/implement.md",
         "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 2475,
-      "characters": 18559,
-      "estimated_tokens": 4640
+      "words": 2542,
+      "characters": 19117,
+      "estimated_tokens": 4780
     },
     {
       "id": "architecture",
       "route": "teacher",
       "host": "codex",
-      "profile_id": "opus-teacher-v1",
+      "profile_id": "astra-teacher-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opus-teacher-v1",
+      "expected_profile_id": "astra-teacher-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/opus-5.5.md"
+        "prompts/models/gpt-6.2-astra.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-codex.md",
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/opus-5.5.md"
+        "prompts/models/gpt-6.2-astra.md"
       ],
-      "words": 1854,
-      "characters": 14074,
-      "estimated_tokens": 3519
+      "words": 1976,
+      "characters": 15063,
+      "estimated_tokens": 3766
     },
     {
       "id": "architecture_opus",
@@ -208,34 +208,34 @@
         "contracts/teacher.md",
         "prompts/models/opus-5.5.md"
       ],
-      "words": 1854,
-      "characters": 14074,
-      "estimated_tokens": 3519
+      "words": 1976,
+      "characters": 15063,
+      "estimated_tokens": 3766
     },
     {
       "id": "hard_fix",
       "route": "teacher",
       "host": "codex",
-      "profile_id": "opus-teacher-v1",
+      "profile_id": "astra-teacher-v1",
       "prompt_profile_id": "model-bound-v1",
-      "expected_profile_id": "opus-teacher-v1",
+      "expected_profile_id": "astra-teacher-v1",
       "profile_pass": true,
       "prompt_profile_pass": true,
       "component_ids": [
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/opus-5.5.md"
+        "prompts/models/gpt-6.2-astra.md"
       ],
       "files": [
         "SKILL.md",
         "references/runtimes-codex.md",
         "prompts/core/teacher.md",
         "contracts/teacher.md",
-        "prompts/models/opus-5.5.md"
+        "prompts/models/gpt-6.2-astra.md"
       ],
-      "words": 1854,
-      "characters": 14074,
-      "estimated_tokens": 3519
+      "words": 1976,
+      "characters": 15063,
+      "estimated_tokens": 3766
     },
     {
       "id": "completed_change",
@@ -262,9 +262,9 @@
         "workflows/review.md",
         "playbooks/recipes/bounded-v4.md"
       ],
-      "words": 2534,
-      "characters": 19092,
-      "estimated_tokens": 4773
+      "words": 2601,
+      "characters": 19652,
+      "estimated_tokens": 4913
     },
     {
       "id": "irreversible",
@@ -279,9 +279,9 @@
       "files": [
         "SKILL.md"
       ],
-      "words": 797,
-      "characters": 6387,
-      "estimated_tokens": 1597
+      "words": 853,
+      "characters": 6824,
+      "estimated_tokens": 1706
     },
     {
       "id": "tiny_read_only",
@@ -296,9 +296,9 @@
       "files": [
         "SKILL.md"
       ],
-      "words": 797,
-      "characters": 6387,
-      "estimated_tokens": 1597
+      "words": 853,
+      "characters": 6824,
+      "estimated_tokens": 1706
     }
   ],
   "routing": {
@@ -398,8 +398,8 @@
       },
       {
         "id": "architecture",
-        "profile_id": "opus-teacher-v1",
-        "expected_profile_id": "opus-teacher-v1",
+        "profile_id": "astra-teacher-v1",
+        "expected_profile_id": "astra-teacher-v1",
         "pass": true
       },
       {
@@ -410,8 +410,8 @@
       },
       {
         "id": "hard_fix",
-        "profile_id": "opus-teacher-v1",
-        "expected_profile_id": "opus-teacher-v1",
+        "profile_id": "astra-teacher-v1",
+        "expected_profile_id": "astra-teacher-v1",
         "pass": true
       },
       {

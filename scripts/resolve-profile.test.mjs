@@ -47,12 +47,24 @@ test("removed OpenCode family profiles are unknown", () => {
   }
 })
 
-test("binds Opus 5.5 to the correct native provider on each host", () => {
+test("binds Astra as default teacher and Opus 5.5 as explicit override on each host", () => {
+  for (const [host, model, provider] of [
+    ["codex", "gpt-6.2-astra", "openai"],
+    ["opencode", "openai/gpt-6.2-astra", "openai"],
+  ]) {
+    const value = resolveSelection({ host, role: "teacher", route: "teacher" })
+    assert.equal(value.model, model)
+    assert.equal(value.model_provider, provider)
+    assert.equal(value.native_agent, "aw-teacher")
+    assert.equal(value.profile_id, "astra-teacher-v1")
+    assert.equal(value.prompt_profile_id, "model-bound-v1")
+    assert.equal(value.components.length, 3)
+  }
   for (const [host, model, provider] of [
     ["codex", "venice-responses/claude-opus-5-5", "codex-router"],
     ["opencode", "venice/claude-opus-5-5", "venice"],
   ]) {
-    const value = resolveSelection({ host, role: "teacher", route: "teacher" })
+    const value = resolveSelection({ host, role: "teacher", route: "teacher", model, explicitModelRequest: true })
     assert.equal(value.model, model)
     assert.equal(value.model_provider, provider)
     assert.equal(value.native_agent, "aw-teacher")
@@ -219,12 +231,12 @@ test("configured worker and teacher bindings are explicitly unverified on every 
   }
 })
 
-test("Terra low binds all native and T3 code routes without a fallback", () => {
+test("Terra medium binds all native and T3 code routes without a fallback", () => {
   for (const [host, providerHost] of [["codex", "codex"], ["opencode", "opencode"], ["t3", "codex"], ["t3", "opencode"]]) {
     for (const route of ["explore", "diagnose", "fix", "implement", "review"]) {
       const selected = resolveSelection({ host, providerHost, role: "worker", route })
       assert.equal(selected.model, providerHost === "codex" ? "gpt-6.1-terra" : "openai/gpt-6.1-terra")
-      assert.equal(selected.reasoning_effort, "low")
+      assert.equal(selected.reasoning_effort, "medium")
       assert.equal(selected.model_provider, "openai")
       assert.equal(selected.native_agent, ["fix", "implement"].includes(route) ? "aw-worker" : "aw-reviewer")
       assert.equal(Object.hasOwn(selected, "fallback_reason"), false)

@@ -1,9 +1,9 @@
 # Codex runtime
 
-Code and computer-use routes select native `gpt-6.1-terra` with low reasoning.
+Code and computer-use routes select native `gpt-6.1-terra` with medium reasoning.
 Resolve the complete model, provider, role, prompt profile and budget from
 `prompts/profiles.json`. The generated `aw-worker` and `aw-reviewer` roles bind
-`model_provider: openai` and `model_reasoning_effort: low`; review retains its
+`model_provider: openai` and `model_reasoning_effort: medium`; review retains its
 read-only sandbox. Keep the main model and reasoning unchanged.
 
 From the absolute skill directory:
@@ -11,11 +11,17 @@ From the absolute skill directory:
 Use the actual task class/complexity. Review uses `--role worker --route review`;
 GUI/computer-use uses `--route computer-use`. Verify host capabilities on actual use.
 Teacher uses `--role teacher --route teacher` and remains advisory/tool-free,
-with `venice-responses/claude-opus-5-5` through Codex Router.
+defaulting to native `gpt-6.2-astra` (`openai`, `reasoning_effort: high`) when Venice has
+no credits (or explicit `--model opus-5.5` / `venice-responses/claude-opus-5-5` through
+Codex Router when Venice credits are available).
 
-Use the complete returned binding, including `reasoning_effort: low`, for
-explicit native model selection. For T3, follow its live orchestration
-instructions for provider delegation and user-requested settings. Bindings do
+Use the complete returned binding, including `reasoning_effort: medium` for workers and
+`reasoning_effort: high` for teachers, for explicit native model selection. For T3 Code
+(from any main provider instance including Antigravity `gemini-4-neon`, Hermes, OpenCode,
+or Codex), resolve with `--host t3 --provider-host codex` and follow T3's live
+orchestration instructions: call `delegate_task` with `providerInstanceId: "codex"`,
+`model: "gpt-6.1-terra"`, `options: { reasoningEffort: "medium" }` for workers and
+`model: "gpt-6.2-astra"`, `options: { reasoningEffort: "high" }` for teachers. Bindings do
 not grant dispatch permission or prove runtime availability.
 
 Supply `--actors <file>` only for observed native/provider metadata. The resolver

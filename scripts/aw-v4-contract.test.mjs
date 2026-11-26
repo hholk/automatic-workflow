@@ -122,7 +122,7 @@ test("binds dedicated native harness profiles without recursive agents", () => {
   for (const name of ["aw-worker", "aw-reviewer"]) {
     const profile = read(`agents/opencode/${name}.md`)
     const config = frontmatter(`agents/opencode/${name}.md`)
-    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: openai\/gpt-6\.1-terra#low$/m)
+    assert.match(read(`agents/generated/opencode/${name}.md`), /^model: openai\/gpt-6\.1-terra#medium$/m)
     assert.match(profile, /mode: all/)
     assert.match(config, /task: deny/)
     assert.match(config, /"codebase-memory-mcp_\*": allow/)

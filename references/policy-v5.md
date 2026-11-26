@@ -17,8 +17,8 @@ cell. Without observed actors, the resolver selects only an explicit coarse task
 cell or defaults. Configured model intent never activates a provenance cell.
 No runtime model discovery occurs here. Worker profiles carry their complete
 provider/write-role/read-role/reasoning binding; default code selection is
-Terra with low reasoning. OpenCode computer-use remains pinned to DeepSeek;
-Codex computer-use uses Terra with low reasoning. Main applies bounded operational trials under operating-learning.md;
+Terra with medium reasoning. OpenCode computer-use remains pinned to DeepSeek;
+Codex computer-use uses Terra with medium reasoning. Main applies bounded operational trials under operating-learning.md;
 research promotion is a separate, stricter path.
 
 `render-agents.mjs` renders native worker limits from the same playbook defaults.
